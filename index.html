@@ -46,11 +46,17 @@
 </head>
 
 <body class="text-neutral-800 h-screen overflow-hidden flex bg-[#fbfbfa]">
-  <aside class="w-64 bg-white border-r border-[#e9e9e7] flex flex-col">
-    <div class="p-6">
+  <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden glass">
+  </div>
+  <aside id="sidebar"
+    class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#e9e9e7] flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 shadow-xl md:shadow-none">
+    <div class="p-6 flex justify-between items-center">
       <h1 class="font-bold text-lg flex items-center gap-2 text-neutral-800">
-        <i data-lucide="calendar"></i>課表管理
+        <i data-lucide="users"></i> 老師名單
       </h1>
+      <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-gray-700">
+        <i data-lucide="x"></i>
+      </button>
     </div>
 
     <nav id="teacher-menu" class="flex-1 px-3 space-y-1 overflow-y-auto"></nav>
@@ -63,24 +69,36 @@
     </div>
   </aside>
 
-  <main class="flex-1 flex flex-col">
-    <header class="bg-white border-b border-[#e9e9e7] p-4 px-6 flex justify-between items-center shadow-sm">
-      <h2 id="main-title" class="text-xl font-bold text-neutral-800">
-        載入中...
-      </h2>
-      <div id="status-tag" class="text-xs px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-800 font-medium">
-        連線狀態：嘗試中...
+  <main class="flex-1 flex flex-col w-full overflow-hidden">
+    <header
+      class="bg-white border-b border-[#e9e9e7] p-4 px-6 flex justify-between items-center shadow-sm sticky top-0 z-30">
+      <div class="flex items-center gap-3">
+        <button onclick="toggleSidebar()" class="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg md:hidden">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="flex flex-col">
+          <h2 id="main-title"
+            class="text-lg md:text-xl font-bold text-neutral-800 truncate max-w-[150px] md:max-w-none">
+            載入中...
+          </h2>
+          <div id="status-tag"
+            class="text-[10px] md:text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-medium inline-block w-fit mt-1">
+            連線狀態：嘗試中...
+          </div>
+        </div>
       </div>
+
       <button onclick="openModal()"
-        class="flex items-center gap-2 bg-neutral-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-neutral-700 transition-all">
-        <i data-lucide="plus" class="w-4 h-4"></i> 新增課程
+        class="flex items-center gap-2 bg-neutral-800 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-neutral-700 transition-all shrink-0">
+        <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden md:inline">新增課程</span><span
+          class="md:hidden">新增</span>
       </button>
     </header>
 
-    <div class="flex-1 overflow-auto p-6 bg-[#fbfbfa]">
-      <div class="bg-white rounded-xl border border-[#e9e9e7] shadow-sm overflow-hidden min-w-[800px]">
+    <div class="flex-1 overflow-auto p-4 md:p-6 bg-[#fbfbfa]">
+      <div class="bg-white rounded-xl border border-[#e9e9e7] shadow-sm overflow-hidden min-w-[800px] relative">
         <div
-          class="grid grid-cols-8 bg-gray-50 border-b border-[#e9e9e7] text-sm text-gray-500 font-medium text-center">
+          class="grid grid-cols-8 bg-gray-50 border-b border-[#e9e9e7] text-sm text-gray-600 font-semibold text-center sticky top-0 z-20 select-none">
           <div class="p-3 border-r border-[#e9e9e7]">時間</div>
           <div class="p-3 border-r border-[#e9e9e7]">週一</div>
           <div class="p-3 border-r border-[#e9e9e7]">週二</div>
@@ -97,7 +115,7 @@
 
   <div id="course-modal"
     class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
-    <div class="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl">
+    <div class="bg-white rounded-xl w-[95%] md:w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-bold">新增課程資料</h3>
         <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
@@ -296,15 +314,16 @@
       const START_HOUR = 8;
 
       // 1. 繪製背景格線
-      // 在 renderSchedule 函數內找到以下段落進行修改
       slots.slice(0, -1).forEach((h) => {
         const row = document.createElement("div");
-        // 關鍵：將 grid-cols-6 改為 grid-cols-8
         row.className = "grid grid-cols-8 border-b border-[#e9e9e7]";
         row.style.height = `${ROW_HEIGHT}px`;
 
-        let rowHtml = `<div class="p-2 border-r border-[#e9e9e7] bg-gray-50/50 text-[10px] text-gray-400 flex items-center justify-center font-mono">${h}:00</div>`;
-        // 關鍵：迴圈從 1 跑到 7 (代表週一到週日)
+        // 原本是: text-[10px] text-gray-400
+        // 修改後: text-sm font-bold text-gray-600
+        let rowHtml = `<div class="p-2 border-r border-[#e9e9e7] bg-gray-50/50 text-sm font-semibold text-gray-600 flex items-center justify-center select-none">${h}:00</div>`;
+
+        // ... 後面的程式碼不用動 ...
         for (let day = 1; day <= 7; day++) {
           rowHtml += `<div class="border-r border-[#e9e9e7] last:border-0"></div>`;
         }
@@ -373,48 +392,49 @@
         };
 
         card.innerHTML = `
-  <div class="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
-    <button onclick="event.stopPropagation(); openEditModal(${JSON.stringify(item).replace(/"/g, "&quot;")})" class="p-1 bg-white/90 rounded shadow-sm text-gray-500 hover:text-blue-600">
-      <i data-lucide="edit-3" class="w-3 h-3"></i>
-    </button>
-    <button onclick="event.stopPropagation(); deleteCourse('${item.id}')" class="p-1 bg-white/90 rounded shadow-sm text-gray-500 hover:text-red-600">
-      <i data-lucide="trash-2" class="w-3 h-3"></i>
-    </button>
-  </div>
-  
-  <div class="flex flex-col h-full min-w-0">
-    <div class="mb-1.5">
-      <div class="font-bold text-[13px] truncate text-neutral-800 flex items-center gap-1">
-        <span class="truncate">${item.course_name}</span>
-        ${isShort ? '<i data-lucide="chevron-down" class="chevron w-3 h-3 text-gray-400"></i>' : ''}
-      </div>
-    </div>
+            <div class="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+              <button onclick="event.stopPropagation(); openEditModal(${JSON.stringify(item).replace(/"/g, "&quot;")})" class="p-1.5 bg-white/90 rounded shadow-sm text-gray-500 hover:text-blue-600">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+              <button onclick="event.stopPropagation(); deleteCourse('${item.id}')" class="p-1.5 bg-white/90 rounded shadow-sm text-gray-500 hover:text-red-600">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+            
+            <div class="flex flex-col h-full min-w-0">
+              <div class="mb-1.5 shrink-0"> <div class="font-bold text-base truncate text-neutral-800 flex items-center gap-1">
+                  <span class="truncate">${item.course_name}</span>
+                  ${isShort ? '<i data-lucide="chevron-down" class="chevron w-4 h-4 text-gray-500"></i>' : ''}
+                </div>
+              </div>
 
-    <div class="flex-1 space-y-1 text-gray-500 text-[11px] overflow-hidden ${heightPx < 100 ? 'hidden' : 'block'}">
-      <p class="flex items-center gap-1.5 truncate">
-        <i data-lucide="map-pin" class="w-3 h-3 opacity-60"></i> ${item.room_no || '-'}
-      </p>
-      <p class="flex items-center gap-1.5 truncate">
-        <i data-lucide="book-open" class="w-3 h-3 opacity-60"></i> ${item.subject || '-'}
-      </p>
-      <p class="flex items-center gap-1.5 font-bold text-blue-600/90">
-        <i data-lucide="banknote" class="w-3 h-3 opacity-60 text-gray-400 font-normal"></i> $${item.amount || 0}
-      </p>
-    </div>
+              <div class="flex-1 space-y-1 text-gray-600 text-sm overflow-hidden ${heightPx < 130 ? 'hidden' : 'block'}">
+                <p class="flex items-center gap-1.5 truncate">
+                  <i data-lucide="map-pin" class="w-4 h-4 opacity-70"></i> ${item.room_no || '-'}
+                </p>
+                <p class="flex items-center gap-1.5 truncate">
+                  <i data-lucide="book-open" class="w-4 h-4 opacity-70"></i> ${item.subject || '-'}
+                </p>
+                <p class="flex items-center gap-1.5 font-bold text-blue-600/90">
+                  <i data-lucide="banknote" class="w-4 h-4 opacity-70 text-gray-400 font-normal"></i> $${item.amount || 0}
+                </p>
+              </div>
 
-    <div class="mt-auto">
-      <div class="flex flex-col gap-1">
-        <div class="${heightPx < 100 ? 'block' : 'hidden'} font-bold text-blue-600 text-[12px] mb-1">
-          $${item.amount || 0}
-        </div>
-        
-        <div class="text-[10px] font-mono text-gray-500 bg-black/5 px-2 py-1 rounded-md text-center whitespace-nowrap">
-          ${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}
-        </div>
-      </div>
-    </div>
-  </div>
-`;
+              <div class="mt-auto shrink-0">
+                <div class="flex flex-col gap-1">
+                  <div class="${heightPx < 130 ? 'block' : 'hidden'} font-bold text-blue-600 text-sm mb-1">
+                    $${item.amount || 0}
+                  </div>
+                  
+                  <div class="text-sm font-mono text-gray-600 bg-black/5 px-1 py-1 rounded-md flex flex-col xl:flex-row items-center justify-center xl:gap-1 leading-none">
+                    <span>${item.start_time.slice(0, 5)}</span>
+                    <span class="block leading-[8px] xl:leading-normal">-</span>
+                    <span>${item.end_time.slice(0, 5)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
         cardLayer.appendChild(card);
       });
       lucide.createIcons();
@@ -530,7 +550,7 @@
       document.getElementById("new-teacher-name").value = "";
     }
 
-    // 3. 渲染管理視窗內的老師列表
+    // 3. 渲染管理視窗內的老師列表 (支援編輯模式)
     async function renderTeacherManageList() {
       const { data: teachers, error } = await _client
         .from("teachers")
@@ -543,17 +563,93 @@
 
       teachers.forEach((t) => {
         const item = document.createElement("div");
-        item.className =
-          "flex justify-between items-center p-2.5 bg-gray-50 rounded-lg border border-gray-100";
+        // 加上 group 讓按鈕在 hover 時顯示
+        item.className = "flex justify-between items-center p-2.5 bg-gray-50 rounded-lg border border-gray-100 group transition-all hover:bg-white hover:shadow-sm";
+
+        // 使用 data-id 屬性方便後續操作
+        item.dataset.id = t.id;
+
+        // 這裡我們準備兩種狀態的 HTML：
+        // 1. 顯示狀態 (預設)
+        // 2. 編輯狀態 (預設隱藏)
         item.innerHTML = `
-      <span class="text-sm font-medium text-neutral-700">${t.name}</span>
-      <button onclick="deleteTeacher('${t.id}')" class="text-gray-300 hover:text-red-500 transition-colors">
-        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-      </button>
+      <div class="view-mode flex items-center justify-between w-full">
+        <span class="text-sm font-medium text-neutral-700 select-none cursor-pointer" onclick="toggleEditMode('${t.id}')" title="點擊修改">${t.name}</span>
+        <div class="flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onclick="toggleEditMode('${t.id}')" class="p-1.5 text-gray-400 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors" title="修改">
+            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+          </button>
+          <button onclick="deleteTeacher('${t.id}')" class="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors" title="刪除">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="edit-mode hidden w-full flex items-center gap-2">
+        <input type="text" value="${t.name}" 
+          class="edit-input flex-1 border border-blue-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+          onkeydown="if(event.key === 'Enter') updateTeacher('${t.id}', this.value)"
+        />
+        <button onclick="updateTeacher('${t.id}', this.previousElementSibling.value)" class="p-1 text-green-600 hover:bg-green-100 rounded">
+          <i data-lucide="check" class="w-4 h-4"></i>
+        </button>
+        <button onclick="toggleEditMode('${t.id}', false)" class="p-1 text-gray-400 hover:bg-gray-100 rounded">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
     `;
         manageList.appendChild(item);
       });
       lucide.createIcons();
+    }
+    // --- 新增的功能：切換編輯模式 ---
+    function toggleEditMode(id, showEdit = true) {
+      const item = document.querySelector(`div[data-id="${id}"]`);
+      if (!item) return;
+
+      const viewMode = item.querySelector('.view-mode');
+      const editMode = item.querySelector('.edit-mode');
+      const input = item.querySelector('.edit-input');
+
+      if (showEdit) {
+        viewMode.classList.add('hidden');
+        editMode.classList.remove('hidden');
+        input.focus(); // 自動聚焦到輸入框
+        input.select(); // 全選文字方便修改
+      } else {
+        viewMode.classList.remove('hidden');
+        editMode.classList.add('hidden');
+      }
+    }
+
+    // --- 新增的功能：執行更新老師名字 ---
+    async function updateTeacher(id, newName) {
+      newName = newName.trim();
+      if (!newName) return alert("老師名字不能為空！");
+
+      setStatus("正在更新資料...");
+
+      // 1. 更新資料庫
+      const { error } = await _client
+        .from("teachers")
+        .update({ name: newName })
+        .eq("id", id);
+
+      if (error) {
+        setStatus("更新失敗", "error");
+        alert("更新失敗: " + error.message);
+      } else {
+        setStatus("更新成功", "success");
+
+        // 2. 如果目前正好選中這位老師，要同步更新標題
+        if (currentTid === id) {
+          document.getElementById("main-title").textContent = `${newName} · 本週課表`;
+        }
+
+        // 3. 重新整理列表與側邊欄
+        await fetchTeachers(); // 更新側邊欄
+        await renderTeacherManageList(); // 更新管理列表 (會自動切回顯示模式)
+      }
     }
 
     // 4. 執行新增老師到資料庫
@@ -596,6 +692,38 @@
         await fetchTeachers();
         await renderTeacherManageList();
       }
+    }
+
+    // --- 側邊欄控制 ---
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+
+      // 切換 CSS class
+      if (sidebar.classList.contains('-translate-x-full')) {
+        // 打開
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+      } else {
+        // 關閉
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      }
+    }
+
+    // 點擊側邊欄選單後自動關閉 (提升手機體驗)
+    async function switchTeacher(tid, name) {
+      currentTid = tid;
+      document.getElementById("main-title").textContent = `${name} · 本週課表`;
+
+      document.querySelectorAll(".teacher-item").forEach((btn) => btn.classList.remove("active", "bg-gray-100"));
+
+      // 新增：如果是手機版，點選後自動收起側邊欄
+      if (window.innerWidth < 768) {
+        toggleSidebar();
+      }
+
+      await refreshData();
     }
   </script>
 </body>
