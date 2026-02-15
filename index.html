@@ -42,6 +42,18 @@
       background-color: #f3f4f6;
     }
 
+    /* 展開狀態的卡片樣式 */
+    .card-expanded {
+      height: auto !important;
+      /* 讓內容決定高度 */
+      min-height: min-content;
+      z-index: 100 !important;
+      /* 確保在最上層 */
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      padding-bottom: 12px !important;
+      /* 增加底部緩衝 */
+    }
+
     @media (max-width: 768px) {
 
       /* 讓手機版的時間軸窄一點點，留更多空間給課表 */
@@ -53,10 +65,10 @@
 </head>
 
 <body class="text-neutral-800 h-[100dvh] overflow-hidden flex bg-[#fbfbfa]">
-  <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[90] hidden md:hidden glass">
+  <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[80] hidden md:hidden glass">
   </div>
   <aside id="sidebar"
-    class="fixed inset-y-0 left-0 z-[100] w-64 bg-white border-r border-[#e9e9e7] flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 shadow-xl md:shadow-none">
+    class="fixed inset-y-0 left-0 z-[90] w-64 bg-white border-r border-[#e9e9e7] flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 shadow-xl md:shadow-none">
     <div class="p-6 flex justify-between items-center">
       <h1 class="font-bold text-lg flex items-center gap-2 text-neutral-800">
         <i data-lucide="users"></i> 老師名單
@@ -119,7 +131,7 @@
   </main>
 
   <div id="course-modal"
-    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
+    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm">
     <div class="bg-white rounded-xl w-[95%] md:w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-bold">新增課程資料</h3>
@@ -388,8 +400,13 @@
         }
         if (maxConcurrent === 0) maxConcurrent = 1;
 
-        // B. 關鍵修改：欄位寬度完全等於卡片總寬，不加額外的 padding
-        const colWidth = Math.max(MIN_COL_WIDTH, maxConcurrent * CARD_WIDTH);
+        // B. 關鍵修改：欄位寬度計算
+
+        // 原本的寫法（太剛好，會爆出去）：
+        // const colWidth = Math.max(MIN_COL_WIDTH, maxConcurrent * CARD_WIDTH);
+
+        // ▼ 修改後的寫法：多加 20px 的寬度，讓卡片兩邊有呼吸空間 ▼
+        const colWidth = Math.max(MIN_COL_WIDTH, maxConcurrent * CARD_WIDTH) + 0.75;
 
         const dayCol = document.createElement("div");
         dayCol.className = "flex flex-col border-r border-[#e9e9e7] shrink-0 relative bg-white";
@@ -397,7 +414,7 @@
 
         // C. Header
         const header = document.createElement("div");
-        header.className = "sticky top-0 z-40 bg-gray-50 border-b border-[#e9e9e7] text-lg font-bold text-gray-800 flex items-center justify-center shadow-sm";
+        header.className = "sticky top-0 z-[500] bg-gray-50 border-b border-[#e9e9e7] text-lg font-bold text-gray-800 flex items-center justify-center shadow-sm";
         header.style.height = `${HEADER_HEIGHT}px`;
         header.textContent = dayNames[day - 1];
         dayCol.appendChild(header);
@@ -416,6 +433,7 @@
 
         // F. 繪製卡片
         dayItems.forEach((item) => {
+          // --- 1. 時間與位置計算 (維持不變，必須在最前面) ---
           const [sH, sM] = item.start_time.split(":").map(Number);
           const [eH, eM] = item.end_time.split(":").map(Number);
           if (sH < START_HOUR) return;
@@ -426,6 +444,7 @@
           const topPx = (startMin / 60) * ROW_HEIGHT;
           const heightPx = ((endMin - startMin) / 60) * ROW_HEIGHT;
 
+          // 計算重疊 (維持不變)
           const overlaps = dayItems.filter(other => {
             const [osH, osM] = other.start_time.split(":").map(Number);
             const [oeH, oeM] = other.end_time.split(":").map(Number);
@@ -438,8 +457,10 @@
           const orderIndex = sortedGroup.findIndex(i => i.id === item.id);
           const leftPx = orderIndex * CARD_WIDTH;
 
+          // --- 2. 建立卡片元件 ---
           const card = document.createElement("div");
-          card.className = `absolute rounded-md p-2 text-xs ${item.color_class || 'status-present'} border-l-4 border-white shadow-sm flex flex-col pointer-events-auto cursor-pointer transition-all duration-200 hover:shadow-xl hover:z-50 group box-border overflow-hidden`;
+          // 加入 flex flex-col 讓內部佈局可以控制垂直方向
+          card.className = `absolute rounded-md p-2 text-xs ${item.color_class || 'status-present'} border-l-4 border-white shadow-sm flex flex-col pointer-events-auto cursor-pointer transition-all duration-300 ease-in-out group box-border overflow-hidden`;
 
           card.style.cssText = `
                 top: ${topPx}px; 
@@ -449,7 +470,7 @@
                 z-index: 20;
             `;
 
-          // --- 1. 電話處理邏輯 ---
+          // --- 3. 資料處理 (電話、圖示) ---
           const rawPhone = item.phone || '';
           let phoneMain = rawPhone;
           let phoneNote = '';
@@ -463,26 +484,22 @@
             phoneMain = `${onlyDigits.slice(0, 4)}-${onlyDigits.slice(4, 7)}-${onlyDigits.slice(7)}`;
           }
 
-          // --- 2. 統一圖示設定 ---
+          // 圖示產生器
+          const createIcon = (iconName, colorClass = "text-gray-400") => `
+            <div class="w-4 h-4 flex items-center justify-center shrink-0">
+                <i data-lucide="${iconName}" class="w-3.5 h-3.5 ${colorClass}"></i>
+            </div>
+          `;
           const subjectIcon = "music";
-          const isShort = heightPx < 60;
 
-          // --- 3. 視覺對齊優化 ---
-          const phoneIconHtml = `
-            <div class="w-4 h-4 flex items-center shrink-0">
-                <i data-lucide="phone" class="w-3.5 h-3.5 text-gray-400"></i>
-            </div>
-          `;
+          // --- 4. 點擊展開邏輯 ---
+          card.onclick = (e) => {
+            if (e.target.closest('button')) return;
+            const isExpanded = card.classList.toggle('card-expanded');
+            if (isExpanded) lucide.createIcons();
+          };
 
-          // 關鍵修改：
-          // 1. -ml-[1px] 修正左右重心
-          // 2. mt-[1px] 修正垂直重心，讓音符符號稍微往下壓一點
-          const subjectIconHtml = `
-            <div class="w-4 h-4 flex items-center shrink-0 -ml-[1px] mt-[1px]">
-                <i data-lucide="${subjectIcon}" class="w-3.5 h-3.5 text-gray-400"></i>
-            </div>
-          `;
-
+          // --- 5. 渲染內容 (依據排除名字後的順序排列) ---
           card.innerHTML = `
                 <div class="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
                     <button onclick="event.stopPropagation(); openEditModal(${JSON.stringify(item).replace(/"/g, "&quot;")})" class="p-1 bg-white/90 rounded text-gray-600 hover:text-blue-600 shadow-sm">
@@ -493,30 +510,43 @@
                     </button>
                 </div>
                 
-                <div class="flex flex-col h-full min-w-0">
-                    <div class="font-bold text-base text-neutral-800 truncate leading-tight">
+                <div class="flex flex-col h-full min-w-0 pointer-events-none">
+                    
+                    <div class="font-bold text-base text-neutral-800 truncate leading-tight pl-[1px] shrink-0 pb-1">
                         ${item.course_name || '未命名'}
                     </div>
 
-                    <div class="w-full mt-0.5 flex items-start gap-1 ${rawPhone ? 'block' : 'hidden'}">
-                        ${phoneIconHtml}
-                        <div class="flex flex-col min-w-0">
-                            <span class="text-xs text-gray-600 font-medium truncate leading-4">
-                                ${phoneMain}
-                            </span>
-                            <span class="text-[10px] text-gray-400 truncate leading-tight ${phoneNote ? 'block' : 'hidden'}">
-                                ${phoneNote}
-                            </span>
+                    <div class="flex flex-col gap-0.5 flex-1 min-h-0 overflow-hidden relative">
+                        
+                        <div class="w-full flex items-start gap-1 ${rawPhone ? 'flex' : 'hidden'}">
+                            ${createIcon('phone')}
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-xs text-gray-600 font-medium leading-4 truncate">${phoneMain}</span>
+                                <span class="text-[10px] text-gray-400 leading-tight truncate ${phoneNote ? 'block' : 'hidden'}">${phoneNote}</span>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="text-sm text-gray-600 truncate opacity-90 mt-0.5 flex items-center gap-1 ${isShort ? 'hidden' : 'block'}">
-                        ${subjectIconHtml}
-                        <span>${item.subject || ''}</span>
+
+                        <div class="w-full flex items-center gap-1 ${item.amount > 0 ? 'flex' : 'hidden'}">
+                             ${createIcon('banknote', 'text-slate-400')}
+                            <span class="text-xs text-slate-600 font-medium tracking-tight">$${item.amount.toLocaleString()}</span>
+                        </div>
+                        
+                        <div class="w-full flex items-center gap-1">
+                            ${createIcon(subjectIcon)}
+                            <span class="text-sm text-gray-600 truncate opacity-90">${item.subject || ''}</span>
+                        </div>
+
+                        <div class="w-full flex items-center gap-1 ${item.room_no ? 'flex' : 'hidden'}">
+                             ${createIcon('map-pin')}
+                            <span class="text-xs text-gray-500 truncate">${item.room_no}</span>
+                        </div>
+
                     </div>
 
-                    <div class="text-xs font-mono text-gray-600 bg-white/50 rounded px-1 text-center ${isShort ? 'mt-1 self-start' : 'mt-auto self-start'}">
-                        ${item.start_time.slice(0, 5)}-${item.end_time.slice(0, 5)}
+                    <div class="mt-auto pt-1 shrink-0">
+                        <div class="text-[10px] font-mono text-gray-400 bg-gray-50/80 border border-gray-100 rounded px-1.5 py-0.5 inline-block">
+                            ${item.start_time.slice(0, 5)}-${item.end_time.slice(0, 5)}
+                        </div>
                     </div>
                 </div>
             `;
@@ -548,6 +578,13 @@
 
     // 6. 輔助函數
     function openModal() {
+      // 新增這行：開啟彈窗時，確保側邊欄是收起的
+      if (window.innerWidth < 768) {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar.classList.contains('-translate-x-full')) {
+          toggleSidebar();
+        }
+      }
       document.getElementById("course-modal").classList.remove("hidden");
     }
     function closeModal() {
