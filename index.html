@@ -14,42 +14,49 @@
       font-family: "Noto Sans TC", sans-serif;
     }
 
-    .bg-notion-pink {
-      background-color: #fce4ec !important;
-      border: 1px solid #f8bbd0 !important;
+    /* 上課：草本綠 (調高飽和，邊框加深) */
+    .status-present {
+      background-color: #dcedc8 !important;
+      /* 更有感的綠色 */
+      border: 1.5px solid #9ccc65 !important;
+      color: #33691e !important;
     }
 
-    .bg-notion-blue {
-      background-color: #e3f2fd !important;
-      border: 1px solid #bbdefb !important;
+    /* 請假：溫潤木棕 (增加暖度，明顯區分) */
+    .status-leave {
+      background-color: #f0e4d7 !important;
+      /* 帶有奶茶感的背景 */
+      border: 1.5px solid #bcaaa4 !important;
+      color: #5d4037 !important;
     }
 
-    .bg-notion-green {
-      background-color: #e8f5e9 !important;
-      border: 1px solid #c8e6c9 !important;
-    }
-
-    .bg-notion-amber {
-      background-color: #fff8e1 !important;
-      border: 1px solid #ffecb3 !important;
-    }
-
-    .bg-notion-purple {
-      background-color: #f3e5f5 !important;
-      border: 1px solid #e1bee7 !important;
+    /* 曠課：煙燻粉紅 (降低亮度但增加色彩濃度) */
+    .status-absent {
+      background-color: #ffdad9 !important;
+      /* 明顯的粉紅背景 */
+      border: 1.5px solid #ef9a9a !important;
+      color: #c62828 !important;
     }
 
     .teacher-item.active {
       background-color: #f3f4f6;
     }
+
+    @media (max-width: 768px) {
+
+      /* 讓手機版的時間軸窄一點點，留更多空間給課表 */
+      #schedule-container>div:first-child {
+        width: 60px !important;
+      }
+    }
   </style>
 </head>
 
 <body class="text-neutral-800 h-[100dvh] overflow-hidden flex bg-[#fbfbfa]">
-  <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden glass">
+  <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-[90] hidden md:hidden glass">
   </div>
   <aside id="sidebar"
-    class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-[#e9e9e7] flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 shadow-xl md:shadow-none">
+    class="fixed inset-y-0 left-0 z-[100] w-64 bg-white border-r border-[#e9e9e7] flex flex-col transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0 shadow-xl md:shadow-none">
     <div class="p-6 flex justify-between items-center">
       <h1 class="font-bold text-lg flex items-center gap-2 text-neutral-800">
         <i data-lucide="users"></i> 老師名單
@@ -69,7 +76,7 @@
       <div class="w-full border-t border-[#e9e9e7] my-4"></div>
 
       <div class="flex flex-col items-center justify-center text-gray-400 gap-1.5">
-        <div class="text-[10px] font-medium">網頁版本 v1.0</div>
+        <div class="text-[10px] font-medium">網頁版本 v1.2</div>
         <div class="text-[10px] font-mono opacity-60">Designed by @CCY</div>
       </div>
 
@@ -102,22 +109,11 @@
       </button>
     </header>
 
-    <div class="flex-1 overflow-auto p-4 md:p-6 bg-[#fbfbfa]">
-      <div class="bg-white rounded-xl border border-[#e9e9e7] shadow-sm overflow-hidden min-w-[800px] relative">
-        <div
-          class="grid grid-cols-8 bg-gray-50 border-b border-[#e9e9e7] text-sm text-gray-600 font-semibold text-center sticky top-0 z-20 select-none">
-          <div class="p-3 border-r border-[#e9e9e7]">時間</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週一</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週二</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週三</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週四</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週五</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週六</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週日</div>
+    <div class="flex-1 overflow-hidden bg-[#fbfbfa] relative">
+      <div id="schedule-wrapper" class="w-full h-full overflow-auto">
+        <div id="schedule-container" class="flex min-w-max">
         </div>
-        <div id="schedule-container"></div>
       </div>
-      <div class="w-full h-10 shrink-0 md:hidden"></div>
     </div>
   </main>
 
@@ -131,66 +127,91 @@
         </button>
       </div>
       <form id="course-form" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-3 pb-2 border-b border-gray-100">
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">星期 (1-7)</label>
-            <input type="number" name="day_of_week" min="1" max="7" required
-              class="w-full border rounded-lg p-2 text-sm outline-none focus:ring-1" />
+            <label class="block text-xs font-bold text-gray-400 mb-1">課程名稱 (如: 鋼琴、小提琴)</label>
+            <input type="text" name="subject" placeholder="請輸入科目名稱"
+              class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">老師</label>
-            <select name="teacher_id" required
-              class="w-full border rounded-lg p-2 text-sm outline-none bg-white"></select>
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">課程名稱</label>
-          <input type="text" name="course_name" required class="w-full border rounded-lg p-2 text-sm" />
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">開始時間</label><input type="time" name="start_time"
-              required class="w-full border rounded-lg p-2 text-sm" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">結束時間</label><input type="time" name="end_time"
-              required class="w-full border rounded-lg p-2 text-sm" />
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-1">學生姓名</label>
+              <input type="text" name="course_name" required placeholder="姓名"
+                class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-1">學生電話</label>
+              <input type="tel" name="phone" placeholder="聯絡電話"
+                class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+            </div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">教室</label><input type="text" name="room_no"
-              class="w-full border rounded-lg p-2 text-sm" />
+
+        <div class="space-y-3 pb-2 border-b border-gray-100">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-1">負責老師</label>
+              <select name="teacher_id" required
+                class="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-100 outline-none"></select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-1">上課星期</label>
+              <select name="day_of_week" required
+                class="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-100 outline-none">
+                <option value="1">週一</option>
+                <option value="2">週二</option>
+                <option value="3">週三</option>
+                <option value="4">週四</option>
+                <option value="5">週五</option>
+                <option value="6">週六</option>
+                <option value="7">週日</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">金額</label><input type="number" name="amount"
-              class="w-full border rounded-lg p-2 text-sm" />
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-1">開始時間</label>
+              <input type="time" name="start_time" required
+                class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-1">結束時間</label>
+              <input type="time" name="end_time" required
+                class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+            </div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">卡片顏色</label>
-            <select name="color_class" class="w-full border rounded-lg p-2 text-sm bg-white">
-              <option value="bg-notion-pink">櫻花粉</option>
-              <option value="bg-notion-blue">天空藍</option>
-              <option value="bg-notion-green">薄荷綠</option>
-              <option value="bg-notion-amber" selected>奶油黃</option>
-              <option value="bg-notion-purple">薰衣草紫</option>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-1">
+            <label class="block text-xs font-bold text-gray-400 mb-1">教室</label>
+            <input type="text" name="room_no" placeholder="編號"
+              class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+          </div>
+          <div class="col-span-1">
+            <label class="block text-xs font-bold text-gray-400 mb-1">薪資 (NT$)</label>
+            <input type="number" name="amount" min="0" placeholder="0"
+              class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+          </div>
+          <div class="col-span-1">
+            <label class="block text-xs font-bold text-gray-400 mb-1">課程狀態</label>
+            <select name="color_class"
+              class="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-100 outline-none">
+              <option value="status-present" selected>✅ 上課 (綠)</option>
+              <option value="status-leave">☕ 請假 (咖)</option>
+              <option value="status-absent">❌ 曠課 (紅)</option>
             </select>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">電話</label><input type="text" name="phone"
-              class="w-full border rounded-lg p-2 text-sm" />
-          </div>
         </div>
-        <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">學習項目</label><input type="text" name="subject"
-            class="w-full border rounded-lg p-2 text-sm" />
+
+        <div class="pt-4">
+          <button type="submit"
+            class="w-full bg-neutral-800 text-white py-3 rounded-xl font-bold hover:bg-black transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
+            <i data-lucide="save" class="w-4 h-4"></i> 儲存課程資料
+          </button>
         </div>
-        <button type="submit"
-          class="w-full bg-neutral-800 text-white py-2.5 rounded-lg font-medium hover:bg-black transition-all">
-          確認儲存
-        </button>
       </form>
     </div>
   </div>
@@ -293,158 +314,217 @@
       }
     }
 
-    // 4. 渲染課表 (保留你原本優化過的邏輯)
     function renderSchedule(list) {
       const container = document.getElementById("schedule-container");
       container.innerHTML = "";
-      container.className = "relative w-full bg-white";
 
-      const slots = [
-        "08",
-        "09",
-        "10",
-        "11",
-        "12",
-        "13",
-        "14",
-        "15",
-        "16",
-        "17",
-        "18",
-        "19",
-        "20",
-        "21",
-        "22",
-        "23",
-        "24",
-      ];
-      const ROW_HEIGHT = 110;
-      const START_HOUR = 8;
+      const slots = ["09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"];
 
-      // 1. 繪製背景格線
-      slots.slice(0, -1).forEach((h) => {
-        const row = document.createElement("div");
-        row.className = "grid grid-cols-8 border-b border-[#e9e9e7]";
-        row.style.height = `${ROW_HEIGHT}px`;
+      // --- 參數設定 ---
+      const ROW_HEIGHT = 120;
+      const HEADER_HEIGHT = 60;
+      const START_HOUR = 9;
+      const CARD_WIDTH = 140; // 卡片寬度
 
-        // 原本是: text-[10px] text-gray-400
-        // 修改後: text-sm font-bold text-gray-600
-        let rowHtml = `<div class="p-2 border-r border-[#e9e9e7] bg-gray-50/50 text-sm font-semibold text-gray-600 flex items-center justify-center select-none">${h}:00</div>`;
+      // 關鍵修改：最小欄位寬度直接等於卡片寬度，不留白
+      const MIN_COL_WIDTH = CARD_WIDTH;
 
-        // ... 後面的程式碼不用動 ...
-        for (let day = 1; day <= 7; day++) {
-          rowHtml += `<div class="border-r border-[#e9e9e7] last:border-0"></div>`;
+      // --- 1. 建立左側「時間軸」 ---
+      const timeCol = document.createElement("div");
+      timeCol.className = "sticky left-0 z-50 bg-white border-r border-[#e9e9e7] flex flex-col shrink-0 shadow-sm";
+      timeCol.style.width = "90px";
+
+      const timeHeader = document.createElement("div");
+      timeHeader.className = "sticky top-0 z-50 bg-gray-50 border-b border-[#e9e9e7] text-sm font-bold text-gray-600 flex items-center justify-center";
+      timeHeader.style.height = `${HEADER_HEIGHT}px`;
+      timeHeader.textContent = "時間";
+      timeCol.appendChild(timeHeader);
+
+      // 左側時間格子
+      slots.forEach(h => {
+        const cell = document.createElement("div");
+
+        // 修改重點：
+        // 1. items-start -> items-center (垂直置中)
+        // 2. 移除 pt-2 (不需要上方留白了)
+        cell.className = "flex items-center justify-center text-sm font-semibold text-gray-500 border-b border-[#e9e9e7] bg-gray-50/50";
+
+        cell.style.height = `${ROW_HEIGHT}px`;
+        cell.textContent = `${h}:00`;
+        timeCol.appendChild(cell);
+      });
+      container.appendChild(timeCol);
+
+      // --- 2. 準備資料 ---
+      const dayGroups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] };
+      const dayNames = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
+      list.forEach(item => {
+        if (item.start_time && item.end_time) dayGroups[item.day_of_week].push(item);
+      });
+
+      // --- 3. 建立每一天的欄位 ---
+      for (let day = 1; day <= 7; day++) {
+        const dayItems = dayGroups[day];
+
+        // A. 計算當天最大並排數
+        let maxConcurrent = 0;
+        if (dayItems.length > 0) {
+          dayItems.forEach(item => {
+            const [sH, sM] = item.start_time.split(":").map(Number);
+            const [eH, eM] = item.end_time.split(":").map(Number);
+            const sMin = (sH - START_HOUR) * 60 + sM;
+            const eMin = (eH - START_HOUR) * 60 + eM;
+
+            const overlaps = dayItems.filter(other => {
+              const [osH, osM] = other.start_time.split(":").map(Number);
+              const [oeH, oeM] = other.end_time.split(":").map(Number);
+              const osMin = (osH - START_HOUR) * 60 + osM;
+              const oeMin = (oeH - START_HOUR) * 60 + oeM;
+              return sMin < oeMin && eMin > osMin;
+            });
+            if (overlaps.length > maxConcurrent) maxConcurrent = overlaps.length;
+          });
         }
-        row.innerHTML = rowHtml;
-        container.appendChild(row);
-      });
+        if (maxConcurrent === 0) maxConcurrent = 1;
 
-      // 2. 建立卡片專用層
-      // 在 renderSchedule 函數內找到繪製卡片的邏輯
-      const cardLayer = document.createElement("div");
-      // 關鍵：left 的起始位置從 16.66% 改成 12.5% (因為 1/8 是時間欄位佔比)
-      cardLayer.style.cssText = `position: absolute; top: 0; left: 12.5%; right: 0; bottom: 0; pointer-events: none;`;
-      container.appendChild(cardLayer);
+        // B. 關鍵修改：欄位寬度完全等於卡片總寬，不加額外的 padding
+        const colWidth = Math.max(MIN_COL_WIDTH, maxConcurrent * CARD_WIDTH);
 
-      // 3. 繪製課程卡片 (支援週一至週日)
-      list.forEach((item) => {
-        if (!item.start_time || !item.end_time) return;
+        const dayCol = document.createElement("div");
+        dayCol.className = "flex flex-col border-r border-[#e9e9e7] shrink-0 relative bg-white";
+        dayCol.style.width = `${colWidth}px`;
 
-        // 解析時間
-        const [sH, sM] = item.start_time.split(":").map(Number);
-        const [eH, eM] = item.end_time.split(":").map(Number);
+        // C. Header
+        const header = document.createElement("div");
+        header.className = "sticky top-0 z-40 bg-gray-50 border-b border-[#e9e9e7] text-lg font-bold text-gray-800 flex items-center justify-center shadow-sm";
+        header.style.height = `${HEADER_HEIGHT}px`;
+        header.textContent = dayNames[day - 1];
+        dayCol.appendChild(header);
 
-        // 計算垂直高度
-        const startTotalMin = (sH - START_HOUR) * 60 + sM;
-        const endTotalMin = (eH - START_HOUR) * 60 + eM;
+        // D. Content Layer
+        const contentLayer = document.createElement("div");
+        contentLayer.className = "relative w-full";
+        contentLayer.style.height = `${slots.length * ROW_HEIGHT}px`;
 
-        // 精確計算：每一分鐘佔用 (ROW_HEIGHT / 60) 像素
-        const topPx = (startTotalMin / 60) * ROW_HEIGHT;
-        const heightPx = ((endTotalMin - startTotalMin) / 60) * ROW_HEIGHT;
+        slots.forEach(() => {
+          const line = document.createElement("div");
+          line.className = "border-b border-[#e9e9e7] w-full";
+          line.style.height = `${ROW_HEIGHT}px`;
+          contentLayer.appendChild(line);
+        });
 
-        // --- 關鍵計算修改點 ---
-        // 總共有 7 天，每一天佔據 100 / 7 ≈ 14.2857%
-        const dayWidthPercent = 100 / 7;
-        const leftPercent = (item.day_of_week - 1) * dayWidthPercent;
-        // ----------------------
+        // F. 繪製卡片
+        dayItems.forEach((item) => {
+          const [sH, sM] = item.start_time.split(":").map(Number);
+          const [eH, eM] = item.end_time.split(":").map(Number);
+          if (sH < START_HOUR) return;
 
-        const isShort = heightPx < 85;
+          const startMin = (sH - START_HOUR) * 60 + sM;
+          const endMin = (eH - START_HOUR) * 60 + eM;
 
-        const card = document.createElement("div");
-        // 加入 group 類別以便控制右上角按鈕顯示
-        card.className = `absolute rounded-xl p-3 text-xs ${item.color_class} border border-black/10 shadow-md flex flex-col pointer-events-auto cursor-pointer transition-all duration-300 ease-out hover:shadow-xl group`;
+          const topPx = (startMin / 60) * ROW_HEIGHT;
+          const heightPx = ((endMin - startMin) / 60) * ROW_HEIGHT;
 
-        // 加上 1px 偏移避免壓到格線
-        // width 也同步調整為 7 天的比例
-        card.style.cssText = `
-            top: ${topPx + 1}px; 
-            height: ${heightPx - 2}px; 
-            left: calc(${leftPercent}% + 4px); 
-            width: calc(${dayWidthPercent}% - 8px); 
-            z-index: 10; 
-            overflow: hidden;
-          `;
+          const overlaps = dayItems.filter(other => {
+            const [osH, osM] = other.start_time.split(":").map(Number);
+            const [oeH, oeM] = other.end_time.split(":").map(Number);
+            const oStart = (osH - START_HOUR) * 60 + osM;
+            const oEnd = (oeH - START_HOUR) * 60 + oeM;
+            return startMin < oEnd && endMin > oStart;
+          });
 
-        card.onclick = () => {
-          const expH = "160px";
-          const isExp = card.style.height === expH;
-          // 縮回時要回到原本計算的 heightPx
-          card.style.height = isExp ? `${heightPx - 2}px` : expH;
-          card.style.zIndex = isExp ? "10" : "100";
-          card
-            .querySelector(".chevron")
-            ?.style.setProperty(
-              "transform",
-              isExp ? "rotate(0deg)" : "rotate(180deg)",
-            );
-        };
+          const sortedGroup = [item, ...overlaps].sort((a, b) => a.id.localeCompare(b.id));
+          const orderIndex = sortedGroup.findIndex(i => i.id === item.id);
+          const leftPx = orderIndex * CARD_WIDTH;
 
-        card.innerHTML = `
-            <div class="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
-              <button onclick="event.stopPropagation(); openEditModal(${JSON.stringify(item).replace(/"/g, "&quot;")})" class="p-1.5 bg-white/90 rounded shadow-sm text-gray-500 hover:text-blue-600">
-                <i data-lucide="edit-3" class="w-4 h-4"></i>
-              </button>
-              <button onclick="event.stopPropagation(); deleteCourse('${item.id}')" class="p-1.5 bg-white/90 rounded shadow-sm text-gray-500 hover:text-red-600">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </div>
-            
-            <div class="flex flex-col h-full min-w-0">
-              <div class="mb-1.5 shrink-0"> <div class="font-bold text-base truncate text-neutral-800 flex items-center gap-1">
-                  <span class="truncate">${item.course_name}</span>
-                  ${isShort ? '<i data-lucide="chevron-down" class="chevron w-4 h-4 text-gray-500"></i>' : ''}
-                </div>
-              </div>
+          const card = document.createElement("div");
+          card.className = `absolute rounded-md p-2 text-xs ${item.color_class || 'status-present'} border-l-4 border-white shadow-sm flex flex-col pointer-events-auto cursor-pointer transition-all duration-200 hover:shadow-xl hover:z-50 group box-border overflow-hidden`;
 
-              <div class="flex-1 space-y-1 text-gray-600 text-sm overflow-hidden ${heightPx < 130 ? 'hidden' : 'block'}">
-                <p class="flex items-center gap-1.5 truncate">
-                  <i data-lucide="map-pin" class="w-4 h-4 opacity-70"></i> ${item.room_no || '-'}
-                </p>
-                <p class="flex items-center gap-1.5 truncate">
-                  <i data-lucide="book-open" class="w-4 h-4 opacity-70"></i> ${item.subject || '-'}
-                </p>
-                <p class="flex items-center gap-1.5 font-bold text-blue-600/90">
-                  <i data-lucide="banknote" class="w-4 h-4 opacity-70 text-gray-400 font-normal"></i> $${item.amount || 0}
-                </p>
-              </div>
+          card.style.cssText = `
+                top: ${topPx}px; 
+                height: ${heightPx + 1}px; 
+                left: ${leftPx}px; 
+                width: ${CARD_WIDTH}px; 
+                z-index: 20;
+            `;
 
-              <div class="mt-auto shrink-0">
-                <div class="flex flex-col gap-1">
-                  <div class="${heightPx < 130 ? 'block' : 'hidden'} font-bold text-blue-600 text-sm mb-1">
-                    $${item.amount || 0}
-                  </div>
-                  
-                  <div class="text-sm font-mono text-gray-600 bg-black/5 px-1 py-1 rounded-md flex flex-col xl:flex-row items-center justify-center xl:gap-1 leading-none">
-                    <span>${item.start_time.slice(0, 5)}</span>
-                    <span class="block leading-[8px] xl:leading-normal">-</span>
-                    <span>${item.end_time.slice(0, 5)}</span>
-                  </div>
-                </div>
-              </div>
+          // --- 1. 電話處理邏輯 ---
+          const rawPhone = item.phone || '';
+          let phoneMain = rawPhone;
+          let phoneNote = '';
+          if (rawPhone.includes('(')) {
+            const parts = rawPhone.split('(');
+            phoneMain = parts[0];
+            phoneNote = '(' + parts.slice(1).join('(');
+          }
+          const onlyDigits = phoneMain.replace(/\D/g, '');
+          if (onlyDigits.length === 10 && onlyDigits.startsWith('09')) {
+            phoneMain = `${onlyDigits.slice(0, 4)}-${onlyDigits.slice(4, 7)}-${onlyDigits.slice(7)}`;
+          }
+
+          // --- 2. 統一圖示設定 ---
+          const subjectIcon = "music";
+          const isShort = heightPx < 60;
+
+          // --- 3. 視覺對齊優化 ---
+          const phoneIconHtml = `
+            <div class="w-4 h-4 flex items-center shrink-0">
+                <i data-lucide="phone" class="w-3.5 h-3.5 text-gray-400"></i>
             </div>
           `;
-        cardLayer.appendChild(card);
-      });
+
+          // 關鍵修改：
+          // 1. -ml-[1px] 修正左右重心
+          // 2. mt-[1px] 修正垂直重心，讓音符符號稍微往下壓一點
+          const subjectIconHtml = `
+            <div class="w-4 h-4 flex items-center shrink-0 -ml-[1px] mt-[1px]">
+                <i data-lucide="${subjectIcon}" class="w-3.5 h-3.5 text-gray-400"></i>
+            </div>
+          `;
+
+          card.innerHTML = `
+                <div class="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+                    <button onclick="event.stopPropagation(); openEditModal(${JSON.stringify(item).replace(/"/g, "&quot;")})" class="p-1 bg-white/90 rounded text-gray-600 hover:text-blue-600 shadow-sm">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); deleteCourse('${item.id}')" class="p-1 bg-white/90 rounded text-gray-600 hover:text-red-600 shadow-sm">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                
+                <div class="flex flex-col h-full min-w-0">
+                    <div class="font-bold text-base text-neutral-800 truncate leading-tight">
+                        ${item.course_name || '未命名'}
+                    </div>
+
+                    <div class="w-full mt-0.5 flex items-start gap-1 ${rawPhone ? 'block' : 'hidden'}">
+                        ${phoneIconHtml}
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-xs text-gray-600 font-medium truncate leading-4">
+                                ${phoneMain}
+                            </span>
+                            <span class="text-[10px] text-gray-400 truncate leading-tight ${phoneNote ? 'block' : 'hidden'}">
+                                ${phoneNote}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="text-sm text-gray-600 truncate opacity-90 mt-0.5 flex items-center gap-1 ${isShort ? 'hidden' : 'block'}">
+                        ${subjectIconHtml}
+                        <span>${item.subject || ''}</span>
+                    </div>
+
+                    <div class="text-xs font-mono text-gray-600 bg-white/50 rounded px-1 text-center ${isShort ? 'mt-1 self-start' : 'mt-auto self-start'}">
+                        ${item.start_time.slice(0, 5)}-${item.end_time.slice(0, 5)}
+                    </div>
+                </div>
+            `;
+          contentLayer.appendChild(card);
+        });
+
+        dayCol.appendChild(contentLayer);
+        container.appendChild(dayCol);
+      }
       lucide.createIcons();
     }
 
@@ -523,14 +603,14 @@
         const data = {
           teacher_id: f.get("teacher_id"),
           day_of_week: parseInt(f.get("day_of_week")),
-          course_name: f.get("course_name"),
+          course_name: f.get("course_name"), // 已補齊
           start_time: f.get("start_time") + ":00",
           end_time: f.get("end_time") + ":00",
-          room_no: f.get("room_no"),
+          room_no: f.get("room_no"),         // 已改名
           amount: parseInt(f.get("amount")) || 0,
-          phone: f.get("phone"),
+          phone: f.get("phone"),             // 已補齊
           subject: f.get("subject"),
-          color_class: f.get("color_class"),
+          color_class: f.get("color_class"), // 已補齊
         };
 
         const res = editingId
