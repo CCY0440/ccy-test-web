@@ -41,19 +41,41 @@
 
     .teacher-item.active {
       background-color: #f3f4f6;
+      border-left: 4px solid #3b82f6;
+    }
+
+    /* 隱藏捲軸但保留功能 */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
   </style>
 </head>
 
-<body class="text-neutral-800 h-screen overflow-hidden flex bg-[#fbfbfa]">
-  <aside class="w-64 bg-white border-r border-[#e9e9e7] flex flex-col">
-    <div class="p-6">
+<body class="text-neutral-800 h-screen overflow-hidden flex flex-col md:flex-row bg-[#fbfbfa]">
+
+  <div class="md:hidden bg-white border-b border-[#e9e9e7] p-4 flex justify-between items-center z-[100]">
+    <h1 class="font-bold text-lg flex items-center gap-2">
+      <i data-lucide="calendar"></i>課表管理
+    </h1>
+    <button onclick="toggleMobileMenu()" class="p-2 hover:bg-gray-100 rounded-lg">
+      <i data-lucide="menu" id="menu-icon"></i>
+    </button>
+  </div>
+
+  <aside id="sidebar"
+    class="fixed inset-y-0 left-0 z-[90] w-64 bg-white border-r border-[#e9e9e7] transform -translate-x-full transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col">
+    <div class="p-6 hidden md:block">
       <h1 class="font-bold text-lg flex items-center gap-2 text-neutral-800">
         <i data-lucide="calendar"></i>課表管理
       </h1>
     </div>
 
-    <nav id="teacher-menu" class="flex-1 px-3 space-y-1 overflow-y-auto"></nav>
+    <nav id="teacher-menu" class="flex-1 px-3 space-y-1 overflow-y-auto no-scrollbar"></nav>
 
     <div class="p-4 border-t border-[#e9e9e7]">
       <button onclick="openTeacherModal()"
@@ -63,44 +85,53 @@
     </div>
   </aside>
 
-  <main class="flex-1 flex flex-col">
-    <header class="bg-white border-b border-[#e9e9e7] p-4 px-6 flex justify-between items-center shadow-sm">
-      <h2 id="main-title" class="text-xl font-bold text-neutral-800">
+  <div id="sidebar-overlay" onclick="toggleMobileMenu()"
+    class="hidden fixed inset-0 bg-black/20 z-[80] backdrop-blur-sm md:hidden"></div>
+
+  <main class="flex-1 flex flex-col min-w-0">
+    <header
+      class="bg-white border-b border-[#e9e9e7] p-3 md:p-4 px-4 md:px-6 flex justify-between items-center shadow-sm">
+      <h2 id="main-title" class="text-base md:text-xl font-bold text-neutral-800 truncate">
         載入中...
       </h2>
-      <div id="status-tag" class="text-xs px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-800 font-medium">
-        連線狀態：嘗試中...
+      <div class="flex items-center gap-2">
+        <div id="status-tag"
+          class="hidden sm:block text-[10px] px-3 py-1.5 rounded-full bg-yellow-100 text-yellow-800 font-medium">
+          連線中...
+        </div>
+        <button onclick="openModal()"
+          class="flex items-center gap-1.5 bg-neutral-800 text-white px-3 md:px-4 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-neutral-700 transition-all shrink-0">
+          <i data-lucide="plus" class="w-4 h-4"></i> 新增
+        </button>
       </div>
-      <button onclick="openModal()"
-        class="flex items-center gap-2 bg-neutral-800 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-neutral-700 transition-all">
-        <i data-lucide="plus" class="w-4 h-4"></i> 新增課程
-      </button>
     </header>
 
-    <div class="flex-1 overflow-auto p-6 bg-[#fbfbfa]">
-      <div class="bg-white rounded-xl border border-[#e9e9e7] shadow-sm overflow-hidden min-w-[800px]">
-        <div
-          class="grid grid-cols-8 bg-gray-50 border-b border-[#e9e9e7] text-sm text-gray-500 font-medium text-center">
-          <div class="p-3 border-r border-[#e9e9e7]">時間</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週一</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週二</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週三</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週四</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週五</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週六</div>
-          <div class="p-3 border-r border-[#e9e9e7]">週日</div>
+    <div class="flex-1 overflow-auto p-3 md:p-6 bg-[#fbfbfa]">
+      <div class="bg-white rounded-xl border border-[#e9e9e7] shadow-sm overflow-x-auto">
+        <div class="min-w-[800px] relative">
+          <div
+            class="grid grid-cols-8 bg-gray-50 border-b border-[#e9e9e7] text-xs md:text-sm text-gray-500 font-medium text-center">
+            <div class="p-3 border-r border-[#e9e9e7]">時間</div>
+            <div class="p-3 border-r border-[#e9e9e7]">週一</div>
+            <div class="p-3 border-r border-[#e9e9e7]">週二</div>
+            <div class="p-3 border-r border-[#e9e9e7]">週三</div>
+            <div class="p-3 border-r border-[#e9e9e7]">週四</div>
+            <div class="p-3 border-r border-[#e9e9e7]">週五</div>
+            <div class="p-3 border-r border-[#e9e9e7]">週六</div>
+            <div class="p-3 border-r border-[#e9e9e7]">週日</div>
+          </div>
+          <div id="schedule-container" class="relative"></div>
         </div>
-        <div id="schedule-container"></div>
       </div>
     </div>
   </main>
 
   <div id="course-modal"
-    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] backdrop-blur-sm">
-    <div class="bg-white rounded-xl w-full max-w-md p-6 shadow-2xl">
+    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[110] backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl w-full max-w-md p-5 md:p-6 shadow-2xl max-h-[95vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
-        <h3 class="text-lg font-bold">新增課程資料</h3>
-        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+        <h3 class="text-lg font-bold">課程資料</h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 p-1">
           <i data-lucide="x"></i>
         </button>
       </div>
@@ -109,7 +140,7 @@
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">星期 (1-7)</label>
             <input type="number" name="day_of_week" min="1" max="7" required
-              class="w-full border rounded-lg p-2 text-sm outline-none focus:ring-1" />
+              class="w-full border rounded-lg p-2 text-sm outline-none" />
           </div>
           <div>
             <label class="block text-xs font-medium text-gray-500 mb-1">老師</label>
@@ -123,22 +154,22 @@
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">開始時間</label><input type="time" name="start_time"
-              required class="w-full border rounded-lg p-2 text-sm" />
+            <label class="block text-xs font-medium text-gray-500 mb-1">開始時間</label>
+            <input type="time" name="start_time" required class="w-full border rounded-lg p-2 text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">結束時間</label><input type="time" name="end_time"
-              required class="w-full border rounded-lg p-2 text-sm" />
+            <label class="block text-xs font-medium text-gray-500 mb-1">結束時間</label>
+            <input type="time" name="end_time" required class="w-full border rounded-lg p-2 text-sm" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">教室</label><input type="text" name="room_no"
-              class="w-full border rounded-lg p-2 text-sm" />
+            <label class="block text-xs font-medium text-gray-500 mb-1">教室</label>
+            <input type="text" name="room_no" class="w-full border rounded-lg p-2 text-sm" />
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">金額</label><input type="number" name="amount"
-              class="w-full border rounded-lg p-2 text-sm" />
+            <label class="block text-xs font-medium text-gray-500 mb-1">金額</label>
+            <input type="number" name="amount" class="w-full border rounded-lg p-2 text-sm" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
@@ -153,16 +184,16 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-500 mb-1">電話</label><input type="text" name="phone"
-              class="w-full border rounded-lg p-2 text-sm" />
+            <label class="block text-xs font-medium text-gray-500 mb-1">電話</label>
+            <input type="text" name="phone" class="w-full border rounded-lg p-2 text-sm" />
           </div>
         </div>
         <div>
-          <label class="block text-xs font-medium text-gray-500 mb-1">學習項目</label><input type="text" name="subject"
-            class="w-full border rounded-lg p-2 text-sm" />
+          <label class="block text-xs font-medium text-gray-500 mb-1">學習項目</label>
+          <input type="text" name="subject" class="w-full border rounded-lg p-2 text-sm" />
         </div>
         <button type="submit"
-          class="w-full bg-neutral-800 text-white py-2.5 rounded-lg font-medium hover:bg-black transition-all">
+          class="w-full bg-neutral-800 text-white py-3 rounded-lg font-medium hover:bg-black transition-all mt-2">
           確認儲存
         </button>
       </form>
@@ -170,22 +201,18 @@
   </div>
 
   <div id="teacher-modal"
-    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[70] backdrop-blur-sm">
-    <div class="bg-white rounded-xl w-80 p-6 shadow-2xl">
+    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[120] backdrop-blur-sm p-4">
+    <div class="bg-white rounded-xl w-full max-w-xs p-6 shadow-2xl">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="font-bold">老師名單管理</h3>
-        <button onclick="closeTeacherModal()">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
+        <h3 class="font-bold">老師管理</h3>
+        <button onclick="closeTeacherModal()"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       <div class="flex gap-2 mb-4">
         <input type="text" id="new-teacher-name" placeholder="姓名"
           class="flex-1 border rounded-lg px-2 py-1 text-sm outline-none" />
-        <button onclick="addTeacher()" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
-          新增
-        </button>
+        <button onclick="addTeacher()" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm shrink-0">新增</button>
       </div>
-      <div id="teacher-manage-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+      <div id="teacher-manage-list" class="space-y-2 max-h-60 overflow-y-auto no-scrollbar"></div>
     </div>
   </div>
 
@@ -194,46 +221,50 @@
     const SUPABASE_KEY = "sb_publishable_0Dqlqe0ZXLRhjaevc7VB2g_39W_8eXP";
     const _client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentTid = null; // 現在儲存的是 UUID
+    let currentTid = null;
     let editingId = null;
 
-    // 1. 初始化頁面
+    // 響應式：切換選單
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      const icon = document.getElementById('menu-icon');
+      const isOpen = !sidebar.classList.contains('-translate-x-full');
+
+      if (isOpen) {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+        icon.setAttribute('data-lucide', 'menu');
+      } else {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+        icon.setAttribute('data-lucide', 'x');
+      }
+      lucide.createIcons();
+    }
+
     window.onload = async () => {
       await fetchTeachers();
       lucide.createIcons();
     };
 
-    // 2. 獲取老師列表
     async function fetchTeachers() {
-      const { data, error } = await _client
-        .from("teachers")
-        .select("*")
-        .order("created_at");
-      if (error) return setStatus("載入老師失敗", "error");
+      const { data, error } = await _client.from("teachers").select("*").order("created_at");
+      if (error) return setStatus("載入失敗", "error");
 
       const menu = document.getElementById("teacher-menu");
       const select = document.querySelector('select[name="teacher_id"]');
-      const manageList = document.getElementById("teacher-manage-list");
-
       menu.innerHTML = "";
       select.innerHTML = "";
-      manageList.innerHTML = "";
 
       data.forEach((t, index) => {
-        // A. 側邊欄按鈕
         const btn = document.createElement("button");
         btn.className = `teacher-item w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all hover:bg-gray-100 ${currentTid === t.id ? "active bg-gray-100" : ""}`;
         btn.onclick = () => switchTeacher(t.id, t.name);
-        btn.innerHTML = `<span class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-500"><i data-lucide="user"></i></span><span class="font-medium text-sm">${t.name}</span>`;
+        btn.innerHTML = `<span class="w-8 h-8 rounded bg-gray-50 flex items-center justify-center text-gray-400"><i data-lucide="user" class="w-4 h-4"></i></span><span class="font-medium text-sm">${t.name}</span>`;
         menu.appendChild(btn);
 
-        // B. 表單下拉選單
         select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
-
-        // C. 管理清單
-        manageList.innerHTML += `<div class="flex justify-between items-center p-2 bg-gray-50 rounded-lg text-sm"><span>${t.name}</span><button onclick="deleteTeacher('${t.id}')" class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div>`;
-
-        // 預設選中第一位
         if (!currentTid && index === 0) switchTeacher(t.id, t.name);
       });
       lucide.createIcons();
@@ -241,70 +272,48 @@
 
     async function switchTeacher(tid, name) {
       currentTid = tid;
-      document.getElementById("main-title").textContent =
-        `${name} · 本週課表`;
-      // 更新按鈕樣式
-      document
-        .querySelectorAll(".teacher-item")
-        .forEach((btn) => btn.classList.remove("active", "bg-gray-100"));
+      document.getElementById("main-title").textContent = `${name} · 本週課表`;
+
+      // 手機版自動關閉選單
+      if (window.innerWidth < 768) {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar.classList.contains('-translate-x-full')) toggleMobileMenu();
+      }
+
+      document.querySelectorAll(".teacher-item").forEach((btn) => btn.classList.remove("active", "bg-gray-100"));
+      const activeBtn = Array.from(document.querySelectorAll(".teacher-item")).find(b => b.textContent.includes(name));
+      if (activeBtn) activeBtn.classList.add("active");
+
       await refreshData();
     }
 
-    // 3. 獲取課表資料
     async function refreshData() {
       if (!currentTid) return;
-      setStatus("讀取中...");
+      setStatus("同步中...");
       try {
-        const { data, error } = await _client
-          .from("schedules")
-          .select("*")
-          .eq("teacher_id", currentTid);
+        const { data, error } = await _client.from("schedules").select("*").eq("teacher_id", currentTid);
         if (error) throw error;
         renderSchedule(data || []);
-        setStatus(`已同步 (${data.length} 筆資料)`, "success");
+        setStatus(`已同步 (${data.length} 筆)`, "success");
       } catch (e) {
-        setStatus(`錯誤: ${e.message}`, "error");
+        setStatus("錯誤", "error");
       }
     }
 
-    // 4. 渲染課表 (保留你原本優化過的邏輯)
     function renderSchedule(list) {
       const container = document.getElementById("schedule-container");
       container.innerHTML = "";
-      container.className = "relative w-full bg-white";
 
-      const slots = [
-        "08",
-        "09",
-        "10",
-        "11",
-        "12",
-        "13",
-        "14",
-        "15",
-        "16",
-        "17",
-        "18",
-        "19",
-        "20",
-        "21",
-        "22",
-        "23",
-        "24",
-      ];
+      const slots = ["08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"];
       const ROW_HEIGHT = 110;
       const START_HOUR = 8;
 
-      // 1. 繪製背景格線
-      // 在 renderSchedule 函數內找到以下段落進行修改
-      slots.slice(0, -1).forEach((h) => {
+      slots.forEach((h) => {
         const row = document.createElement("div");
-        // 關鍵：將 grid-cols-6 改為 grid-cols-8
         row.className = "grid grid-cols-8 border-b border-[#e9e9e7]";
         row.style.height = `${ROW_HEIGHT}px`;
 
         let rowHtml = `<div class="p-2 border-r border-[#e9e9e7] bg-gray-50/50 text-[10px] text-gray-400 flex items-center justify-center font-mono">${h}:00</div>`;
-        // 關鍵：迴圈從 1 跑到 7 (代表週一到週日)
         for (let day = 1; day <= 7; day++) {
           rowHtml += `<div class="border-r border-[#e9e9e7] last:border-0"></div>`;
         }
@@ -312,291 +321,132 @@
         container.appendChild(row);
       });
 
-      // 2. 建立卡片專用層
-      // 在 renderSchedule 函數內找到繪製卡片的邏輯
       const cardLayer = document.createElement("div");
-      // 關鍵：left 的起始位置從 16.66% 改成 12.5% (因為 1/8 是時間欄位佔比)
       cardLayer.style.cssText = `position: absolute; top: 0; left: 12.5%; right: 0; bottom: 0; pointer-events: none;`;
       container.appendChild(cardLayer);
 
-      // 3. 繪製課程卡片 (支援週一至週日)
       list.forEach((item) => {
         if (!item.start_time || !item.end_time) return;
-
-        // 解析時間
         const [sH, sM] = item.start_time.split(":").map(Number);
         const [eH, eM] = item.end_time.split(":").map(Number);
-
-        // 計算垂直高度
         const startTotalMin = (sH - START_HOUR) * 60 + sM;
         const endTotalMin = (eH - START_HOUR) * 60 + eM;
 
-        // 精確計算：每一分鐘佔用 (ROW_HEIGHT / 60) 像素
         const topPx = (startTotalMin / 60) * ROW_HEIGHT;
         const heightPx = ((endTotalMin - startTotalMin) / 60) * ROW_HEIGHT;
-
-        // --- 關鍵計算修改點 ---
-        // 總共有 7 天，每一天佔據 100 / 7 ≈ 14.2857%
         const dayWidthPercent = 100 / 7;
         const leftPercent = (item.day_of_week - 1) * dayWidthPercent;
-        // ----------------------
-
-        const isShort = heightPx < 85;
 
         const card = document.createElement("div");
-        // 加入 group 類別以便控制右上角按鈕顯示
-        card.className = `absolute rounded-xl p-3 text-xs ${item.color_class} border border-black/10 shadow-md flex flex-col pointer-events-auto cursor-pointer transition-all duration-300 ease-out hover:shadow-xl group`;
-
-        // 加上 1px 偏移避免壓到格線
-        // width 也同步調整為 7 天的比例
-        card.style.cssText = `
-            top: ${topPx + 1}px; 
-            height: ${heightPx - 2}px; 
-            left: calc(${leftPercent}% + 4px); 
-            width: calc(${dayWidthPercent}% - 8px); 
-            z-index: 10; 
-            overflow: hidden;
-          `;
-
-        card.onclick = () => {
-          const expH = "160px";
-          const isExp = card.style.height === expH;
-          // 縮回時要回到原本計算的 heightPx
-          card.style.height = isExp ? `${heightPx - 2}px` : expH;
-          card.style.zIndex = isExp ? "10" : "100";
-          card
-            .querySelector(".chevron")
-            ?.style.setProperty(
-              "transform",
-              isExp ? "rotate(0deg)" : "rotate(180deg)",
-            );
-        };
+        card.className = `absolute rounded-xl p-3 text-xs ${item.color_class} border border-black/5 shadow-md flex flex-col pointer-events-auto cursor-pointer transition-all hover:shadow-lg group overflow-hidden`;
+        card.style.cssText = `top: ${topPx + 2}px; height: ${heightPx - 4}px; left: calc(${leftPercent}% + 4px); width: calc(${dayWidthPercent}% - 8px); z-index: 10;`;
 
         card.innerHTML = `
-  <div class="absolute top-1.5 right-1.5 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
-    <button onclick="event.stopPropagation(); openEditModal(${JSON.stringify(item).replace(/"/g, "&quot;")})" class="p-1 bg-white/90 rounded shadow-sm text-gray-500 hover:text-blue-600">
-      <i data-lucide="edit-3" class="w-3 h-3"></i>
-    </button>
-    <button onclick="event.stopPropagation(); deleteCourse('${item.id}')" class="p-1 bg-white/90 rounded shadow-sm text-gray-500 hover:text-red-600">
-      <i data-lucide="trash-2" class="w-3 h-3"></i>
-    </button>
-  </div>
-  
-  <div class="flex flex-col h-full min-w-0">
-    <div class="mb-1.5">
-      <div class="font-bold text-[13px] truncate text-neutral-800 flex items-center gap-1">
-        <span class="truncate">${item.course_name}</span>
-        ${isShort ? '<i data-lucide="chevron-down" class="chevron w-3 h-3 text-gray-400"></i>' : ''}
-      </div>
-    </div>
-
-    <div class="flex-1 space-y-1 text-gray-500 text-[11px] overflow-hidden ${heightPx < 100 ? 'hidden' : 'block'}">
-      <p class="flex items-center gap-1.5 truncate">
-        <i data-lucide="map-pin" class="w-3 h-3 opacity-60"></i> ${item.room_no || '-'}
-      </p>
-      <p class="flex items-center gap-1.5 truncate">
-        <i data-lucide="book-open" class="w-3 h-3 opacity-60"></i> ${item.subject || '-'}
-      </p>
-      <p class="flex items-center gap-1.5 font-bold text-blue-600/90">
-        <i data-lucide="banknote" class="w-3 h-3 opacity-60 text-gray-400 font-normal"></i> $${item.amount || 0}
-      </p>
-    </div>
-
-    <div class="mt-auto">
-      <div class="flex flex-col gap-1">
-        <div class="${heightPx < 100 ? 'block' : 'hidden'} font-bold text-blue-600 text-[12px] mb-1">
-          $${item.amount || 0}
-        </div>
-        
-        <div class="text-[10px] font-mono text-gray-500 bg-black/5 px-2 py-1 rounded-md text-center whitespace-nowrap">
-          ${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}
-        </div>
-      </div>
-    </div>
-  </div>
-`;
+          <div class="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick="event.stopPropagation(); openEditModal(${JSON.stringify(item).replace(/"/g, "&quot;")})" class="p-1 bg-white/80 rounded shadow-sm hover:text-blue-600"><i data-lucide="edit-3" class="w-3 h-3"></i></button>
+            <button onclick="event.stopPropagation(); deleteCourse('${item.id}')" class="p-1 bg-white/80 rounded shadow-sm hover:text-red-600"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+          </div>
+          <div class="font-bold text-[13px] truncate pr-8">${item.course_name}</div>
+          <div class="mt-1 text-[11px] text-gray-500 space-y-0.5 truncate ${heightPx < 60 ? 'hidden' : ''}">
+            <p><i data-lucide="map-pin" class="w-2.5 h-2.5 inline mr-1 opacity-60"></i>${item.room_no || '-'}</p>
+            <p class="font-bold text-blue-600">$${item.amount || 0}</p>
+          </div>
+          <div class="mt-auto text-[10px] font-mono text-gray-500 bg-black/5 px-1 py-0.5 rounded text-center">
+            ${item.start_time.slice(0, 5)}-${item.end_time.slice(0, 5)}
+          </div>
+        `;
         cardLayer.appendChild(card);
       });
       lucide.createIcons();
     }
 
-    // 5. 老師管理功能
-    async function addTeacher() {
-      const name = document.getElementById("new-teacher-name").value.trim();
-      if (!name) return;
-      const { error } = await _client.from("teachers").insert([{ name }]);
-      if (error) alert("新增失敗");
-      document.getElementById("new-teacher-name").value = "";
-      await fetchTeachers();
-    }
-
-    async function deleteTeacher(id) {
-      if (!confirm("確定刪除老師嗎？相關課程也會一併刪除。")) return;
-      await _client.from("teachers").delete().eq("id", id);
-      if (currentTid === id) currentTid = null;
-      await fetchTeachers();
-    }
-
-    // 6. 輔助函數
-    function openModal() {
-      document.getElementById("course-modal").classList.remove("hidden");
-    }
+    // Modal 輔助功能
+    function openModal() { document.getElementById("course-modal").classList.remove("hidden"); }
     function closeModal() {
       editingId = null;
       document.getElementById("course-modal").classList.add("hidden");
       document.getElementById("course-form").reset();
-      document.querySelector("#course-modal h3").textContent = "新增課程資料";
     }
-    function openTeacherModal() {
+    async function openTeacherModal() {
       document.getElementById("teacher-modal").classList.remove("hidden");
+      const { data } = await _client.from("teachers").select("*").order("created_at");
+      const list = document.getElementById("teacher-manage-list");
+      list.innerHTML = data.map(t => `
+        <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded-lg border border-gray-100">
+          <span class="text-sm font-medium">${t.name}</span>
+          <button onclick="deleteTeacher('${t.id}')" class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </div>
+      `).join("");
+      lucide.createIcons();
     }
-    function closeTeacherModal() {
-      document.getElementById("teacher-modal").classList.add("hidden");
-    }
-    function setStatus(msg, type = "warn") {
-      const el = document.getElementById("status-tag");
-      el.textContent = `資料庫連線狀態：${msg}`;
-      el.className = `text-xs px-3 py-1.5 rounded-full ${type === "error" ? "bg-red-100 text-red-800" : type === "success" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"} font-medium`;
+    function closeTeacherModal() { document.getElementById("teacher-modal").classList.add("hidden"); }
+
+    async function addTeacher() {
+      const input = document.getElementById("new-teacher-name");
+      const name = input.value.trim();
+      if (!name) return;
+      await _client.from("teachers").insert([{ name }]);
+      input.value = "";
+      await fetchTeachers();
+      await openTeacherModal();
     }
 
-    // 7. 修改與刪除
+    async function deleteTeacher(id) {
+      if (!confirm("確定刪除嗎？課程會一併移除。")) return;
+      await _client.from("teachers").delete().eq("id", id);
+      if (currentTid === id) currentTid = null;
+      await fetchTeachers();
+      await openTeacherModal();
+    }
+
     function openEditModal(item) {
       editingId = item.id;
-      document.querySelector("#course-modal h3").textContent = "修改課程資料";
-      const form = document.getElementById("course-form");
-      form.day_of_week.value = item.day_of_week;
-      form.teacher_id.value = item.teacher_id;
-      form.course_name.value = item.course_name;
-      form.start_time.value = item.start_time.slice(0, 5);
-      form.end_time.value = item.end_time.slice(0, 5);
-      form.room_no.value = item.room_no || "";
-      form.amount.value = item.amount || 0;
-      form.phone.value = item.phone || "";
-      form.subject.value = item.subject || "";
-      form.color_class.value = item.color_class;
+      const f = document.getElementById("course-form");
+      f.day_of_week.value = item.day_of_week;
+      f.teacher_id.value = item.teacher_id;
+      f.course_name.value = item.course_name;
+      f.start_time.value = item.start_time.slice(0, 5);
+      f.end_time.value = item.end_time.slice(0, 5);
+      f.room_no.value = item.room_no || "";
+      f.amount.value = item.amount || 0;
+      f.phone.value = item.phone || "";
+      f.subject.value = item.subject || "";
+      f.color_class.value = item.color_class;
       openModal();
     }
 
     async function deleteCourse(id) {
-      if (!confirm("確定要刪除嗎？")) return;
-      await _client.from("schedules").delete().eq("id", id);
-      await refreshData();
-    }
-
-    // 8. 表單提交
-    document
-      .getElementById("course-form")
-      .addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const f = new FormData(e.target);
-        if (f.get("start_time") >= f.get("end_time"))
-          return alert("時間錯誤！");
-
-        const data = {
-          teacher_id: f.get("teacher_id"),
-          day_of_week: parseInt(f.get("day_of_week")),
-          course_name: f.get("course_name"),
-          start_time: f.get("start_time") + ":00",
-          end_time: f.get("end_time") + ":00",
-          room_no: f.get("room_no"),
-          amount: parseInt(f.get("amount")) || 0,
-          phone: f.get("phone"),
-          subject: f.get("subject"),
-          color_class: f.get("color_class"),
-        };
-
-        const res = editingId
-          ? await _client.from("schedules").update(data).eq("id", editingId)
-          : await _client.from("schedules").insert([data]);
-        if (res.error) alert("操作失敗: " + res.error.message);
-        else {
-          closeModal();
-          await refreshData();
-        }
-      });
-
-    // --- 老師管理功能邏輯 ---
-
-    // 1. 開啟管理視窗並讀取最新清單
-    async function openTeacherModal() {
-      document.getElementById("teacher-modal").classList.remove("hidden");
-      await renderTeacherManageList();
-      lucide.createIcons();
-    }
-
-    // 2. 關閉視窗
-    function closeTeacherModal() {
-      document.getElementById("teacher-modal").classList.add("hidden");
-      document.getElementById("new-teacher-name").value = "";
-    }
-
-    // 3. 渲染管理視窗內的老師列表
-    async function renderTeacherManageList() {
-      const { data: teachers, error } = await _client
-        .from("teachers")
-        .select("*")
-        .order("created_at");
-      if (error) return;
-
-      const manageList = document.getElementById("teacher-manage-list");
-      manageList.innerHTML = "";
-
-      teachers.forEach((t) => {
-        const item = document.createElement("div");
-        item.className =
-          "flex justify-between items-center p-2.5 bg-gray-50 rounded-lg border border-gray-100";
-        item.innerHTML = `
-      <span class="text-sm font-medium text-neutral-700">${t.name}</span>
-      <button onclick="deleteTeacher('${t.id}')" class="text-gray-300 hover:text-red-500 transition-colors">
-        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-      </button>
-    `;
-        manageList.appendChild(item);
-      });
-      lucide.createIcons();
-    }
-
-    // 4. 執行新增老師到資料庫
-    async function addTeacher() {
-      const input = document.getElementById("new-teacher-name");
-      const name = input.value.trim();
-
-      if (!name) return alert("請輸入老師姓名");
-
-      setStatus("正在新增老師...");
-      const { error } = await _client.from("teachers").insert([{ name }]);
-
-      if (error) {
-        setStatus("新增失敗", "error");
-        alert("新增失敗: " + error.message);
-      } else {
-        input.value = "";
-        setStatus("老師新增成功", "success");
-        // 關鍵：新增完後要同時更新側邊欄與管理清單
-        await fetchTeachers();
-        await renderTeacherManageList();
+      if (confirm("確定刪除課程？")) {
+        await _client.from("schedules").delete().eq("id", id);
+        await refreshData();
       }
     }
 
-    // 5. 執行刪除老師 (會連動刪除該老師的課表)
-    async function deleteTeacher(id) {
-      if (!confirm("確定要刪除這位老師嗎？相關的所有課程將會一併消失！"))
-        return;
-
-      setStatus("正在刪除老師...");
-      const { error } = await _client.from("teachers").delete().eq("id", id);
-
-      if (error) {
-        setStatus("刪除失敗", "error");
-        alert("刪除失敗: " + error.message);
-      } else {
-        setStatus("老師已刪除", "success");
-        // 如果刪除的是當前選取的老師，重置 ID 避免顯示錯誤
-        if (currentTid === id) currentTid = null;
-        await fetchTeachers();
-        await renderTeacherManageList();
-      }
+    function setStatus(msg, type = "warn") {
+      const el = document.getElementById("status-tag");
+      el.textContent = msg;
+      el.className = `hidden sm:block text-[10px] px-3 py-1.5 rounded-full font-medium ${type === 'error' ? 'bg-red-100 text-red-800' : type === 'success' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`;
     }
+
+    document.getElementById("course-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      const data = {
+        teacher_id: f.get("teacher_id"),
+        day_of_week: parseInt(f.get("day_of_week")),
+        course_name: f.get("course_name"),
+        start_time: f.get("start_time") + ":00",
+        end_time: f.get("end_time") + ":00",
+        room_no: f.get("room_no"),
+        amount: parseInt(f.get("amount")) || 0,
+        phone: f.get("phone"),
+        subject: f.get("subject"),
+        color_class: f.get("color_class"),
+      };
+      const res = editingId ? await _client.from("schedules").update(data).eq("id", editingId) : await _client.from("schedules").insert([data]);
+      if (res.error) alert("錯誤: " + res.error.message);
+      else { closeModal(); await refreshData(); }
+    });
   </script>
 </body>
 
