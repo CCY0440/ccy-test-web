@@ -131,7 +131,7 @@
   </main>
 
   <div id="course-modal"
-    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm">
+    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] backdrop-blur-sm">
     <div class="bg-white rounded-xl w-[95%] md:w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-bold">新增課程資料</h3>
@@ -142,7 +142,7 @@
       <form id="course-form" class="space-y-4">
         <div class="space-y-3 pb-2 border-b border-gray-100">
           <div>
-            <label class="block text-xs font-bold text-gray-400 mb-1">課程名稱 (如: 鋼琴、小提琴)</label>
+            <label class="block text-xs font-bold text-gray-400 mb-1">課程名稱 ( 如:EG-1、AG-1 )</label>
             <input type="text" name="subject" placeholder="請輸入科目名稱"
               class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
           </div>
@@ -200,7 +200,7 @@
         <div class="grid grid-cols-3 gap-3">
           <div class="col-span-1">
             <label class="block text-xs font-bold text-gray-400 mb-1">教室</label>
-            <input type="text" name="room_no" placeholder="編號"
+            <input type="text" name="room_no" placeholder="教室名稱"
               class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
           </div>
           <div class="col-span-1">
@@ -230,7 +230,7 @@
   </div>
 
   <div id="teacher-modal"
-    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[70] backdrop-blur-sm">
+    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] backdrop-blur-sm">
     <div class="bg-white rounded-xl w-80 p-6 shadow-2xl">
       <div class="flex justify-between items-center mb-4">
         <h3 class="font-bold">老師名單管理</h3>
