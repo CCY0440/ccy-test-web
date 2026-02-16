@@ -79,6 +79,21 @@
       /* 增加底部緩衝 */
     }
 
+    /* 核心修正：強制讓隱形的日曆點擊感應區撐滿整個區域 */
+    #date-picker::-webkit-calendar-picker-indicator {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      cursor: pointer;
+      opacity: 0;
+      /* 完全透明但充滿整格 */
+      z-index: 25;
+    }
+
     @media (max-width: 768px) {
 
       /* 讓手機版的時間軸窄一點點，留更多空間給課表 */
@@ -143,43 +158,30 @@
 
   <main class="flex-1 flex flex-col w-full overflow-hidden">
     <header
-      class="bg-white border-b border-[#e9e9e7] p-4 px-6 flex justify-between items-center shadow-sm sticky top-0 z-30">
-      <div class="flex items-center gap-3">
-        <button onclick="toggleSidebar()" class="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg md:hidden">
+      class="bg-white border-b border-[#e9e9e7] p-3 md:p-4 px-4 md:px-6 flex flex-wrap lg:flex-nowrap items-center gap-y-3 gap-x-4 shadow-sm sticky top-0 z-30">
+
+      <div class="flex items-center gap-3 order-1 flex-1 min-w-[150px]">
+        <button onclick="toggleSidebar()"
+          class="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg md:hidden shrink-0">
           <i data-lucide="menu"></i>
         </button>
-        <div class="flex flex-col">
-          <h2 id="main-title"
-            class="text-lg md:text-xl font-bold text-neutral-800 truncate max-w-[150px] md:max-w-none">
+
+        <div class="flex flex-col min-w-0">
+          <h2 id="main-title" class="text-lg md:text-xl font-bold text-neutral-800 truncate leading-tight">
             載入中...
           </h2>
           <div id="status-tag"
-            class="text-[10px] md:text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 font-medium inline-block w-fit mt-1">
-            連線狀態：嘗試中...
+            class="text-[10px] md:text-xs px-2.5 py-1 rounded-md bg-yellow-100 text-yellow-800 font-medium mt-0.5 -ml-2">
+            嘗試連線...
           </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm mx-4">
-        <button onclick="changeWeek(-1)" class="p-1 hover:bg-gray-100 rounded-md text-gray-600 transition-colors">
-          <i data-lucide="chevron-left" class="w-5 h-5"></i>
-        </button>
-
-        <span id="current-date-range"
-          class="text-sm md:text-base font-bold text-neutral-800 font-mono tracking-wide min-w-[140px] text-center">
-          計算中...
-        </span>
-
-        <button onclick="changeWeek(1)" class="p-1 hover:bg-gray-100 rounded-md text-gray-600 transition-colors">
-          <i data-lucide="chevron-right" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 order-2 lg:order-3 shrink-0">
         <button onclick="freezeTeacherHistory()"
           class="flex items-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-amber-100 transition-all shrink-0 shadow-sm">
           <i data-lucide="archive" class="w-4 h-4"></i>
-          <span class="hidden md:inline">凍結歷史</span>
+          <span>凍結歷史</span>
         </button>
 
         <button onclick="openModal()"
@@ -188,6 +190,33 @@
           <span class="hidden md:inline">新增課程</span><span class="md:hidden">新增</span>
         </button>
       </div>
+
+      <div
+        class="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm order-3 w-full lg:w-auto lg:mx-4 lg:order-2 relative overflow-hidden">
+
+        <button onclick="changeWeek(-1)"
+          class="p-1 hover:bg-gray-100 rounded-md text-gray-600 transition-colors shrink-0 z-20 relative">
+          <i data-lucide="chevron-left" class="w-5 h-5"></i>
+        </button>
+
+        <div class="relative flex-1 flex justify-center items-center group px-2">
+
+          <span id="current-date-range"
+            class="text-sm md:text-base font-bold text-neutral-800 font-mono tracking-wide text-center cursor-pointer group-hover:text-blue-600 transition-colors select-none pointer-events-none">
+            計算中...
+          </span>
+
+          <input type="date" id="date-picker"
+            class="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full appearance-none"
+            onchange="handleDatePick(this.value)">
+        </div>
+
+        <button onclick="changeWeek(1)"
+          class="p-1 hover:bg-gray-100 rounded-md text-gray-600 transition-colors shrink-0 z-20 relative">
+          <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        </button>
+      </div>
+
     </header>
 
     <div class="flex-1 overflow-hidden bg-[#fbfbfa] relative">
@@ -365,7 +394,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 課表系統 v1.3 重點使用說明
+          📅 系統使用說明
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -417,8 +446,10 @@
             凍結歷史
           </h4>
           <div class="pl-2 space-y-2">
-            <p><b class="text-neutral-900">● 主要重點：</b>以目前時間的前一週開始凍結 (三個月)。</p>
-            <p><b class="text-neutral-900">● 適合用於：</b>長假後回歸課程的學生。</p>
+            <ul class="list-disc list-inside pl-2 space-y-1 text-neutral-600">
+              <li><b>主要重點：</b>以目前時間的前一週開始凍結 (三個月)。</li>
+              <li><b>適合用於：</b>長假後回歸課程的學生。</li>
+            </ul>
             <div class="bg-gray-100 p-3 rounded-lg border border-gray-200">
               <p class="font-bold text-neutral-800 mb-1">💡 使用邏輯：</p>
               <p>編輯固定課表前，先點擊 <span
@@ -451,6 +482,10 @@
             <li>
               新增特殊教室 (練團室/練鼓室) 資料時，可打勾「僅限本週」。
               <div class="mt-1 opacity-75">＊若需設定不同週的資料，可先將「僅限本週」取消打勾，切換到對應的週次再打勾該課程。</div>
+            </li>
+            <li>
+              點擊畫面正上方的「日期文字」，可直接從日曆選擇起始日期。
+              <div class="mt-1 opacity-75 italic">＊系統會以您選定的日期為第一天，自動顯示連續 7 天的課表。</div>
             </li>
           </ol>
         </section>
@@ -568,6 +603,14 @@
       currentBaseDate = addDays(currentBaseDate, direction * 7);
 
       // 切換後，重新載入資料 (這樣畫面才會變)
+      refreshData();
+    }
+
+    // 1. 處理日曆選擇 (滾動式：選哪天，哪天就是起點)
+    function handleDatePick(val) {
+      if (!val) return;
+      // 直接把 currentBaseDate 設為使用者選的那一天 (不找禮拜一了)
+      currentBaseDate = new Date(val);
       refreshData();
     }
 
@@ -714,20 +757,30 @@
       }, 800);
     }
 
+    // 2. 重新整理資料 (修改版：以 currentBaseDate 為起點，往後推 7 天)
     async function refreshData() {
       if (!currentTid) return;
 
-      const monday = getMonday(currentBaseDate);
-      const sunday = addDays(monday, 6);
-      const startStr = formatDate(monday);
-      const endStr = formatDate(sunday);
+      // --- 修改重點開始 ---
+      // 原本：const monday = getMonday(currentBaseDate);
+      // 現在：直接用 currentBaseDate 當作開始日
+      const startDate = new Date(currentBaseDate);
+      const endDate = addDays(startDate, 6); // 往後推 6 天 (共 7 天)
+
+      const startStr = formatDate(startDate);
+      const endStr = formatDate(endDate);
+      // --- 修改重點結束 ---
 
       document.getElementById("current-date-range").textContent = `${startStr} ~ ${endStr}`;
+
+      // 同步隱藏日曆的值
+      const picker = document.getElementById("date-picker");
+      if (picker) picker.value = startStr;
+
       setStatus("正在同步紀錄...");
 
       try {
-        // A. 抓母版
-        // 抓取母版 (篩選條件：日期是空的，或是日期介於本週週一到週日)
+        // A. 抓母版 (邏輯不變：只要日期有重疊或是常駐的都抓)
         const { data: sData, error: sErr } = await _client
           .from("schedules")
           .select("*")
@@ -735,36 +788,31 @@
           .or(`target_date.is.null,and(target_date.gte.${startStr},target_date.lte.${endStr})`);
         if (sErr) throw sErr;
 
-        // B. 抓日記 (本週紀錄)
+        // B. 抓日記 (抓這 7 天的紀錄)
         const { data: rData, error: rErr } = await _client.from("lesson_records").select("*")
           .eq("teacher_id", currentTid)
           .gte("actual_date", startStr)
           .lte("actual_date", endStr);
         if (rErr) throw rErr;
 
-        // C. 更新全域暫存 (這步沒做，畫圖就會一直抓舊的或空的)
         _cachedSchedule = sData || [];
         _cachedRecords = rData || [];
 
-        // D. 執行繪圖
-        renderSchedule(_cachedSchedule, _cachedRecords);
+        // C. 執行繪圖 (把 startDate 傳進去，因為繪圖需要知道第一天是誰)
+        renderSchedule(_cachedSchedule, _cachedRecords, startDate);
 
-        // --- 重新精確計算 ---
+        // ... (下方的計算統計邏輯維持不變) ...
         const total = _cachedSchedule.length;
-
-        // 修改後的計算：只算 綠色(attended) 與 紅色(absent)
         const attendedOrAbsent = _cachedRecords.filter(r =>
           ['attended', 'status-present', 'absent', 'status-absent'].includes(r.status)
         ).length;
-
-        // 請假維持不變
         const onLeave = _cachedRecords.filter(r =>
           ['leave', 'status-leave'].includes(r.status)
         ).length;
-
         setStatus(`總堂數：${total} | 已點名+曠課：${attendedOrAbsent} | 請假：${onLeave}`, "success");
 
       } catch (e) {
+        console.error(e);
         setStatus(`連線錯誤: ${e.message}`, "error");
       }
     }
@@ -796,7 +844,8 @@
       }
     }
 
-    function renderSchedule(list, records = []) {
+    // 3. 繪圖函式 (修改版：接收 startDate，動態產生 7 個欄位)
+    function renderSchedule(list, records = [], startDate) {
       const container = document.getElementById("schedule-container");
       if (!container) return;
       container.innerHTML = "";
@@ -807,13 +856,20 @@
       const START_HOUR = 9;
       const CARD_WIDTH = 140;
       const MIN_COL_WIDTH = CARD_WIDTH;
+      // 定義星期名稱對照表 (0=週日, 1=週一...)
+      const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
 
       // 1. 建立左側時間軸
       const timeCol = document.createElement("div");
-      timeCol.className = "sticky left-0 z-50 bg-white border-r border-[#e9e9e7] flex flex-col shrink-0 shadow-sm";
+      // 修改重點：提高 z-index 到 500 (高於課表卡片)，確保橫向捲動時固定在最左邊
+      timeCol.className = "sticky left-0 z-[500] bg-white border-r border-[#e9e9e7] flex flex-col shrink-0";
       timeCol.style.width = "90px";
+
       const timeHeader = document.createElement("div");
-      timeHeader.className = "sticky top-0 z-50 bg-gray-50 border-b border-[#e9e9e7] text-sm font-bold text-gray-600 flex items-center justify-center";
+      // 修改重點：
+      // 1. z-[600]：它是「角落之王」，必須高於所有人，才不會在捲動時消失
+      // 2. 移除 border-r：因為外層 timeCol 已經有 border-r 了，裡面再加會導致 1px 的對齊斷層
+      timeHeader.className = "sticky top-0 z-[600] bg-gray-50 border-b border-[#e9e9e7] text-sm font-bold text-gray-600 flex items-center justify-center leading-tight box-border";
       timeHeader.style.height = `${HEADER_HEIGHT}px`;
       timeHeader.textContent = "時間";
       timeCol.appendChild(timeHeader);
@@ -826,21 +882,29 @@
       });
       container.appendChild(timeCol);
 
-      // 2. 準備資料
-      const dayGroups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] };
-      const dayNames = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
-      list.forEach(item => {
-        if (item.start_time && item.end_time) dayGroups[item.day_of_week].push(item);
-      });
+      // --- 修改重點：動態產生 7 天 ---
+      // 如果沒有傳入 startDate，就用全域的 (防呆)
+      const baseDate = startDate || currentBaseDate;
 
-      // 3. 建立每一天的欄位
-      for (let day = 1; day <= 7; day++) {
-        const currentWeekMonday = getMonday(currentBaseDate);
-        const thisDayDate = addDays(currentWeekMonday, day - 1);
+      // 迴圈跑 0~6 (代表第1天到第7天)
+      for (let i = 0; i < 7; i++) {
+        // 計算這一欄的日期
+        const thisDayDate = addDays(baseDate, i);
         const thisDayDateStr = formatDate(thisDayDate);
-        const dayItems = dayGroups[day];
 
-        // 計算寬度
+        // 取得這一天是星期幾 (0~6)
+        const jsDay = thisDayDate.getDay();
+
+        // 轉換成資料庫的 day_of_week (1=週一... 7=週日)
+        // JS的週日是0，我們要轉成7
+        const dbDay = jsDay === 0 ? 7 : jsDay;
+
+        // 篩選出屬於「這一天 (dbDay)」的課程
+        const dayItems = list.filter(item => item.day_of_week === dbDay);
+
+        // --- 以下繪製邏輯跟原本幾乎一樣，只是變數來源變了 ---
+
+        // 計算重疊寬度
         let maxConcurrent = 0;
         if (dayItems.length > 0) {
           dayItems.forEach(item => {
@@ -866,24 +930,29 @@
         const colWidth = Math.max(MIN_COL_WIDTH, maxConcurrent * CARD_WIDTH) + 0.75;
 
         const dayCol = document.createElement("div");
+        // 修改重點：border-r 依然保留在容器上，這就是標題和格子能「完美連線」的關鍵
         dayCol.className = "flex flex-col border-r border-[#e9e9e7] shrink-0 relative bg-white";
         dayCol.style.width = `${colWidth}px`;
 
-        // ▼▼▼ Header 更新：加入日期顯示 ▼▼▼
+        // Header 顯示：上面是「週X」，下面是「日期」
         const header = document.createElement("div");
-        header.className = "sticky top-0 z-[500] bg-gray-50 border-b border-[#e9e9e7] text-lg font-bold text-gray-800 flex items-center justify-center shadow-sm flex-col leading-tight";
+        // 修改重點：
+        // 1. z-[400]：確保它會乖乖待在「時間」標題的下面
+        // 2. 移除 border-r：讓它直接使用父容器 dayCol 的邊框，達成妳要的「收到裡面」完美對齊感
+        header.className = "sticky top-0 z-[400] bg-gray-50 border-b border-[#e9e9e7] text-lg font-bold text-gray-800 flex flex-col items-center justify-center leading-tight box-border w-full";
         header.style.height = `${HEADER_HEIGHT}px`;
 
-        // 格式化日期為 M/D (例如 2/17)
         const dateDisplay = `${thisDayDate.getMonth() + 1}/${thisDayDate.getDate()}`;
 
-        // 組合 HTML：上面是星期幾，下面是小小的日期
+        // 妳想保留的週二藍色高亮
+        const isToday = formatDate(new Date()) === thisDayDateStr;
+        const colorClass = isToday ? "text-blue-600" : "text-gray-800";
+
         header.innerHTML = `
-            <span>${dayNames[day - 1]}</span>
+            <span class="${colorClass}">${dayNames[jsDay]}</span>
             <span class="text-[11px] text-gray-400 font-mono font-normal">${dateDisplay}</span>
         `;
         dayCol.appendChild(header);
-        // ▲▲▲ Header 更新結束 ▲▲▲
 
         const contentLayer = document.createElement("div");
         contentLayer.className = "relative w-full";
@@ -896,7 +965,9 @@
           contentLayer.appendChild(line);
         });
 
+        // 繪製卡片
         dayItems.forEach((item) => {
+          // ... (卡片內部繪製邏輯完全不用動，直接複製原本的即可) ...
           const [sH, sM] = item.start_time.split(":").map(Number);
           const [eH, eM] = item.end_time.split(":").map(Number);
           if (sH < START_HOUR) return;
@@ -906,6 +977,7 @@
           const topPx = (startMin / 60) * ROW_HEIGHT;
           const heightPx = ((endMin - startMin) / 60) * ROW_HEIGHT;
 
+          // 排序計算 (維持不變)
           const overlaps = dayItems.filter(other => {
             const [osH] = other.start_time.split(":").map(Number);
             if (osH < START_HOUR) return false;
@@ -927,6 +999,7 @@
           }
           const leftPx = orderIndex * CARD_WIDTH;
 
+          // 狀態與顏色 (維持不變)
           const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
           let displayStatus = item.color_class || 'status-pending';
           if (record) displayStatus = record.status;
@@ -949,11 +1022,12 @@
             default: btnIcon = 'circle-dashed'; btnColor = 'text-neutral-800'; break;
           }
 
-          // 常駐備註優先級邏輯
           const remarkText = (record && record.remark) ? record.remark : (item.remark || "");
           const showPin = remarkText !== "";
 
+          // 建立卡片 DOM (維持不變)
           const card = document.createElement("div");
+          // ... 樣式省略，請保持原本的 ...
           card.className = `absolute rounded-md p-2 text-sm ${finalColorClass} border-l-4 border-white shadow-sm flex flex-col transition-all duration-300 group box-border overflow-hidden hover:brightness-95 hover:z-50`;
           card.style.cssText = `top: ${topPx}px; height: ${heightPx + 1}px; left: ${leftPx}px; width: ${CARD_WIDTH}px; z-index: 20;`;
 
@@ -986,7 +1060,7 @@
 
             <div class="flex flex-col h-full min-w-0 pr-8 cursor-pointer" 
                  onclick="toggleRecordStatus('${item.id}', '${thisDayDateStr}', '${displayStatus}')">
-                 
+                
                 <div class="flex items-center gap-1.5 mb-1.5 shrink-0 pointer-events-none">
                     <i data-lucide="${btnIcon}" class="w-4 h-4 ${btnColor}"></i>
                     <div class="font-bold text-sm text-neutral-800 truncate leading-tight">${item.course_name || '未命名'}</div>
@@ -1013,7 +1087,7 @@
                     </div>
                 </div>
             </div>`;
-
+          // ... 
           contentLayer.appendChild(card);
         });
 
@@ -1092,16 +1166,18 @@
       await fetchTeachers();
     }
 
-    // 6. 輔助函數
-    function openModal() {
-      // 新增這行：開啟彈窗時，確保側邊欄是收起的
-      if (window.innerWidth < 768) {
-        const sidebar = document.getElementById('sidebar');
-        if (!sidebar.classList.contains('-translate-x-full')) {
-          toggleSidebar();
-        }
-      }
-      document.getElementById("course-modal").classList.remove("hidden");
+    // 6. 輔助函數 (加大版：px-2.5, py-1, -ml-2)
+    function setStatus(msg, type = "warn") {
+      const el = document.getElementById("status-tag");
+      el.textContent = `資料庫連線狀態：${msg}`;
+
+      // 定義顏色
+      let colorClass = "bg-yellow-100 text-yellow-800"; // 預設 (黃)
+      if (type === "error") colorClass = "bg-red-100 text-red-800"; // 錯誤 (紅)
+      if (type === "success") colorClass = "bg-green-100 text-green-800"; // 成功 (綠)
+
+      // 套用樣式 (同步加大與對齊修正)
+      el.className = `text-[10px] md:text-xs px-2.5 py-1 rounded-md font-medium mt-0.5 -ml-2 ${colorClass}`;
     }
     function closeModal() {
       editingId = null;
@@ -1114,11 +1190,6 @@
     }
     function closeTeacherModal() {
       document.getElementById("teacher-modal").classList.add("hidden");
-    }
-    function setStatus(msg, type = "warn") {
-      const el = document.getElementById("status-tag");
-      el.textContent = `資料庫連線狀態：${msg}`;
-      el.className = `text-xs px-3 py-1.5 rounded-full ${type === "error" ? "bg-red-100 text-red-800" : type === "success" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"} font-medium`;
     }
 
     // 7. 修改與刪除
