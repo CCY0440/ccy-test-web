@@ -148,7 +148,7 @@
       <div class="w-full border-t border-[#e9e9e7] my-4"></div>
 
       <div class="flex flex-col items-center justify-center text-gray-400 gap-1.5">
-        <div class="text-[10px] font-medium">網頁版本 v1.31</div>
+        <div class="text-[10px] font-medium">網頁版本 v1.35</div>
         <div class="text-[10px] font-mono opacity-60">Designed by @CCY</div>
         <div class="text-[10px] font-medium">任何網頁相關問題 請聯繫鮪魚老師</div>
       </div>
@@ -394,7 +394,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用說明
+          📅 系統使用說明 (v1.35版本)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -410,29 +410,16 @@
               class="bg-neutral-700 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">1</span>
             變更「點名」or「編輯固定課表」
           </h4>
-
           <div class="grid gap-3">
             <div class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg">
               <h5 class="font-bold text-blue-800 mb-1 flex items-center gap-1"><i data-lucide="mouse-pointer-2"
-                  class="w-3.5 h-3.5"></i> 點名(點擊卡片本體)</h5>
-              <ul class="list-none space-y-1 text-blue-900/80 text-xs ml-1">
-                <li>• <b>情境：</b>學生今天有沒有來？</li>
-                <li>• <b>邏輯：</b>就像在日曆上打勾，<span class="underline decoration-blue-400 decoration-2">完全不會</span>動到原本的課表設定。
-                </li>
-                <li>• <b>影響範圍：</b>只有這一天。</li>
-                <li>• <b>適用：</b>出席、感冒請假、曠課、臨時補課。</li>
-              </ul>
+                  class="w-3.5 h-3.5"></i> 點名 (點擊卡片)</h5>
+              <p class="text-xs text-blue-900/80">• 僅影響「這一天」。適用於點名、感冒請假、曠課或臨時補課。</p>
             </div>
-
             <div class="bg-orange-50 border-l-4 border-orange-400 p-3 rounded-r-lg">
               <h5 class="font-bold text-orange-800 mb-1 flex items-center gap-1"><i data-lucide="edit-3"
-                  class="w-3.5 h-3.5"></i> 編輯固定課表(卡片右上角)</h5>
-              <ul class="list-none space-y-1 text-orange-900/80 text-xs ml-1">
-                <li>• <b>情境：</b>這堂課的本質變了嗎？</li>
-                <li>• <b>邏輯：</b>在這裡改了名字，以後<span class="font-bold">每一週</span>都會變成新名字。</li>
-                <li>• <b>影響範圍：</b>未來每一週（除非勾選「僅限本週」）。</li>
-                <li>• <b>適用：</b>學生長期/永久換時段、永久調薪或換教室。</li>
-              </ul>
+                  class="w-3.5 h-3.5"></i> 編輯固定課表 (右上角筆頭)</h5>
+              <p class="text-xs text-orange-900/80">• 會影響「未來每一週」。適用於更換上課時段、永久更換教室等。</p>
             </div>
           </div>
         </section>
@@ -443,64 +430,126 @@
           <h4 class="font-bold text-neutral-900 text-base mb-2 flex items-center gap-2">
             <span
               class="bg-neutral-700 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">2</span>
-            凍結歷史
+            凍結歷史 (保護歷史紀錄)
           </h4>
-          <div class="pl-2 space-y-2">
-            <ul class="list-disc list-inside pl-2 space-y-1 text-neutral-600">
-              <li><b>主要重點：</b>以目前時間的前一週開始凍結 (三個月)。</li>
-              <li><b>適合用於：</b>長假後回歸課程的學生。</li>
-            </ul>
-            <div class="bg-gray-100 p-3 rounded-lg border border-gray-200">
-              <p class="font-bold text-neutral-800 mb-1">💡 使用邏輯：</p>
-              <p>編輯固定課表前，先點擊 <span
-                  class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold"><i
-                    data-lucide="archive" class="w-3 h-3"></i> 凍結歷史</span> 按鈕，保留過去學生長假的紀錄，再對固定課表進行變更。</p>
-            </div>
-          </div>
+
+          <ul class="space-y-3 mt-3">
+
+            <li class="flex gap-2.5 items-start">
+              <span class="w-1 h-1 rounded-full bg-neutral-400 shrink-0 mt-2"></span>
+              <p class="text-neutral-700">
+                <b class="text-neutral-900">功能：</b>將過去的課程凍結，防止因修改固定課表而導致舊紀錄遺失。
+              </p>
+            </li>
+
+            <li class="list-none">
+              <div class="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <ul class="space-y-1">
+                  <li class="flex gap-2.5 items-start">
+                    <span class="w-1 h-1 rounded-full bg-amber-500 shrink-0 mt-2"></span>
+                    <div>
+                      <p class="font-bold text-amber-800 text-sm">簡單小情境模擬：</p>
+                      <p class="text-xs text-amber-900/70">
+                        當長假學生準備回歸課堂時，能快速凍結<b>長假時期的日期</b>，凍結後再改動後續學生的課程。
+                      </p>
+                    </div>
+                  </li>
+                  <li class="flex gap-2.5 items-start">
+                    <span class="w-1 h-1 rounded-full bg-amber-500 shrink-0 mt-2"></span>
+                    <div>
+                      <p class="font-bold text-amber-800 text-sm">快速跳轉小技巧：</p>
+                      <p class="text-xs text-amber-900/70">
+                        點擊「設定上月」按鈕，每點一次日期就會<b>往回推一個月</b>，方便您快速凍結好幾個月前的資料！
+                      </p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
         </section>
 
         <hr class="border-gray-100">
 
-        <section>
-          <h4 class="font-bold text-neutral-900 text-base mb-2 flex items-center gap-2">
-            <span
-              class="bg-neutral-700 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">3</span>
-            備註功能
+        <section class="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+          <h4 class="font-bold text-indigo-800 mb-3 flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4"></i> 效率捷徑
           </h4>
-          <ul class="list-disc list-inside pl-2 space-y-1 text-neutral-600">
-            <li><b>不勾選設為常駐：</b>只出現在「今天」，適合記錄「感冒請假」等。</li>
-            <li><b>勾選設為常駐：</b>出現在「未來每一週」，適合記錄「長假中」等。</li>
+
+          <ul class="space-y-3">
+
+            <li class="flex gap-2.5 items-start">
+              <span class="w-1 h-1 rounded-full bg-indigo-500 shrink-0 mt-2"></span>
+              <div>
+                <p class="font-bold text-indigo-900 text-sm">快速切換起始日期</p>
+                <p class="text-xs text-indigo-800/70">直接點擊畫面正上方的「日期範圍」，即可彈出日曆選擇您想顯示的第一天。</p>
+              </div>
+            </li>
+
+            <li class="flex gap-2.5 items-start">
+              <span class="w-1 h-1 rounded-full bg-indigo-500 shrink-0 mt-2"></span>
+              <div>
+                <p class="font-bold text-indigo-900 text-sm">查看完整課程資訊</p>
+                <p class="text-xs text-indigo-800/70">點擊卡片右上角的「向下箭頭」可展開卡片，查看電話、薪資與教室。</p>
+              </div>
+            </li>
+
+            <li class="flex gap-2.5 items-start">
+              <span class="w-1 h-1 rounded-full bg-indigo-500 shrink-0 mt-2"></span>
+              <div>
+                <p class="font-bold text-indigo-900 text-sm">新增特殊/臨時教室</p>
+                <p class="text-xs text-indigo-800/70">新增課程時勾選「僅限本週」，資料就不會出現在其他週次，適合預約制教室。</p>
+              </div>
+            </li>
           </ul>
         </section>
 
-        <section class="bg-amber-50 rounded-xl p-4 border border-amber-100">
-          <h4 class="font-bold text-amber-800 mb-2 flex items-center gap-2">
-            <i data-lucide="sparkles" class="w-4 h-4"></i> 小祕訣
-          </h4>
-          <ol class="list-decimal list-outside pl-4 space-y-2 text-amber-900/80 text-xs">
-            <li>點擊卡片右上角的「箭頭」可以展開卡片，查看詳細的電話、金額與教室資訊。</li>
-            <li>
-              新增特殊教室 (練團室/練鼓室) 資料時，可打勾「僅限本週」。
-              <div class="mt-1 opacity-75">＊若需設定不同週的資料，可先將「僅限本週」取消打勾，切換到對應的週次再打勾該課程。</div>
-            </li>
-            <li>
-              點擊畫面正上方的「日期文字」，可直接從日曆選擇起始日期。
-              <div class="mt-1 opacity-75 italic">＊系統會以您選定的日期為第一天，自動顯示連續 7 天的課表。</div>
-            </li>
-          </ol>
-        </section>
-
         <section class="text-center space-y-3 pt-2">
-          <div class="text-xs text-gray-400 px-4 text-left">
-            <p>1. 用過程有顯示任何錯誤訊息，請為設計師保留顯示的錯誤資訊，謝謝。</p>
-            <p>2. 有任何相關的修改建議請聯繫 <b class="text-gray-600">鮪魚老師</b>。</p>
-          </div>
           <button onclick="closeInstructionsModal()"
             class="w-full bg-neutral-800 text-white py-3 rounded-xl font-bold hover:bg-black transition-all active:scale-95 shadow-md">
             我瞭解了
           </button>
         </section>
 
+      </div>
+    </div>
+  </div>
+
+  <div id="freeze-date-modal"
+    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1200] backdrop-blur-sm">
+    <div class="bg-white rounded-xl w-80 p-6 shadow-2xl border border-amber-100">
+      <h3 class="font-bold mb-4 flex items-center gap-2 text-amber-800">
+        <i data-lucide="archive" class="w-4 h-4"></i> 自訂凍結範圍
+      </h3>
+
+      <div class="flex gap-2 mb-4">
+        <button onclick="quickSetFreezeDates('current')"
+          class="flex-1 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-md hover:bg-amber-100 hover:text-amber-700 transition-colors">設定本月</button>
+        <button onclick="quickSetFreezeDates('last')"
+          class="flex-1 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-md hover:bg-amber-100 hover:text-amber-700 transition-colors">設定上月</button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-400 mb-1">起始日期 (From)</label>
+          <input type="date" id="freeze-start-date"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-100" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-400 mb-1">結束日期 (To)</label>
+          <input type="date" id="freeze-end-date"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-100" />
+        </div>
+
+        <div class="pt-2">
+          <button onclick="executeFreeze()"
+            class="w-full bg-amber-600 text-white py-2.5 rounded-lg text-sm font-bold shadow-md hover:bg-amber-700 transition-all active:scale-95">
+            確認並執行凍結
+          </button>
+          <button onclick="closeFreezeModal()" class="w-full text-gray-400 text-xs py-2 mt-1 hover:text-gray-600">
+            取消
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1497,69 +1546,92 @@
       }
     }
 
-    async function freezeTeacherHistory() {
+    // 1. 打開選擇視窗 (預設顯示本月)
+    function freezeTeacherHistory() {
       if (!currentTid) return alert("請先選擇一位老師");
+      // 預設先幫妳填好「本月」的範圍
+      quickSetFreezeDates('current');
+      document.getElementById("freeze-date-modal").classList.remove("hidden");
+    }
 
+    // 2. 快速設定日期的核心邏輯 (升級版：支援連續點擊跳轉)
+    function quickSetFreezeDates(type) {
+      // 取得目前輸入框中顯示的起始日期
+      const currentInputVal = document.getElementById("freeze-start-date").value;
+
+      // 如果輸入框有值就用它當基準，沒有就用今天
+      let baseDate = currentInputVal ? new Date(currentInputVal) : new Date();
+      let start, end;
+
+      if (type === 'current') {
+        // 【設定本月】：固定回到「今天」所屬的月份
+        const now = new Date();
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      } else {
+        // 【設定上月】：從目前顯示的日期再往回推一個月
+        // 抓取目前顯示月份的 1 號，並減去 1 個月
+        start = new Date(baseDate.getFullYear(), baseDate.getMonth() - 1, 1);
+        // 設定為該月最後一天
+        end = new Date(baseDate.getFullYear(), baseDate.getMonth(), 0);
+      }
+
+      // 更新輸入框
+      document.getElementById("freeze-start-date").value = formatDate(start);
+      document.getElementById("freeze-end-date").value = formatDate(end);
+    }
+
+    // 2.5. 關閉視窗
+    function closeFreezeModal() {
+      document.getElementById("freeze-date-modal").classList.add("hidden");
+    }
+
+    // 3. 執行凍結 (讀取輸入框的值)
+    async function executeFreeze() {
+      const startStr = document.getElementById("freeze-start-date").value;
+      const endStr = document.getElementById("freeze-end-date").value;
       const teacherName = document.getElementById("main-title").textContent.split(' · ')[0];
 
-      // 1. 設定時間範圍：從「三個月前」到「昨天」
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() - 1); // 截止日：昨天 (今天先不鎖，方便操作)
+      if (!startStr || !endStr) return alert("請完整選擇日期範圍！");
 
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 3); // ▼ 起始日：往前推 3 個月
+      const startDate = new Date(startStr);
+      const endDate = new Date(endStr);
+      if (startDate > endDate) return alert("起始日期不能晚於結束日期唷！");
 
-      // 格式化日期給確認視窗看 (YYYY-MM-DD)
-      const startStr = startDate.toISOString().split('T')[0];
-      const endStr = endDate.toISOString().split('T')[0];
+      if (!confirm(`確定要保留「${teacherName}」老師\n從 ${startStr} 到 ${endStr} 的紀錄嗎？`)) return;
 
-      if (!confirm(`確定要保留「${teacherName}」老師\n從 ${startStr} 到 ${endStr} (近三個月) 的紀錄嗎？\n\n這會把這段時間所有的空格都填滿，保護它們不受未來修改影響。`)) return;
-
-      setStatus("正在保護近三個月的歷史紀錄...");
+      closeFreezeModal();
+      setStatus(`正在保護 ${startStr} ~ ${endStr} 的歷史紀錄...`);
 
       const recordsToInsert = [];
-
-      // 2. 找出所有空格
       _cachedSchedule.forEach(course => {
         let checkDate = new Date(startDate);
-        const targetDay = course.day_of_week;
-
         while (checkDate <= endDate) {
           let dayOfWeek = checkDate.getDay();
           if (dayOfWeek === 0) dayOfWeek = 7;
-
-          // 如果星期幾對得上，就準備填空
-          if (dayOfWeek === targetDay) {
+          if (dayOfWeek === course.day_of_week) {
             recordsToInsert.push({
               schedule_id: course.id,
               teacher_id: currentTid,
               actual_date: formatDate(checkDate),
-              status: course.color_class || 'status-pending', // 用母版預設顏色
-              remark: course.remark || "系統自動補檔" // 如果有常駐備註就用
+              status: course.color_class || 'status-pending',
+              remark: course.remark || "系統自動補檔"
             });
           }
           checkDate.setDate(checkDate.getDate() + 1);
         }
       });
 
-      if (recordsToInsert.length === 0) {
-        return setStatus("這三個月的資料都很完整，不需要補檔", "success");
-      }
+      if (recordsToInsert.length === 0) return setStatus("範圍內沒有需要補檔的課程", "success");
 
-      // 3. 寫入資料庫 (關鍵：ignoreDuplicates: true)
-      // 只要遇到那天已經有資料，就跳過，確保不會蓋掉妳以前的紀錄
-      const { error } = await _client
-        .from("lesson_records")
-        .upsert(recordsToInsert, {
-          onConflict: 'schedule_id,actual_date',
-          ignoreDuplicates: true
-        });
+      const { error } = await _client.from("lesson_records").upsert(recordsToInsert, {
+        onConflict: 'schedule_id,actual_date', ignoreDuplicates: true
+      });
 
       if (error) {
-        console.error("凍結失敗:", error);
-        setStatus("存檔失敗，請檢查 Console", "error");
+        setStatus("存檔失敗", "error");
       } else {
-        setStatus(`成功！已補滿 ${recordsToInsert.length} 個空缺，近三個月的歷史安全了。`, "success");
+        setStatus(`成功！已補滿 ${recordsToInsert.length} 個歷史空缺。`, "success");
         await refreshData();
       }
     }
