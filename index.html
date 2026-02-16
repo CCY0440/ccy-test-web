@@ -38,8 +38,33 @@
       color: #c62828 !important;
     }
 
+    /* 學生練習：海洋藍 (清爽、獨立) */
+    .status-practice {
+      background-color: #e0f2fe !important;
+      /* 很淡的藍 */
+      border: 1.5px solid #7dd3fc !important;
+      /* 天空藍邊框 */
+      color: #0c4a6e !important;
+      /* 深藍文字 */
+    }
+
+    /* 預設/尚未點名：冷灰色 (低調、等待中) */
+    .status-pending {
+      background-color: #f3f4f6 !important;
+      border: 1.5px solid #d1d5db !important;
+      color: #4b5563 !important;
+    }
+
+    /* 側邊欄選中狀態：加深背景色 */
     .teacher-item.active {
-      background-color: #f3f4f6;
+      background-color: #e2e8f0 !important;
+      /* Slate-200 (比原本的灰色深) */
+      color: #0f172a !important;
+      /* 深藍黑色文字 */
+      font-weight: 700 !important;
+      /* 加粗文字 */
+      border-right: 4px solid #3b82f6;
+      /* (選用) 右邊加一條藍色線條增加識別度 */
     }
 
     /* 展開狀態的卡片樣式 */
@@ -80,6 +105,20 @@
 
     <nav id="teacher-menu" class="flex-1 px-3 space-y-1 overflow-y-auto"></nav>
 
+    <div class="px-4 py-2">
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 shadow-sm relative group">
+        <div class="flex items-center gap-1.5 mb-2 text-yellow-700/80">
+          <i data-lucide="sticky-note" class="w-3.5 h-3.5"></i>
+          <span class="text-xs font-bold">備忘錄</span>
+          <span id="memo-status"
+            class="ml-auto text-[10px] text-yellow-600 opacity-0 transition-opacity duration-500">已儲存</span>
+        </div>
+        <textarea id="teacher-memo"
+          class="w-full bg-transparent text-xs text-gray-700 resize-none outline-none placeholder-yellow-700/30 leading-relaxed"
+          rows="4" placeholder="隨手記點什麼..." oninput="handleMemoInput(this.value)"></textarea>
+      </div>
+    </div>
+
     <div class="p-4"> <button onclick="openTeacherModal()"
         class="w-full py-2 text-xs text-gray-500 hover:text-blue-600 border border-dashed rounded-lg flex items-center justify-center gap-1 transition-colors">
         <i data-lucide="settings-2" class="w-3 h-3"></i> 管理老師名單
@@ -115,11 +154,33 @@
         </div>
       </div>
 
-      <button onclick="openModal()"
-        class="flex items-center gap-2 bg-neutral-800 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-neutral-700 transition-all shrink-0">
-        <i data-lucide="plus" class="w-4 h-4"></i> <span class="hidden md:inline">新增課程</span><span
-          class="md:hidden">新增</span>
-      </button>
+      <div class="flex items-center gap-4 bg-white border border-gray-200 rounded-lg px-3 py-1 shadow-sm mx-4">
+        <button onclick="changeWeek(-1)" class="p-1 hover:bg-gray-100 rounded text-gray-600">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </button>
+
+        <span id="current-date-range" class="text-xs font-bold text-gray-700 font-mono">
+          計算中...
+        </span>
+
+        <button onclick="changeWeek(1)" class="p-1 hover:bg-gray-100 rounded text-gray-600">
+          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="freezeTeacherHistory()"
+          class="flex items-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-amber-100 transition-all shrink-0 shadow-sm">
+          <i data-lucide="archive" class="w-4 h-4"></i>
+          <span class="hidden md:inline">凍結歷史</span>
+        </button>
+
+        <button onclick="openModal()"
+          class="flex items-center gap-2 bg-neutral-800 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-neutral-700 transition-all shrink-0">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span class="hidden md:inline">新增課程</span><span class="md:hidden">新增</span>
+        </button>
+      </div>
     </header>
 
     <div class="flex-1 overflow-hidden bg-[#fbfbfa] relative">
@@ -212,12 +273,53 @@
             <label class="block text-xs font-bold text-gray-400 mb-1">課程狀態</label>
             <select name="color_class"
               class="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-100 outline-none">
-              <option value="status-present" selected>✅ 上課 (綠)</option>
+              <option value="status-pending" selected>⬜ 尚未點名 (灰)</option>
+              <option value="status-present">✅ 上課 (綠)</option>
               <option value="status-leave">☕ 請假 (咖)</option>
               <option value="status-absent">❌ 曠課 (紅)</option>
+              <option value="status-practice">🎹 學生練習 (藍)</option>
             </select>
           </div>
         </div>
+
+        <div class="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-100">
+
+          <div class="col-span-3 relative">
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-xs font-bold text-gray-400">備註內容</label>
+              <div class="flex items-center gap-1.5 cursor-pointer group">
+                <input type="checkbox" name="is_persistent" id="is_persistent"
+                  class="w-3.5 h-3.5 rounded border-gray-300 cursor-pointer text-blue-600 focus:ring-0">
+                <label for="is_persistent"
+                  class="text-[10px] text-gray-400 font-medium cursor-pointer group-hover:text-blue-600 transition-colors select-none">
+                  設為常駐 (每週顯示)
+                </label>
+              </div>
+            </div>
+            <textarea name="record_remark" placeholder="例如：會考請假、補課..."
+              class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-100 outline-none resize-none h-[72px]"
+              rows="2"></textarea>
+          </div>
+
+          <div class="col-span-1 flex flex-col h-full">
+            <label class="block text-xs font-bold text-gray-400 mb-1 text-center whitespace-nowrap">課程性質</label>
+
+            <div
+              class="flex flex-col items-center justify-center bg-gray-50 border border-dashed border-gray-300 rounded-lg h-[72px] w-full px-2 hover:bg-gray-100 transition-colors cursor-pointer group relative">
+
+              <input type="checkbox" name="is_temporary" id="is_temporary"
+                class="w-5 h-5 rounded border-gray-300 cursor-pointer accent-blue-600 z-10">
+              <label for="is_temporary"
+                class="text-[11px] font-bold text-neutral-500 mt-1 cursor-pointer group-hover:text-blue-600 z-10 whitespace-nowrap">僅限本週</label>
+
+              <div class="absolute inset-0" onclick="document.getElementById('is_temporary').click()"></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="text-[10px] text-amber-600 mt-2 flex items-center gap-1 italic">
+          <i data-lucide="alert-circle" class="w-3 h-3"></i> 備註內容與單次設定不會連動到未來課表。
+        </p>
 
         <div class="pt-4">
           <button type="submit"
@@ -250,12 +352,96 @@
   </div>
 
   <script>
-    const SUPABASE_URL = "https://szudiyorlqmxyibxwaqp.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_0Dqlqe0ZXLRhjaevc7VB2g_39W_8eXP";
+    const SUPABASE_URL = "https://szudiyorlqmxyibxwaqp.supabase.co"; // 請確認您的 URL
+    const SUPABASE_KEY = "sb_publishable_0Dqlqe0ZXLRhjaevc7VB2g_39W_8eXP"; // 請確認您的 KEY
     const _client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentTid = null; // 現在儲存的是 UUID
+    let currentTid = null;
     let editingId = null;
+    let editingCurrentStatus = null;
+    let editingDateStr = null;
+    // --- 新增全域變數：用來暫存資料與排序 ---
+    let _cachedSchedule = []; // 暫存課表資料
+    let _cachedRecords = [];  // 暫存紀錄資料
+    let _userSortOrder = [];  // 記住使用者排好的卡片順序 (存 ID)
+
+    // --- 拖曳排序功能核心 ---
+
+    // 1. 開始拖曳
+    function handleDragStart(e, id) {
+      e.dataTransfer.setData("text/plain", id);
+      e.dataTransfer.effectAllowed = "move";
+      // 讓被拖的卡片稍微變透明，增加視覺回饋
+      e.target.style.opacity = '0.4';
+    }
+
+    // 2. 拖曳結束 (不管有沒有成功放下，都要把透明度改回來)
+    function handleDragEnd(e) {
+      e.target.style.opacity = '1';
+    }
+
+    // 3. 放下卡片 (交換順序)
+    function handleDrop(e, targetId) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const sourceId = e.dataTransfer.getData("text/plain");
+      if (sourceId === targetId) return; // 自己丟自己，不做事
+
+      // 調整陣列順序
+      const fromIndex = _userSortOrder.indexOf(sourceId);
+      const toIndex = _userSortOrder.indexOf(targetId);
+
+      if (fromIndex > -1 && toIndex > -1) {
+        // 把原本的那張拿出來
+        _userSortOrder.splice(fromIndex, 1);
+        // 插隊到新目標的位置
+        _userSortOrder.splice(toIndex, 0, sourceId);
+
+        // ★ 重新繪圖！這樣畫面才會變
+        renderSchedule(_cachedSchedule, _cachedRecords);
+      }
+    }
+
+    // --- 積木一：日期控制核心 ---
+    // 1. 設定目前選擇的日期 (預設今天)
+    let currentBaseDate = new Date();
+
+    // 2. 工具：取得本週一的日期 (這樣我們才知道這週是從哪天開始)
+    function getMonday(d) {
+      d = new Date(d);
+      var day = d.getDay(),
+        diff = d.getDate() - day + (day == 0 ? -6 : 1);
+      return new Date(d.setDate(diff));
+    }
+
+    // 3. 工具：加減天數 (用來切換上一週、下一週)
+    function addDays(date, days) {
+      var result = new Date(date);
+      result.setDate(result.getDate() + days);
+      return result;
+    }
+
+    // 4. 工具：把日期變字串 (修正版：使用當地時間，解決早晨日期跑掉的問題)
+    function formatDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // 5. 切換週次的功能
+    function changeWeek(direction) {
+      // direction: -1 代表上一週， 1 代表下一週
+      currentBaseDate = addDays(currentBaseDate, direction * 7);
+
+      // 切換後，重新載入資料 (這樣畫面才會變)
+      refreshData();
+    }
+
+    // ▼ 關鍵修正 1：宣告全域變數來存老師資料 ▼
+    let allTeachers = [];
+    let memoTimeout = null;
 
     // 1. 初始化頁面
     window.onload = async () => {
@@ -263,13 +449,18 @@
       lucide.createIcons();
     };
 
-    // 2. 獲取老師列表
+    // 2. 獲取老師列表 (修正版)
     async function fetchTeachers() {
+      // 這裡一定要把 memo 欄位也選出來 (select * 會包含 memo)
       const { data, error } = await _client
         .from("teachers")
         .select("*")
         .order("created_at");
+
       if (error) return setStatus("載入老師失敗", "error");
+
+      // ▼ 關鍵修正 2：把抓下來的資料存到全域變數 allTeachers ▼
+      allTeachers = data;
 
       const menu = document.getElementById("teacher-menu");
       const select = document.querySelector('select[name="teacher_id"]');
@@ -282,6 +473,8 @@
       data.forEach((t, index) => {
         // A. 側邊欄按鈕
         const btn = document.createElement("button");
+        // ▼ 關鍵修改 1：加入這行，給按鈕一個身分證 ▼
+        btn.dataset.id = t.id;
         btn.className = `teacher-item w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all hover:bg-gray-100 ${currentTid === t.id ? "active bg-gray-100" : ""}`;
         btn.onclick = () => switchTeacher(t.id, t.name);
         btn.innerHTML = `<span class="w-8 h-8 rounded bg-gray-100 flex items-center justify-center text-gray-500"><i data-lucide="user"></i></span><span class="font-medium text-sm">${t.name}</span>`;
@@ -301,125 +494,256 @@
 
     async function switchTeacher(tid, name) {
       currentTid = tid;
-      document.getElementById("main-title").textContent =
-        `${name} · 本週課表`;
-      // 更新按鈕樣式
-      document
-        .querySelectorAll(".teacher-item")
-        .forEach((btn) => btn.classList.remove("active", "bg-gray-100"));
+      document.getElementById("main-title").textContent = `${name} · 本週課表`;
+
+      // ▼ 關鍵修改 2：處理按鈕變色邏輯 ▼
+      // 1. 先移除所有按鈕的 active 狀態
+      document.querySelectorAll(".teacher-item").forEach((btn) => {
+        btn.classList.remove("active"); // 移除 CSS 定義的深色樣式
+        btn.classList.remove("bg-gray-100"); // 移除原本可能殘留的淺色背景
+      });
+
+      // 2. 找到現在點擊的這位老師的按鈕，加上 active
+      const activeBtn = document.querySelector(`.teacher-item[data-id="${tid}"]`);
+      if (activeBtn) {
+        activeBtn.classList.add("active");
+      }
+      // ▲ 修改結束 ▲
+
+
+      // --- 下面維持您原本的備忘錄與資料讀取邏輯 ---
+      const targetTeacher = allTeachers.find(t => t.id === tid);
+      const memoInput = document.getElementById("teacher-memo");
+      if (memoInput) {
+        memoInput.value = (targetTeacher && targetTeacher.memo) ? targetTeacher.memo : "";
+      }
+
+      if (window.innerWidth < 768) {
+        toggleSidebar();
+      }
+
       await refreshData();
     }
 
-    // 3. 獲取課表資料
+    // 4. 備忘錄自動儲存功能 (新增)
+    async function handleMemoInput(text) {
+      const status = document.getElementById("memo-status");
+      if (status) {
+        status.textContent = "輸入中...";
+        status.classList.remove("opacity-0");
+      }
+
+      // 防手震：清除上一次的計時器
+      if (memoTimeout) clearTimeout(memoTimeout);
+
+      // 設定新的計時器：停止打字 0.8 秒後才儲存
+      memoTimeout = setTimeout(async () => {
+        if (!currentTid) return;
+
+        if (status) status.textContent = "儲存中...";
+
+        // 更新資料庫
+        const { error } = await _client
+          .from("teachers")
+          .update({ memo: text })
+          .eq("id", currentTid);
+
+        if (!error) {
+          if (status) status.textContent = "已儲存";
+
+          // ▼ 關鍵修正 4：儲存成功後，同步更新本地變數 allTeachers ▼
+          // 這樣切換去別的老師再切回來，資料才會是新的
+          const localTeacher = allTeachers.find(t => t.id === currentTid);
+          if (localTeacher) {
+            localTeacher.memo = text;
+          }
+
+          // 2秒後隱藏狀態文字
+          setTimeout(() => {
+            if (status) status.classList.add("opacity-0");
+          }, 2000);
+        } else {
+          console.error("儲存失敗:", error); // 在 Console 顯示錯誤以便除錯
+          if (status) {
+            status.textContent = "儲存失敗";
+            status.classList.remove("text-yellow-600");
+            status.classList.add("text-red-500");
+          }
+        }
+      }, 800);
+    }
+
     async function refreshData() {
       if (!currentTid) return;
-      setStatus("讀取中...");
+
+      const monday = getMonday(currentBaseDate);
+      const sunday = addDays(monday, 6);
+      const startStr = formatDate(monday);
+      const endStr = formatDate(sunday);
+
+      document.getElementById("current-date-range").textContent = `${startStr} ~ ${endStr}`;
+      setStatus("正在同步紀錄...");
+
       try {
-        const { data, error } = await _client
+        // A. 抓母版
+        // 抓取母版 (篩選條件：日期是空的，或是日期介於本週週一到週日)
+        const { data: sData, error: sErr } = await _client
           .from("schedules")
           .select("*")
-          .eq("teacher_id", currentTid);
-        if (error) throw error;
-        renderSchedule(data || []);
-        setStatus(`已同步 (${data.length} 筆資料)`, "success");
+          .eq("teacher_id", currentTid)
+          .or(`target_date.is.null,and(target_date.gte.${startStr},target_date.lte.${endStr})`);
+        if (sErr) throw sErr;
+
+        // B. 抓日記 (本週紀錄)
+        const { data: rData, error: rErr } = await _client.from("lesson_records").select("*")
+          .eq("teacher_id", currentTid)
+          .gte("actual_date", startStr)
+          .lte("actual_date", endStr);
+        if (rErr) throw rErr;
+
+        // C. 更新全域暫存 (這步沒做，畫圖就會一直抓舊的或空的)
+        _cachedSchedule = sData || [];
+        _cachedRecords = rData || [];
+
+        // D. 執行繪圖
+        renderSchedule(_cachedSchedule, _cachedRecords);
+
+        // --- 重新精確計算 ---
+        const total = _cachedSchedule.length;
+
+        // 修改後的計算：只算 綠色(attended) 與 紅色(absent)
+        const attendedOrAbsent = _cachedRecords.filter(r =>
+          ['attended', 'status-present', 'absent', 'status-absent'].includes(r.status)
+        ).length;
+
+        // 請假維持不變
+        const onLeave = _cachedRecords.filter(r =>
+          ['leave', 'status-leave'].includes(r.status)
+        ).length;
+
+        setStatus(`應上課：${total} | 已點名/曠課：${attendedOrAbsent} | 請假：${onLeave}`, "success");
+
       } catch (e) {
-        setStatus(`錯誤: ${e.message}`, "error");
+        setStatus(`連線錯誤: ${e.message}`, "error");
       }
     }
 
-    function renderSchedule(list) {
+    // --- 新增：快速切換課程狀態 ---
+    async function toggleCourseStatus(id, currentStatus) {
+      // 定義狀態循環順序：灰 -> 綠 -> 咖 -> 紅 -> 灰
+      const statusCycle = {
+        'status-pending': 'status-present', // 灰 -> 綠 (點名)
+        'status-present': 'status-leave',   // 綠 -> 咖 (請假)
+        'status-leave': 'status-absent',    // 咖 -> 紅 (曠課)
+        'status-absent': 'status-pending'   // 紅 -> 灰 (重置)
+      };
+
+      // 如果目前的狀態不在循環中 (例如舊資料)，預設轉為綠色
+      const nextStatus = statusCycle[currentStatus] || 'status-present';
+
+      // 更新資料庫
+      const { error } = await _client
+        .from("schedules")
+        .update({ color_class: nextStatus })
+        .eq("id", id);
+
+      if (!error) {
+        // 更新成功後，重新讀取資料以刷新畫面
+        await refreshData();
+      } else {
+        alert("狀態切換失敗");
+      }
+    }
+
+    function renderSchedule(list, records = []) {
       const container = document.getElementById("schedule-container");
+      if (!container) return;
       container.innerHTML = "";
 
       const slots = ["09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"];
-
-      // --- 參數設定 ---
       const ROW_HEIGHT = 120;
       const HEADER_HEIGHT = 60;
       const START_HOUR = 9;
-      const CARD_WIDTH = 140; // 卡片寬度
-
-      // 關鍵修改：最小欄位寬度直接等於卡片寬度，不留白
+      const CARD_WIDTH = 140;
       const MIN_COL_WIDTH = CARD_WIDTH;
 
-      // --- 1. 建立左側「時間軸」 ---
+      // 1. 建立左側時間軸
       const timeCol = document.createElement("div");
       timeCol.className = "sticky left-0 z-50 bg-white border-r border-[#e9e9e7] flex flex-col shrink-0 shadow-sm";
       timeCol.style.width = "90px";
-
       const timeHeader = document.createElement("div");
       timeHeader.className = "sticky top-0 z-50 bg-gray-50 border-b border-[#e9e9e7] text-sm font-bold text-gray-600 flex items-center justify-center";
       timeHeader.style.height = `${HEADER_HEIGHT}px`;
       timeHeader.textContent = "時間";
       timeCol.appendChild(timeHeader);
-
-      // 左側時間格子
       slots.forEach(h => {
         const cell = document.createElement("div");
-
-        // 修改重點：
-        // 1. items-start -> items-center (垂直置中)
-        // 2. 移除 pt-2 (不需要上方留白了)
         cell.className = "flex items-center justify-center text-sm font-semibold text-gray-500 border-b border-[#e9e9e7] bg-gray-50/50";
-
         cell.style.height = `${ROW_HEIGHT}px`;
         cell.textContent = `${h}:00`;
         timeCol.appendChild(cell);
       });
       container.appendChild(timeCol);
 
-      // --- 2. 準備資料 ---
+      // 2. 準備資料
       const dayGroups = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] };
       const dayNames = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"];
       list.forEach(item => {
         if (item.start_time && item.end_time) dayGroups[item.day_of_week].push(item);
       });
 
-      // --- 3. 建立每一天的欄位 ---
+      // 3. 建立每一天的欄位
       for (let day = 1; day <= 7; day++) {
+        const currentWeekMonday = getMonday(currentBaseDate);
+        const thisDayDate = addDays(currentWeekMonday, day - 1);
+        const thisDayDateStr = formatDate(thisDayDate);
         const dayItems = dayGroups[day];
 
-        // A. 計算當天最大並排數
+        // 計算寬度
         let maxConcurrent = 0;
         if (dayItems.length > 0) {
           dayItems.forEach(item => {
+            const [checkH] = item.start_time.split(":").map(Number);
+            if (checkH < START_HOUR) return;
             const [sH, sM] = item.start_time.split(":").map(Number);
             const [eH, eM] = item.end_time.split(":").map(Number);
             const sMin = (sH - START_HOUR) * 60 + sM;
             const eMin = (eH - START_HOUR) * 60 + eM;
-
             const overlaps = dayItems.filter(other => {
-              const [osH, osM] = other.start_time.split(":").map(Number);
-              const [oeH, oeM] = other.end_time.split(":").map(Number);
-              const osMin = (osH - START_HOUR) * 60 + osM;
-              const oeMin = (oeH - START_HOUR) * 60 + oeM;
-              return sMin < oeMin && eMin > osMin;
+              const [osH] = other.start_time.split(":").map(Number);
+              if (osH < START_HOUR) return false;
+              const [otherSH, otherSM] = other.start_time.split(":").map(Number);
+              const [otherEH, otherEM] = other.end_time.split(":").map(Number);
+              const oStart = (otherSH - START_HOUR) * 60 + otherSM;
+              const oEnd = (otherEH - START_HOUR) * 60 + otherEM;
+              return sMin < oEnd && eMin > oStart;
             });
             if (overlaps.length > maxConcurrent) maxConcurrent = overlaps.length;
           });
         }
         if (maxConcurrent === 0) maxConcurrent = 1;
-
-        // B. 關鍵修改：欄位寬度計算
-
-        // 原本的寫法（太剛好，會爆出去）：
-        // const colWidth = Math.max(MIN_COL_WIDTH, maxConcurrent * CARD_WIDTH);
-
-        // ▼ 修改後的寫法：多加 20px 的寬度，讓卡片兩邊有呼吸空間 ▼
         const colWidth = Math.max(MIN_COL_WIDTH, maxConcurrent * CARD_WIDTH) + 0.75;
 
         const dayCol = document.createElement("div");
         dayCol.className = "flex flex-col border-r border-[#e9e9e7] shrink-0 relative bg-white";
         dayCol.style.width = `${colWidth}px`;
 
-        // C. Header
+        // ▼▼▼ Header 更新：加入日期顯示 ▼▼▼
         const header = document.createElement("div");
-        header.className = "sticky top-0 z-[500] bg-gray-50 border-b border-[#e9e9e7] text-lg font-bold text-gray-800 flex items-center justify-center shadow-sm";
+        header.className = "sticky top-0 z-[500] bg-gray-50 border-b border-[#e9e9e7] text-lg font-bold text-gray-800 flex items-center justify-center shadow-sm flex-col leading-tight";
         header.style.height = `${HEADER_HEIGHT}px`;
-        header.textContent = dayNames[day - 1];
-        dayCol.appendChild(header);
 
-        // D. Content Layer
+        // 格式化日期為 M/D (例如 2/17)
+        const dateDisplay = `${thisDayDate.getMonth() + 1}/${thisDayDate.getDate()}`;
+
+        // 組合 HTML：上面是星期幾，下面是小小的日期
+        header.innerHTML = `
+            <span>${dayNames[day - 1]}</span>
+            <span class="text-[11px] text-gray-400 font-mono font-normal">${dateDisplay}</span>
+        `;
+        dayCol.appendChild(header);
+        // ▲▲▲ Header 更新結束 ▲▲▲
+
         const contentLayer = document.createElement("div");
         contentLayer.className = "relative w-full";
         contentLayer.style.height = `${slots.length * ROW_HEIGHT}px`;
@@ -431,131 +755,182 @@
           contentLayer.appendChild(line);
         });
 
-        // F. 繪製卡片
         dayItems.forEach((item) => {
-          // --- 1. 時間與位置計算 (維持不變，必須在最前面) ---
           const [sH, sM] = item.start_time.split(":").map(Number);
           const [eH, eM] = item.end_time.split(":").map(Number);
           if (sH < START_HOUR) return;
 
           const startMin = (sH - START_HOUR) * 60 + sM;
           const endMin = (eH - START_HOUR) * 60 + eM;
-
           const topPx = (startMin / 60) * ROW_HEIGHT;
           const heightPx = ((endMin - startMin) / 60) * ROW_HEIGHT;
 
-          // 計算重疊 (維持不變)
           const overlaps = dayItems.filter(other => {
-            const [osH, osM] = other.start_time.split(":").map(Number);
-            const [oeH, oeM] = other.end_time.split(":").map(Number);
-            const oStart = (osH - START_HOUR) * 60 + osM;
-            const oEnd = (oeH - START_HOUR) * 60 + oeM;
+            const [osH] = other.start_time.split(":").map(Number);
+            if (osH < START_HOUR) return false;
+            const [otherSH, otherSM] = other.start_time.split(":").map(Number);
+            const [otherEH, otherEM] = other.end_time.split(":").map(Number);
+            const oStart = (otherSH - START_HOUR) * 60 + otherSM;
+            const oEnd = (otherEH - START_HOUR) * 60 + otherEM;
             return startMin < oEnd && endMin > oStart;
           });
 
-          const sortedGroup = [item, ...overlaps].sort((a, b) => a.id.localeCompare(b.id));
-          const orderIndex = sortedGroup.findIndex(i => i.id === item.id);
+          if (typeof _userSortOrder !== 'undefined') {
+            [item, ...overlaps].forEach(i => {
+              if (!_userSortOrder.includes(i.id)) _userSortOrder.push(i.id);
+            });
+            var sortedGroup = [item, ...overlaps].sort((a, b) => _userSortOrder.indexOf(a.id) - _userSortOrder.indexOf(b.id));
+            var orderIndex = sortedGroup.findIndex(i => i.id === item.id);
+          } else {
+            var orderIndex = 0;
+          }
           const leftPx = orderIndex * CARD_WIDTH;
 
-          // --- 2. 建立卡片元件 ---
-          const card = document.createElement("div");
-          // 加入 flex flex-col 讓內部佈局可以控制垂直方向
-          card.className = `absolute rounded-md p-2 text-xs ${item.color_class || 'status-present'} border-l-4 border-white shadow-sm flex flex-col pointer-events-auto cursor-pointer transition-all duration-300 ease-in-out group box-border overflow-hidden`;
+          const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
+          let displayStatus = item.color_class || 'status-pending';
+          if (record) displayStatus = record.status;
 
-          card.style.cssText = `
-                top: ${topPx}px; 
-                height: ${heightPx + 1}px; 
-                left: ${leftPx}px; 
-                width: ${CARD_WIDTH}px; 
-                z-index: 20;
-            `;
-
-          // --- 3. 資料處理 (電話、圖示) ---
-          const rawPhone = item.phone || '';
-          let phoneMain = rawPhone;
-          let phoneNote = '';
-          if (rawPhone.includes('(')) {
-            const parts = rawPhone.split('(');
-            phoneMain = parts[0];
-            phoneNote = '(' + parts.slice(1).join('(');
-          }
-          const onlyDigits = phoneMain.replace(/\D/g, '');
-          if (onlyDigits.length === 10 && onlyDigits.startsWith('09')) {
-            phoneMain = `${onlyDigits.slice(0, 4)}-${onlyDigits.slice(4, 7)}-${onlyDigits.slice(7)}`;
-          }
-
-          // 圖示產生器
-          const createIcon = (iconName, colorClass = "text-gray-400") => `
-            <div class="w-4 h-4 flex items-center justify-center shrink-0">
-                <i data-lucide="${iconName}" class="w-3.5 h-3.5 ${colorClass}"></i>
-            </div>
-          `;
-          const subjectIcon = "music";
-
-          // --- 4. 點擊展開邏輯 ---
-          card.onclick = (e) => {
-            if (e.target.closest('button')) return;
-            const isExpanded = card.classList.toggle('card-expanded');
-            if (isExpanded) lucide.createIcons();
+          const statusMap = {
+            'attended': 'status-present', 'status-present': 'status-present',
+            'leave': 'status-leave', 'status-leave': 'status-leave',
+            'absent': 'status-absent', 'status-absent': 'status-absent',
+            'status-practice': 'status-practice', 'status-pending': 'status-pending'
           };
+          let finalColorClass = statusMap[displayStatus] || 'status-pending';
 
-          // --- 5. 渲染內容 (依據排除名字後的順序排列) ---
+          let btnIcon = 'circle-dashed';
+          let btnColor = 'text-neutral-800';
+          switch (finalColorClass) {
+            case 'status-present': btnIcon = 'check-circle-2'; btnColor = 'text-green-600'; break;
+            case 'status-leave': btnIcon = 'coffee'; btnColor = 'text-amber-700'; break;
+            case 'status-absent': btnIcon = 'x-circle'; btnColor = 'text-red-500'; break;
+            case 'status-practice': btnIcon = 'headphones'; btnColor = 'text-blue-500'; break;
+            default: btnIcon = 'circle-dashed'; btnColor = 'text-neutral-800'; break;
+          }
+
+          // 常駐備註優先級邏輯
+          const remarkText = (record && record.remark) ? record.remark : (item.remark || "");
+          const showPin = remarkText !== "";
+
+          const card = document.createElement("div");
+          card.className = `absolute rounded-md p-2 text-sm ${finalColorClass} border-l-4 border-white shadow-sm flex flex-col transition-all duration-300 group box-border overflow-hidden hover:brightness-95 hover:z-50`;
+          card.style.cssText = `top: ${topPx}px; height: ${heightPx + 1}px; left: ${leftPx}px; width: ${CARD_WIDTH}px; z-index: 20;`;
+
+          card.draggable = true;
+          card.ondragstart = (e) => handleDragStart(e, item.id);
+          card.ondragend = (e) => handleDragEnd(e);
+          card.ondragover = (e) => e.preventDefault();
+          card.ondrop = (e) => handleDrop(e, item.id);
+
+          const rawPhone = item.phone || '';
+          const noteMatch = rawPhone.match(/\((.*?)\)/);
+          const phoneNote = noteMatch ? noteMatch[1] : "";
+          const phoneMain = rawPhone.replace(/\(.*?\)/, "").replace(/\D/g, "");
+
           card.innerHTML = `
-                <div class="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
-                    <button onclick="event.stopPropagation(); openEditModal(${JSON.stringify(item).replace(/"/g, "&quot;")})" class="p-1 bg-white/90 rounded text-gray-600 hover:text-blue-600 shadow-sm">
-                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                    </button>
-                    <button onclick="event.stopPropagation(); deleteCourse('${item.id}')" class="p-1 bg-white/90 rounded text-gray-600 hover:text-red-600 shadow-sm">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                    </button>
+            <div class="absolute top-1 right-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-[60]" onclick="event.stopPropagation()">
+                <button type="button" onclick="openEditModal('${item.id}', '${displayStatus}', '${thisDayDateStr}')" 
+                        class="p-1 bg-white/95 rounded text-neutral-800 hover:text-blue-600 shadow-sm border border-gray-100 cursor-pointer">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5 pointer-events-none"></i>
+                </button>
+                <button type="button" onclick="deleteCourse('${item.id}')" 
+                        class="p-1 bg-white/95 rounded text-neutral-800 hover:text-red-600 shadow-sm border border-gray-100 cursor-pointer">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i>
+                </button>
+                <button type="button" onclick="handleToggleExpand(this)" 
+                        class="p-1 bg-white/95 rounded text-neutral-800 hover:text-blue-600 shadow-sm border border-gray-100 transition-transform duration-300 cursor-pointer">
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 pointer-events-none"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-col h-full min-w-0 pr-8 cursor-pointer" 
+                 onclick="toggleRecordStatus('${item.id}', '${thisDayDateStr}', '${displayStatus}')">
+                 
+                <div class="flex items-center gap-1.5 mb-1.5 shrink-0 pointer-events-none">
+                    <i data-lucide="${btnIcon}" class="w-4 h-4 ${btnColor}"></i>
+                    <div class="font-bold text-sm text-neutral-800 truncate leading-tight">${item.course_name || '未命名'}</div>
                 </div>
-                
-                <div class="flex flex-col h-full min-w-0 pointer-events-none">
-                    
-                    <div class="font-bold text-base text-neutral-800 truncate leading-tight pl-[1px] shrink-0 pb-1">
-                        ${item.course_name || '未命名'}
+
+                <div class="mt-0.5 text-[10px] text-red-600 font-bold bg-white/60 px-1 rounded flex items-center gap-1 w-fit pointer-events-none ${showPin ? 'block' : 'hidden'}">
+                    <i data-lucide="pin" class="w-2.5 h-2.5"></i> ${remarkText}
+                </div>
+
+                <div class="flex flex-col gap-y-2 flex-1 min-h-0 overflow-hidden relative mt-1 pointer-events-none">
+                    <div class="w-full flex items-start gap-1 ${phoneMain ? 'flex' : 'hidden'}">
+                        <i data-lucide="phone" class="w-3.5 h-3.5 text-neutral-800"></i>
+                        <div class="flex flex-col min-w-0 leading-tight">
+                            <span class="text-sm text-neutral-800 font-medium truncate">${phoneMain}</span>
+                            <span class="text-sm text-neutral-800 truncate ${phoneNote ? 'block' : 'hidden'}">${phoneNote}</span>
+                        </div>
                     </div>
-
-                    <div class="flex flex-col gap-0.5 flex-1 min-h-0 overflow-hidden relative">
-                        
-                        <div class="w-full flex items-start gap-1 ${rawPhone ? 'flex' : 'hidden'}">
-                            ${createIcon('phone')}
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-xs text-gray-600 font-medium leading-4 truncate">${phoneMain}</span>
-                                <span class="text-[10px] text-gray-400 leading-tight truncate ${phoneNote ? 'block' : 'hidden'}">${phoneNote}</span>
-                            </div>
-                        </div>
-
-                        <div class="w-full flex items-center gap-1 ${item.amount > 0 ? 'flex' : 'hidden'}">
-                             ${createIcon('banknote', 'text-slate-400')}
-                            <span class="text-xs text-slate-600 font-medium tracking-tight">$${item.amount.toLocaleString()}</span>
-                        </div>
-                        
-                        <div class="w-full flex items-center gap-1">
-                            ${createIcon(subjectIcon)}
-                            <span class="text-sm text-gray-600 truncate opacity-90">${item.subject || ''}</span>
-                        </div>
-
-                        <div class="w-full flex items-center gap-1 ${item.room_no ? 'flex' : 'hidden'}">
-                             ${createIcon('map-pin')}
-                            <span class="text-xs text-gray-500 truncate">${item.room_no}</span>
-                        </div>
-
-                    </div>
-
-                    <div class="mt-auto pt-1 shrink-0">
-                        <div class="text-[10px] font-mono text-gray-400 bg-gray-50/80 border border-gray-100 rounded px-1.5 py-0.5 inline-block">
-                            ${item.start_time.slice(0, 5)}-${item.end_time.slice(0, 5)}
-                        </div>
+                    <div class="w-full flex items-center gap-1"><i data-lucide="music" class="w-3.5 h-3.5 text-neutral-800"></i><span class="text-sm text-neutral-800 truncate">${item.subject || ''}</span></div>
+                    <div class="w-full flex items-center gap-1 ${item.room_no ? 'flex' : 'hidden'}"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-neutral-800"></i><span class="text-sm text-neutral-800 truncate">${item.room_no}</span></div>
+                </div>
+                <div class="mt-auto pt-2 shrink-0 pb-0.5 pointer-events-none">
+                    <div class="text-sm font-mono text-neutral-800 bg-white border border-black/10 rounded px-2 py-0.5 inline-block whitespace-nowrap shadow-sm">
+                        ${item.start_time.slice(0, 5)}-${item.end_time.slice(0, 5)}
                     </div>
                 </div>
-            `;
+            </div>`;
+
           contentLayer.appendChild(card);
         });
 
         dayCol.appendChild(contentLayer);
         container.appendChild(dayCol);
       }
+      lucide.createIcons();
+    }
+
+    async function toggleRecordStatus(scheduleId, dateStr, currentStatus) {
+      let nextStatus = '';
+      let action = 'save';
+
+      // 簡化後的循環：灰 -> 綠 -> 咖 -> 紅 -> 刪除(回到灰)
+      if (!currentStatus || currentStatus === 'status-pending') {
+        nextStatus = 'attended'; // 變綠色
+      } else if (currentStatus === 'attended' || currentStatus === 'status-present') {
+        nextStatus = 'leave';    // 變咖啡色
+      } else if (currentStatus === 'leave' || currentStatus === 'status-leave') {
+        nextStatus = 'absent';   // 變紅色
+      } else {
+        action = 'delete';       // 移除紀錄 (回到灰色)
+      }
+
+      try {
+        if (action === 'delete') {
+          await _client.from("lesson_records").delete().eq("schedule_id", scheduleId).eq("actual_date", dateStr);
+        } else {
+          const { data: existing } = await _client.from("lesson_records").select("id").eq("schedule_id", scheduleId).eq("actual_date", dateStr).maybeSingle();
+          if (existing) {
+            await _client.from("lesson_records").update({ status: nextStatus }).eq("id", existing.id);
+          } else {
+            await _client.from("lesson_records").insert({ schedule_id: scheduleId, teacher_id: currentTid, actual_date: dateStr, status: nextStatus });
+          }
+        }
+        setTimeout(() => { refreshData(); }, 150);
+      } catch (err) {
+        console.error("點名失敗:", err);
+      }
+    }
+
+    // --- 專門處理卡片展開/收合的函式 ---
+    function handleToggleExpand(btn) {
+      // 1. 找到該按鈕所屬的卡片
+      const card = btn.closest('.absolute.rounded-md');
+      if (!card) return;
+
+      // 2. 切換展開 class
+      const isExpanded = card.classList.toggle('card-expanded');
+
+      // 3. 視覺回饋：旋轉箭頭 180 度
+      if (isExpanded) {
+        btn.style.transform = 'rotate(180deg)';
+      } else {
+        btn.style.transform = 'rotate(0deg)';
+      }
+
+      // 4. 重新觸發 Lucide 圖示渲染 (確保圖示正確顯示)
       lucide.createIcons();
     }
 
@@ -606,10 +981,19 @@
     }
 
     // 7. 修改與刪除
-    function openEditModal(item) {
-      editingId = item.id;
+    // 修改後：第一個參數接收 itemId (字串)，而不是 item (物件)
+    function openEditModal(itemId, currentStatus, dateStr) {
+      editingId = itemId;
+      editingDateStr = dateStr;
+
+      // ▼ 關鍵：用 ID 去全域變數 _cachedSchedule 找資料，避免 HTML 傳送錯誤 ▼
+      const item = _cachedSchedule.find(i => i.id === itemId);
+      if (!item) return alert("錯誤：找不到該課程資料");
+
       document.querySelector("#course-modal h3").textContent = "修改課程資料";
       const form = document.getElementById("course-form");
+
+      // 填入資料
       form.day_of_week.value = item.day_of_week;
       form.teacher_id.value = item.teacher_id;
       form.course_name.value = item.course_name;
@@ -619,7 +1003,31 @@
       form.amount.value = item.amount || 0;
       form.phone.value = item.phone || "";
       form.subject.value = item.subject || "";
-      form.color_class.value = item.color_class;
+
+      // ▼ 讀取備註邏輯更新 ▼
+      // 優先找「日記 (record)」的備註，如果沒有，就找「母版 (item)」的常駐備註
+      const record = _cachedRecords.find(r => r.schedule_id === item.id && r.actual_date === dateStr);
+
+      if (record && record.remark) {
+        // 如果今天有寫日記，就顯示日記的內容，且「常駐」不打勾 (因為這是特例)
+        form.record_remark.value = record.remark;
+        form.is_persistent.checked = false;
+      } else {
+        // 如果今天沒日記，就顯示母版的常駐內容，並把「常駐」打勾
+        form.record_remark.value = item.remark || "";
+        form.is_persistent.checked = !!item.remark; // 有內容就自動勾選
+      }
+
+      // 處理狀態顏色對照
+      const reverseMap = {
+        'attended': 'status-present', 'status-present': 'status-present',
+        'leave': 'status-leave', 'status-leave': 'status-leave',
+        'absent': 'status-absent', 'status-absent': 'status-absent',
+        'practice': 'status-practice', 'status-practice': 'status-practice'
+      };
+      const statusValue = currentStatus || item.color_class || 'status-pending';
+      form.color_class.value = reverseMap[statusValue] || 'status-pending';
+
       openModal();
     }
 
@@ -629,36 +1037,72 @@
       await refreshData();
     }
 
-    // 8. 表單提交
+    // 8. 表單提交 (修正版：確保所有資料都存完才刷新畫面)
+    // 8. 表單提交 (診斷版)
     document
       .getElementById("course-form")
       .addEventListener("submit", async (e) => {
         e.preventDefault();
         const f = new FormData(e.target);
-        if (f.get("start_time") >= f.get("end_time"))
-          return alert("時間錯誤！");
 
-        const data = {
+        if (f.get("start_time") >= f.get("end_time")) return alert("時間錯誤！");
+
+        const isTemporary = e.target.is_temporary.checked;
+        const monday = getMonday(currentBaseDate);
+        const targetDate = isTemporary ? formatDate(addDays(monday, parseInt(f.get("day_of_week")) - 1)) : null;
+
+        const scheduleData = {
           teacher_id: f.get("teacher_id"),
           day_of_week: parseInt(f.get("day_of_week")),
-          course_name: f.get("course_name"), // 已補齊
+          course_name: f.get("course_name"),
           start_time: f.get("start_time") + ":00",
           end_time: f.get("end_time") + ":00",
-          room_no: f.get("room_no"),         // 已改名
+          room_no: f.get("room_no"),
           amount: parseInt(f.get("amount")) || 0,
-          phone: f.get("phone"),             // 已補齊
+          phone: f.get("phone"),
           subject: f.get("subject"),
-          color_class: f.get("color_class"), // 已補齊
+          color_class: f.get("color_class"),
+          target_date: targetDate
         };
 
-        const res = editingId
-          ? await _client.from("schedules").update(data).eq("id", editingId)
-          : await _client.from("schedules").insert([data]);
-        if (res.error) alert("操作失敗: " + res.error.message);
-        else {
-          closeModal();
-          await refreshData();
+        // ▼ 新增：處理常駐備註 ▼
+        const isPersistent = f.get("is_persistent") === "on"; // 檢查是否勾選
+        const remarkContent = f.get("record_remark");
+
+        // 如果勾選「常駐」，就把備註存進 scheduleData (母版)
+        if (isPersistent) {
+          scheduleData.remark = remarkContent;
+        } else {
+          // 如果沒勾選，母版的備註要設為 null (或是保持原樣？這裡建議設為 null 代表取消常駐)
+          // 但為了安全，我們先設為空字串，代表「移除常駐」
+          scheduleData.remark = "";
         }
+
+        // 1. 存母版 (Schedules)
+        console.log("Saving schedule...");
+        const res = editingId
+          ? await _client.from("schedules").update(scheduleData).eq("id", editingId)
+          : await _client.from("schedules").insert([scheduleData]);
+
+        if (res.error) return alert("操作失敗: " + res.error.message);
+
+        // 2. 存日記 (Lesson Records)
+        // 如果「沒有」勾選常駐，代表這是一次性的，我們才存進日記
+        // 或者：為了保險起見，我們「總是」把當天的狀態存進日記，確保歷史正確
+        if (editingId && editingDateStr) {
+          console.log("Upserting record...");
+          await _client.from("lesson_records").upsert({
+            schedule_id: editingId,
+            teacher_id: f.get("teacher_id"),
+            actual_date: editingDateStr,
+            status: f.get("color_class"),
+            remark: remarkContent || "" // 這裡不管是不是常駐，都把當下的文字寫入今天的日記，作為快照
+          }, { onConflict: 'schedule_id,actual_date' });
+        }
+
+        // 3. 刷新
+        closeModal();
+        await refreshData();
       });
 
     // --- 老師管理功能邏輯 ---
@@ -837,19 +1281,71 @@
       }
     }
 
-    // 點擊側邊欄選單後自動關閉 (提升手機體驗)
-    async function switchTeacher(tid, name) {
-      currentTid = tid;
-      document.getElementById("main-title").textContent = `${name} · 本週課表`;
+    async function freezeTeacherHistory() {
+      if (!currentTid) return alert("請先選擇一位老師");
 
-      document.querySelectorAll(".teacher-item").forEach((btn) => btn.classList.remove("active", "bg-gray-100"));
+      const teacherName = document.getElementById("main-title").textContent.split(' · ')[0];
 
-      // 新增：如果是手機版，點選後自動收起側邊欄
-      if (window.innerWidth < 768) {
-        toggleSidebar();
+      // 1. 設定時間範圍：從「三個月前」到「昨天」
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() - 1); // 截止日：昨天 (今天先不鎖，方便操作)
+
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 3); // ▼ 起始日：往前推 3 個月
+
+      // 格式化日期給確認視窗看 (YYYY-MM-DD)
+      const startStr = startDate.toISOString().split('T')[0];
+      const endStr = endDate.toISOString().split('T')[0];
+
+      if (!confirm(`確定要保留「${teacherName}」老師\n從 ${startStr} 到 ${endStr} (近三個月) 的紀錄嗎？\n\n這會把這段時間所有的空格都填滿，保護它們不受未來修改影響。`)) return;
+
+      setStatus("正在保護近三個月的歷史紀錄...");
+
+      const recordsToInsert = [];
+
+      // 2. 找出所有空格
+      _cachedSchedule.forEach(course => {
+        let checkDate = new Date(startDate);
+        const targetDay = course.day_of_week;
+
+        while (checkDate <= endDate) {
+          let dayOfWeek = checkDate.getDay();
+          if (dayOfWeek === 0) dayOfWeek = 7;
+
+          // 如果星期幾對得上，就準備填空
+          if (dayOfWeek === targetDay) {
+            recordsToInsert.push({
+              schedule_id: course.id,
+              teacher_id: currentTid,
+              actual_date: formatDate(checkDate),
+              status: course.color_class || 'status-pending', // 用母版預設顏色
+              remark: course.remark || "系統自動補檔" // 如果有常駐備註就用
+            });
+          }
+          checkDate.setDate(checkDate.getDate() + 1);
+        }
+      });
+
+      if (recordsToInsert.length === 0) {
+        return setStatus("這三個月的資料都很完整，不需要補檔", "success");
       }
 
-      await refreshData();
+      // 3. 寫入資料庫 (關鍵：ignoreDuplicates: true)
+      // 只要遇到那天已經有資料，就跳過，確保不會蓋掉妳以前的紀錄
+      const { error } = await _client
+        .from("lesson_records")
+        .upsert(recordsToInsert, {
+          onConflict: 'schedule_id,actual_date',
+          ignoreDuplicates: true
+        });
+
+      if (error) {
+        console.error("凍結失敗:", error);
+        setStatus("存檔失敗，請檢查 Console", "error");
+      } else {
+        setStatus(`成功！已補滿 ${recordsToInsert.length} 個空缺，近三個月的歷史安全了。`, "success");
+        await refreshData();
+      }
     }
   </script>
 </body>
