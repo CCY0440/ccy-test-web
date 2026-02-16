@@ -1179,6 +1179,10 @@
       // 套用樣式 (同步加大與對齊修正)
       el.className = `text-[10px] md:text-xs px-2.5 py-1 rounded-md font-medium mt-0.5 -ml-2 ${colorClass}`;
     }
+    // 新增這個函式，讓彈窗可以打開
+    function openModal() {
+      document.getElementById("course-modal").classList.remove("hidden");
+    }
     function closeModal() {
       editingId = null;
       document.getElementById("course-modal").classList.add("hidden");
