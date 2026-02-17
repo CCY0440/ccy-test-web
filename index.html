@@ -479,7 +479,8 @@
             </li>
             <li class="flex gap-2.5 items-start">
               <span class="w-1 h-1 rounded-full bg-neutral-400 shrink-0 mt-2"></span>
-              <p class="text-neutral-700"><b class="text-neutral-900">勾選設為常駐：</b>這則備註會出現在「未來每一週」，適合記錄「長假、出國、準備考試」等長期請假的學生。</p>
+              <p class="text-neutral-700"><b
+                  class="text-neutral-900">勾選設為常駐：</b>這則備註會出現在「未來每一週」，適合記錄「長假、出國、準備考試」等長期請假的學生。</p>
             </li>
           </ul>
         </section>
@@ -512,6 +513,14 @@
             <li class="flex gap-2.5 items-start">
               <span class="w-1 h-1 rounded-full bg-indigo-500 shrink-0 mt-2"></span>
               <div>
+                <p class="font-bold text-indigo-900 text-sm">快速複製課程</p>
+                <p class="text-xs text-indigo-800/70">點擊卡片右上角的「複製圖示」，系統會自動帶入該課程的學生姓名與電話，適合處理調課或補課。</p>
+              </div>
+            </li>
+
+            <li class="flex gap-2.5 items-start">
+              <span class="w-1 h-1 rounded-full bg-indigo-500 shrink-0 mt-2"></span>
+              <div>
                 <p class="font-bold text-indigo-900 text-sm">新增特殊/臨時教室</p>
                 <p class="text-xs text-indigo-800/70">新增課程時勾選「僅限本週」，資料就不會出現在其他週次，適合有調課、新增臨時單週課程或預約制教室。</p>
               </div>
@@ -520,15 +529,15 @@
         </section>
 
         <section
-          class="text-[11px] text-gray-400 px-4 space-y-1 bg-gray-50/50 py-3 rounded-lg border border-dashed border-gray-200">
+          class="text-sm text-gray-400 px-4 space-y-1 bg-gray-50/50 py-3 rounded-lg border border-dashed border-gray-200">
           <p class="font-bold mb-1 text-gray-500">特別提醒</p>
           <ul class="space-y-1.5">
             <li class="flex gap-2 items-start">
-              <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
-              <p>使用過程若有顯示任何錯誤訊息，請為設計師保留顯示的錯誤資訊，謝謝。</p>
+              <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-2"></span>
+              <p>若使用過程有任何錯誤訊息，請為設計師保留錯誤資訊，謝謝。</p>
             </li>
             <li class="flex gap-2 items-start">
-              <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
+              <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-2"></span>
               <p>有任何相關的修改建議請聯繫 <b class="text-gray-500">鮪魚老師</b> :)</p>
             </li>
           </ul>
@@ -1127,10 +1136,18 @@
                         class="p-1 bg-white/95 rounded text-neutral-800 hover:text-blue-600 shadow-sm border border-gray-100 cursor-pointer">
                     <i data-lucide="edit-3" class="w-3.5 h-3.5 pointer-events-none"></i>
                 </button>
+
+                <button type="button" onclick="copyCourse('${item.id}', '${thisDayDateStr}')" 
+                        title="複製此課程資料"
+                        class="p-1 bg-white/95 rounded text-neutral-800 hover:text-amber-600 shadow-sm border border-gray-100 cursor-pointer">
+                    <i data-lucide="copy" class="w-3.5 h-3.5 pointer-events-none"></i>
+                </button>
+
                 <button type="button" onclick="deleteCourse('${item.id}')" 
                         class="p-1 bg-white/95 rounded text-neutral-800 hover:text-red-600 shadow-sm border border-gray-100 cursor-pointer">
                     <i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i>
                 </button>
+                
                 <button type="button" onclick="handleToggleExpand(this)" 
                         class="p-1 bg-white/95 rounded text-neutral-800 hover:text-blue-600 shadow-sm border border-gray-100 transition-transform duration-300 cursor-pointer">
                     <i data-lucide="chevron-down" class="w-3.5 h-3.5 pointer-events-none"></i>
@@ -1174,6 +1191,27 @@
         container.appendChild(dayCol);
       }
       lucide.createIcons();
+    }
+
+    // 課程複製功能：把現有課程資料填入表單，作為「新增」的範本
+    function copyCourse(itemId, dateStr) {
+      // 1. 先用原本的編輯模式把資料填滿表單
+      openEditModal(itemId, null, dateStr);
+
+      // 2. 關鍵修正：將標題改為「複製並新增課程」
+      document.querySelector("#course-modal h3").textContent = "複製並新增課程";
+
+      // 3. 核心關鍵：將 editingId 設為空！
+      // 這樣當妳按下「儲存」按鈕時，系統會執行 insert 而不是 update
+      editingId = null;
+
+      // 4. 自動勾選「僅限本週」
+      // 因為會用到複製功能，通常是為了處理某一次的「調課」或「補課」
+      const tempCheckbox = document.getElementById("is_temporary");
+      if (tempCheckbox) tempCheckbox.checked = true;
+
+      // 提示使用者
+      console.log("已載入課程範本，修改時間後即可儲存為新課程。");
     }
 
     async function toggleRecordStatus(scheduleId, dateStr, currentStatus) {
@@ -1467,6 +1505,7 @@
       });
       lucide.createIcons();
     }
+
     // --- 新增的功能：切換編輯模式 ---
     function toggleEditMode(id, showEdit = true) {
       const item = document.querySelector(`div[data-id="${id}"]`);
