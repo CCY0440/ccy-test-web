@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教師登入 - 幕尼克音樂</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+
+<body class="bg-neutral-100 h-screen flex items-center justify-center font-sans">
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border border-gray-200">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-gray-800 tracking-tight">幕尼克音樂</h1>
+            <p class="text-sm text-gray-500 mt-1">金山校區 · 教師課表系統</p>
+        </div>
+
+        <div class="space-y-5">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">帳號 (User
+                    ID)</label>
+                <div class="relative">
+                    <input type="text" id="username"
+                        class="w-full border border-gray-300 rounded-xl p-3 pl-10 outline-none focus:ring-2 focus:ring-neutral-800 transition-all bg-gray-50 focus:bg-white"
+                        placeholder="請輸入英文代號 (如: tuna)">
+                    <div class="absolute left-3 top-3.5 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">密碼
+                    (Password)</label>
+                <div class="relative">
+                    <input type="password" id="password"
+                        class="w-full border border-gray-300 rounded-xl p-3 pl-10 outline-none focus:ring-2 focus:ring-neutral-800 transition-all bg-gray-50 focus:bg-white"
+                        placeholder="••••••••">
+                    <div class="absolute left-3 top-3.5 text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="handleLogin()"
+                class="w-full bg-neutral-800 text-white py-3.5 rounded-xl font-bold hover:bg-black transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 mt-2">
+                <span>登入系統</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                    <polyline points="10 17 15 12 10 7"></polyline>
+                    <line x1="15" y1="12" x2="3" y2="12"></line>
+                </svg>
+            </button>
+
+            <p id="msg" class="text-center text-xs text-red-500 min-h-[20px] font-bold mt-2"></p>
+        </div>
+    </div>
+
+    <script>
+        // 這裡填入跟主程式一樣的設定
+        const SUPABASE_URL = "https://szudiyorlqmxyibxwaqp.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_0Dqlqe0ZXLRhjaevc7VB2g_39W_8eXP";
+        const _client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ★ 我們約定好的假網域
+        const FAKE_DOMAIN = "@moonick.music";
+
+        async function handleLogin() {
+            const usernameInput = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('msg');
+
+            if (!usernameInput || !password) {
+                msg.textContent = "請輸入帳號與密碼";
+                return;
+            }
+
+            msg.className = "text-center text-xs text-gray-500 font-bold mt-2";
+            msg.textContent = "驗證中...";
+
+            // 自動補完 Email：如果使用者只打 willy，自動補上後綴
+            const finalEmail = usernameInput.includes('@') ? usernameInput : (usernameInput + FAKE_DOMAIN);
+
+            const { data, error } = await _client.auth.signInWithPassword({
+                email: finalEmail,
+                password: password
+            });
+
+            if (error) {
+                msg.className = "text-center text-xs text-red-500 font-bold mt-2";
+                if (error.message.includes("Invalid login")) {
+                    msg.textContent = "帳號或密碼錯誤，請重試。";
+                } else {
+                    msg.textContent = "登入失敗：" + error.message;
+                }
+            } else {
+                msg.className = "text-center text-xs text-green-600 font-bold mt-2";
+                msg.textContent = "登入成功！正在進入系統...";
+
+                // 登入成功，1秒後跳轉回主程式
+                setTimeout(() => window.location.href = "index.html", 800);
+            }
+        }
+
+        // 讓按 Enter 也能登入
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+    </script>
+</body>
+
+</html>
