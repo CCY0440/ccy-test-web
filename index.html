@@ -1781,7 +1781,7 @@
       document.getElementById("new-teacher-name").value = "";
     }
 
-    // 3. 渲染管理視窗內的老師列表 (支援編輯模式)
+    // 3. 渲染管理視窗內的老師列表 (修正版：隱藏 is_hidden 的管理者)
     async function renderTeacherManageList() {
       const { data: teachers, error } = await _client
         .from("teachers")
@@ -1793,6 +1793,9 @@
       manageList.innerHTML = "";
 
       teachers.forEach((t) => {
+        // ★★★ 關鍵修改：如果是隱藏帳號 (如 Admin)，直接跳過不顯示 ★★★
+        if (t.is_hidden) return;
+
         const item = document.createElement("div");
         // 加上 group 讓按鈕在 hover 時顯示
         item.className = "flex justify-between items-center p-2.5 bg-gray-50 rounded-lg border border-gray-100 group transition-all hover:bg-white hover:shadow-sm";
@@ -1800,9 +1803,6 @@
         // 使用 data-id 屬性方便後續操作
         item.dataset.id = t.id;
 
-        // 這裡我們準備兩種狀態的 HTML：
-        // 1. 顯示狀態 (預設)
-        // 2. 編輯狀態 (預設隱藏)
         item.innerHTML = `
       <div class="view-mode flex items-center justify-between w-full">
         <span class="text-sm font-medium text-neutral-700 select-none cursor-pointer" onclick="toggleEditMode('${t.id}')" title="點擊修改">${t.name}</span>
