@@ -23,6 +23,11 @@
       opacity: 1;
     }
 
+    /* ★ 解決拖曳感應不良：拖曳時，讓卡片內所有子元素滑鼠穿透 ★ */
+    body.is-dragging .schedule-card * {
+      pointer-events: none !important;
+    }
+
     /* --- 新版卡片樣式：白底 + 左側色條 --- */
 
     /* 上課：綠色邊框 + 極淡綠底 */
@@ -287,119 +292,187 @@
   </main>
 
   <div id="course-modal"
-    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] backdrop-blur-sm">
-    <div class="bg-white rounded-xl w-[95%] md:w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-lg font-bold">新增課程資料</h3>
-        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
-          <i data-lucide="x"></i>
+    class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[1000] backdrop-blur-sm transition-opacity">
+    <div
+      class="bg-white rounded-2xl w-[95%] md:w-full max-w-md shadow-2xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
+
+      <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-blue-50">
+        <div class="flex items-center gap-2 text-blue-800">
+          <i data-lucide="book-open" class="w-5 h-5"></i>
+          <h3 class="font-bold m-0">新增課程資料</h3>
+        </div>
+        <button onclick="closeModal()"
+          class="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 p-1.5 rounded-full transition-colors shadow-sm border border-gray-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
-      <form id="course-form" class="space-y-4">
-        <div class="space-y-3 pb-2 border-b border-gray-100">
-          <div>
-            <label class="block text-xs font-bold text-gray-400 mb-1">課程名稱 ( 如:EG-1、AG-1 )</label>
-            <input type="text" name="subject" placeholder="請輸入科目名稱"
-              class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+
+      <form id="course-form" class="flex flex-col flex-1 min-h-0">
+        <div class="p-6 overflow-y-auto bg-white space-y-4">
+
+          <div class="space-y-3 pb-4 border-b border-gray-100">
+            <div>
+              <label class="block text-[11px] font-bold text-gray-500 mb-1">課程名稱 ( 如:EG-1、AG-1 )</label>
+              <input type="text" name="subject" placeholder="請輸入科目名稱"
+                class="w-full border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner" />
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">學生姓名</label>
+                <input type="text" name="course_name" required placeholder="姓名"
+                  class="w-full border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">學生電話 (多台請用空格)</label>
+                <input type="tel" name="phone" placeholder="聯絡電話"
+                  class="w-full border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner" />
+              </div>
+            </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-1">學生姓名</label>
-              <input type="text" name="course_name" required placeholder="姓名"
-                class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+          <div class="space-y-3 pb-4 border-b border-gray-100">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">負責老師</label>
+                <select name="teacher_id" required
+                  class="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 focus:bg-white shadow-inner"></select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">上課星期</label>
+                <select name="day_of_week" required
+                  class="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 focus:bg-white shadow-inner">
+                  <option value="1">週一</option>
+                  <option value="2">週二</option>
+                  <option value="3">週三</option>
+                  <option value="4">週四</option>
+                  <option value="5">週五</option>
+                  <option value="6">週六</option>
+                  <option value="7">週日</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-1">學生電話</label>
-              <input type="tel" name="phone" placeholder="聯絡電話"
-                class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">開始時間</label>
+                <input type="time" name="start_time" required
+                  class="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 focus:bg-white shadow-inner" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">結束時間</label>
+                <input type="time" name="end_time" required
+                  class="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 focus:bg-white shadow-inner" />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="space-y-3 pb-2 border-b border-gray-100">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-1">負責老師</label>
-              <select name="teacher_id" required
-                class="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-100 outline-none"></select>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="col-span-1">
+              <label class="block text-[11px] font-bold text-gray-500 mb-1">教室</label>
+              <input type="text" name="room_no" placeholder="教室名稱"
+                class="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 focus:bg-white shadow-inner" />
             </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-1">上課星期</label>
-              <select name="day_of_week" required
-                class="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-100 outline-none">
-                <option value="1">週一</option>
-                <option value="2">週二</option>
-                <option value="3">週三</option>
-                <option value="4">週四</option>
-                <option value="5">週五</option>
-                <option value="6">週六</option>
-                <option value="7">週日</option>
+            <div class="col-span-1">
+              <label class="block text-[11px] font-bold text-gray-500 mb-1">薪資 (NT$)</label>
+              <input type="number" name="amount" min="0" max="9999999" placeholder="0"
+                class="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 focus:bg-white shadow-inner" />
+            </div>
+            <div class="col-span-1">
+              <label class="block text-[11px] font-bold text-gray-500 mb-1">預設狀態</label>
+              <select name="color_class"
+                class="w-full border border-gray-200 rounded-xl p-2.5 text-[11px] md:text-xs outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 focus:bg-white shadow-inner">
+                <option value="status-pending" selected>⬜ 尚未點名</option>
+                <option value="status-present">✅ 上課</option>
+                <option value="status-leave">☕ 請假</option>
+                <option value="status-absent">❌ 曠課</option>
+                <option value="status-practice">🎹 學生練習</option>
               </select>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-1">開始時間</label>
-              <input type="time" name="start_time" required
-                class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-1">結束時間</label>
-              <input type="time" name="end_time" required
-                class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3">
-          <div class="col-span-1">
-            <label class="block text-xs font-bold text-gray-400 mb-1">教室</label>
-            <input type="text" name="room_no" placeholder="教室名稱"
-              class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
-          </div>
-          <div class="col-span-1">
-            <label class="block text-xs font-bold text-gray-400 mb-1">薪資 (NT$)</label>
-            <input type="number" name="amount" min="0" max="9999999" placeholder="0"
-              class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none" />
-          </div>
-          <div class="col-span-1">
-            <label class="block text-xs font-bold text-gray-400 mb-1">課程狀態</label>
-            <select name="color_class"
-              class="w-full border border-gray-300 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-blue-100 outline-none">
-              <option value="status-pending" selected>⬜ 尚未點名 (灰)</option>
-              <option value="status-present">✅ 上課 (綠)</option>
-              <option value="status-leave">☕ 請假 (咖)</option>
-              <option value="status-absent">❌ 曠課 (紅)</option>
-              <option value="status-practice">🎹 學生練習 (藍)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="mt-4 pt-4 border-t border-gray-100">
-          <div class="flex items-center gap-2">
+          <div class="mt-4 pt-4">
             <div
-              class="flex items-center justify-center bg-gray-50 border border-dashed border-gray-300 rounded-lg h-12 px-4 hover:bg-gray-100 cursor-pointer relative">
-              <input type="checkbox" name="is_temporary" id="is_temporary"
-                class="w-4 h-4 cursor-pointer accent-blue-600 z-10">
-              <label for="is_temporary" class="text-xs font-bold text-neutral-500 ml-2 z-10 cursor-pointer">僅限本週
-                (臨時課程)</label>
-              <div class="absolute inset-0" onclick="document.getElementById('is_temporary').click()"></div>
-            </div>
-
-            <div class="flex-1">
+              class="bg-blue-50/50 border border-blue-100 rounded-xl p-4 relative overflow-hidden transition-all shadow-sm">
+              <div class="flex items-center gap-2 relative z-10">
+                <input type="checkbox" name="is_temporary" id="is_temporary"
+                  class="w-4 h-4 cursor-pointer accent-blue-600 rounded"
+                  onchange="document.getElementById('temp-date-wrapper').classList.toggle('hidden', !this.checked)">
+                <label for="is_temporary" class="text-sm font-bold text-blue-800 cursor-pointer select-none">📌
+                  設為「單次/臨時課程」</label>
+              </div>
+              <div id="temp-date-wrapper" class="hidden mt-3 relative z-10 pl-6 border-l-2 border-blue-300 ml-2">
+                <label class="block text-[10px] font-bold text-blue-700 mb-1">上課日期 <span
+                    class="font-normal text-blue-500">(將自動推算星期)</span></label>
+                <input type="date" name="target_date" id="target_date_input"
+                  class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-inner bg-white">
+              </div>
             </div>
           </div>
 
-          <div class="pt-4">
-            <button type="submit"
-              class="w-full bg-neutral-800 text-white py-3 rounded-xl font-bold hover:bg-black transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
-              <i data-lucide="save" class="w-4 h-4"></i> 儲存設定
-            </button>
-          </div>
+        </div>
+
+        <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2 shrink-0">
+          <button type="button" onclick="closeModal()"
+            class="px-5 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 hover:text-gray-700 rounded-xl transition-colors">取消</button>
+          <button type="submit"
+            class="px-5 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-bold shadow-md active:scale-95 flex items-center gap-2">
+            <i data-lucide="save" class="w-4 h-4"></i> 儲存設定
+          </button>
         </div>
       </form>
+
+    </div>
+  </div>
+
+  <div id="permissions-modal"
+    class="hidden fixed inset-0 bg-black/50 z-[1600] flex items-center justify-center backdrop-blur-sm transition-opacity">
+    <div
+      class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[80vh] border border-gray-100">
+      <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <h3 class="font-bold text-gray-800 flex items-center gap-2" id="perm-modal-title">
+          <i data-lucide="eye" class="w-4 h-4 text-blue-500"></i> 設定可見名單
+        </h3>
+        <button type="button" onclick="closePermissionsModal()"
+          class="text-gray-400 hover:text-red-500 transition-colors bg-white p-1 rounded-full shadow-sm">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-2 overflow-y-auto flex-1 bg-white space-y-1" id="perm-checkbox-list">
+      </div>
+      <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+        <button type="button" onclick="closePermissionsModal()"
+          class="px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 rounded-xl transition-colors">取消</button>
+        <button type="button" onclick="savePermissions()"
+          class="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors font-bold shadow-md active:scale-95 flex items-center gap-2">
+          <i data-lucide="save" class="w-4 h-4"></i> 儲存設定
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="undo-modal"
+    class="hidden fixed inset-0 bg-black/60 z-[2000] flex items-center justify-center backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl shadow-2xl w-[90%] max-w-sm overflow-hidden flex flex-col border border-gray-100">
+      <div class="p-4 border-b border-gray-100 flex items-center gap-2 bg-amber-50">
+        <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500"></i>
+        <h3 class="font-bold text-amber-800" id="undo-modal-title">確認復原操作</h3>
+      </div>
+      <div class="p-5 text-sm text-gray-700 bg-white">
+        <div id="undo-modal-content"
+          class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-2 text-xs font-mono shadow-inner">
+        </div>
+        <p class="mt-4 text-[11px] font-bold text-red-500 text-center bg-red-50 py-1.5 rounded-lg border border-red-100"
+          id="undo-modal-warning">
+          👉 執行後，資料將退回到修改前的狀態！
+        </p>
+      </div>
+      <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+        <button type="button" onclick="closeUndoModal()"
+          class="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 hover:text-gray-700 rounded-xl transition-colors">取消</button>
+        <button type="button" onclick="confirmExecuteUndo()"
+          class="px-4 py-2 text-sm bg-amber-500 text-white hover:bg-amber-600 rounded-xl transition-colors font-bold shadow-md active:scale-95 flex items-center gap-2">
+          <i data-lucide="undo-2" class="w-4 h-4"></i> 確認復原
+        </button>
+      </div>
     </div>
   </div>
 
@@ -518,8 +591,9 @@
               <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
               <p>初次登入請務必更改密碼及記住密碼，後台僅能協助重設密碼。</p>
             </li>
-            <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
-            <p>若使用過程有任何錯誤訊息，請截圖保留錯誤資訊給 <b class="text-gray-500">鮪魚老師</b>，謝謝。</p>
+            <li class="flex gap-2 items-start">
+              <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
+              <p>若使用過程有任何錯誤訊息，請截圖保留錯誤資訊給 <b class="text-gray-500">鮪魚老師</b>，謝謝。</p>
             </li>
             <li class="flex gap-2 items-start">
               <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
@@ -542,41 +616,50 @@
   </div>
 
   <div id="freeze-date-modal"
-    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1200] backdrop-blur-sm">
-    <div class="bg-white rounded-xl w-80 p-6 shadow-2xl border border-amber-100">
-      <h3 class="font-bold mb-4 flex items-center gap-2 text-amber-800">
-        <i data-lucide="archive" class="w-4 h-4"></i> 自訂凍結範圍
-      </h3>
+    class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[1200] backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl w-80 shadow-2xl flex flex-col overflow-hidden border border-gray-100">
 
-      <div class="flex gap-2 mb-4">
-        <button onclick="quickSetFreezeDates('current')"
-          class="flex-1 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-md hover:bg-amber-100 hover:text-amber-700 transition-colors">設定本月</button>
-        <button onclick="quickSetFreezeDates('last')"
-          class="flex-1 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-md hover:bg-amber-100 hover:text-amber-700 transition-colors">設定上月</button>
+      <div class="p-4 border-b border-amber-100 flex justify-between items-center bg-amber-50">
+        <h3 class="font-bold text-amber-800 flex items-center gap-2 m-0">
+          <i data-lucide="archive" class="w-5 h-5 text-amber-600"></i> 自訂凍結範圍
+        </h3>
+        <button onclick="closeFreezeModal()"
+          class="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 p-1.5 rounded-full transition-colors shadow-sm border border-gray-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
       </div>
 
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-gray-400 mb-1">起始日期 (From)</label>
-          <input type="date" id="freeze-start-date"
-            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-100" />
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-gray-400 mb-1">結束日期 (To)</label>
-          <input type="date" id="freeze-end-date"
-            class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-100" />
+      <div class="p-5 bg-white space-y-5">
+        <div class="flex gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200 shadow-inner">
+          <button onclick="quickSetFreezeDates('current')"
+            class="flex-1 py-1.5 bg-white shadow-sm text-gray-600 text-xs font-bold rounded-lg hover:text-amber-600 hover:border-amber-200 border border-gray-100 transition-colors">設定本月</button>
+          <button onclick="quickSetFreezeDates('last')"
+            class="flex-1 py-1.5 bg-white shadow-sm text-gray-600 text-xs font-bold rounded-lg hover:text-amber-600 hover:border-amber-200 border border-gray-100 transition-colors">設定上月</button>
         </div>
 
-        <div class="pt-2">
-          <button onclick="executeFreeze()"
-            class="w-full bg-amber-600 text-white py-2.5 rounded-lg text-sm font-bold shadow-md hover:bg-amber-700 transition-all active:scale-95">
-            確認並執行凍結
-          </button>
-          <button onclick="closeFreezeModal()" class="w-full text-gray-400 text-xs py-2 mt-1 hover:text-gray-600">
-            取消
-          </button>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-gray-500 mb-1">起始日期 (From)</label>
+            <input type="date" id="freeze-start-date"
+              class="w-full border border-gray-300 bg-gray-50 focus:bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 transition-all shadow-inner" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-500 mb-1">結束日期 (To)</label>
+            <input type="date" id="freeze-end-date"
+              class="w-full border border-gray-300 bg-gray-50 focus:bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 transition-all shadow-inner" />
+          </div>
         </div>
       </div>
+
+      <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+        <button onclick="closeFreezeModal()"
+          class="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 hover:text-gray-700 rounded-xl transition-colors">取消</button>
+        <button onclick="executeFreeze()"
+          class="px-5 py-2 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-all text-sm shadow-md active:scale-95 flex items-center gap-2">
+          <i data-lucide="lock" class="w-4 h-4"></i> 確認凍結
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -764,45 +847,55 @@
   </div>
 
   <div id="remark-modal"
-    class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1400] backdrop-blur-sm">
-    <div class="bg-white rounded-xl w-80 p-5 shadow-2xl border border-yellow-200 bg-yellow-50/50">
-      <h3 class="font-bold text-neutral-800 mb-3 flex items-center gap-2">
-        <i data-lucide="sticky-note" class="w-5 h-5 text-yellow-600"></i> 設定備註
-      </h3>
-      <div class="space-y-3">
-        <div class="grid grid-cols-2 gap-2">
+    class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[1400] backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl w-80 shadow-2xl flex flex-col overflow-hidden border border-gray-100">
+
+      <div class="p-4 border-b border-yellow-100 flex justify-between items-center bg-yellow-50">
+        <h3 class="font-bold text-yellow-800 flex items-center gap-2 m-0">
+          <i data-lucide="sticky-note" class="w-5 h-5 text-yellow-600"></i> 設定備註
+        </h3>
+        <button onclick="closeRemarkModal()"
+          class="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 p-1.5 rounded-full transition-colors shadow-sm border border-gray-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5 bg-white space-y-4 text-sm">
+        <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200 shadow-inner">
           <div>
             <label class="block text-[10px] font-bold text-gray-500 mb-1">開始日期</label>
             <input type="date" id="remark-start-date"
-              class="w-full border border-yellow-300 rounded-lg px-2 py-1.5 text-xs bg-white outline-none">
+              class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-yellow-400">
           </div>
           <div>
             <label class="block text-[10px] font-bold text-gray-500 mb-1">結束日期</label>
             <input type="date" id="remark-end-date"
-              class="w-full border border-yellow-300 rounded-lg px-2 py-1.5 text-xs bg-white outline-none">
+              class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs bg-white outline-none focus:ring-2 focus:ring-yellow-400">
           </div>
         </div>
-        <textarea id="quick-remark-input"
-          class="w-full bg-white border border-yellow-300 rounded-lg p-3 text-sm outline-none resize-none text-neutral-700"
-          rows="3" placeholder="例如：補課、請假..."></textarea>
-        <div class="flex gap-2 pt-1">
-          <button onclick="saveQuickRemark(false)"
-            class="flex-1 bg-yellow-500 text-white py-2 rounded-lg font-bold hover:bg-yellow-600 transition-all text-sm shadow-sm">
-            儲存
-          </button>
+        <div>
+          <textarea id="quick-remark-input"
+            class="w-full bg-gray-50 focus:bg-white border border-gray-200 focus:border-yellow-400 rounded-xl p-3 text-sm outline-none resize-none text-neutral-700 shadow-inner transition-colors"
+            rows="3" placeholder="例如：補課、請假..."></textarea>
+        </div>
+      </div>
 
-          <button onclick="saveQuickRemark(true)"
-            class="px-3 bg-red-100 text-red-600 border border-red-200 py-2 rounded-lg font-bold hover:bg-red-200 transition-all text-sm"
-            title="清空此區間的備註">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
-
+      <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between gap-2 items-center">
+        <button onclick="saveQuickRemark(true)"
+          class="p-2 bg-white text-red-500 border border-gray-200 hover:bg-red-50 hover:border-red-200 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center group"
+          title="清空此區間的備註">
+          <i data-lucide="trash-2" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+        </button>
+        <div class="flex gap-2">
           <button onclick="closeRemarkModal()"
-            class="px-3 bg-white text-gray-500 border border-gray-200 py-2 rounded-lg font-bold hover:bg-gray-50 transition-all text-sm">
-            取消
+            class="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 hover:text-gray-700 rounded-xl transition-colors">取消</button>
+          <button onclick="saveQuickRemark(false)"
+            class="px-5 py-2 bg-yellow-500 text-white rounded-xl font-bold hover:bg-yellow-600 transition-all text-sm shadow-md active:scale-95 flex items-center gap-2">
+            <i data-lucide="save" class="w-4 h-4"></i> 儲存
           </button>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -830,6 +923,11 @@
             class="admin-tab px-5 py-4 text-sm font-bold text-gray-300 hover:text-white hover:bg-neutral-700 border-b-4 border-transparent transition-all flex items-center gap-2"
             id="tab-btn-teachers">
             <i data-lucide="users" class="w-4 h-4"></i> 老師管理
+          </button>
+          <button onclick="switchAdminTab('logs')"
+            class="admin-tab px-5 py-4 text-sm font-bold text-gray-300 hover:text-white hover:bg-neutral-700 border-b-4 border-transparent transition-all flex items-center gap-2"
+            id="tab-btn-logs">
+            <i data-lucide="history" class="w-4 h-4"></i> 操作日誌
           </button>
         </div>
         <button onclick="closeAdminModal()"
@@ -888,7 +986,7 @@
               <label class="block text-xs font-bold text-gray-500 mb-1">1. 選擇老師</label>
               <select id="stat-teacher" onchange="updateStudentList()"
                 class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm outline-none bg-white min-w-[120px] focus:ring-2 focus:ring-neutral-800">
-                <option value="all">全校總計</option>
+                <option value="all">ALL</option>
               </select>
             </div>
 
@@ -971,6 +1069,51 @@
           </div>
         </div>
 
+        <div id="tab-content-logs" class="admin-tab-content w-full h-full flex flex-col p-6 hidden">
+          <div
+            class="flex justify-between items-center mb-4 shrink-0 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+              <i data-lucide="activity" class="text-blue-500 w-5 h-5"></i> 系統操作軌跡
+            </h3>
+            <button onclick="loadLogs()"
+              class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors flex items-center gap-1">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i> 重新整理
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-sm">
+            <table class="w-full text-sm text-left">
+              <thead class="bg-gray-50 text-gray-500 font-bold sticky top-0 z-10 shadow-sm select-none">
+                <tr>
+                  <th class="p-4 whitespace-nowrap">時間</th>
+                  <th class="p-4 whitespace-nowrap">操作人員</th>
+                  <th class="p-4 whitespace-nowrap">動作</th>
+                  <th class="p-4 min-w-[250px]">詳細內容</th>
+                  <th class="p-4 whitespace-nowrap text-center">復原</th>
+                </tr>
+              </thead>
+              <tbody id="logs-list" class="divide-y divide-gray-100 text-neutral-700">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="sys-dialog-modal"
+    class="hidden fixed inset-0 bg-black/40 z-[3000] flex items-center justify-center backdrop-blur-sm opacity-0 transition-opacity duration-200">
+    <div
+      class="bg-white rounded-xl shadow-2xl w-[85%] max-w-sm overflow-hidden flex flex-col transform scale-95 transition-transform duration-200"
+      id="sys-dialog-box">
+      <div class="p-6">
+        <h3 class="font-bold text-gray-900 text-lg mb-2 flex items-center gap-2" id="sys-dialog-title">提示</h3>
+        <p class="text-sm text-gray-600 leading-relaxed" id="sys-dialog-msg">內容</p>
+      </div>
+      <div class="px-5 py-3 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+        <button id="sys-dialog-cancel" onclick="closeSysDialog()"
+          class="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 hover:text-gray-800 rounded-lg transition-colors">取消</button>
+        <button id="sys-dialog-confirm" onclick="execSysDialog()"
+          class="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-bold shadow-sm active:scale-95">確定</button>
       </div>
     </div>
   </div>
@@ -1005,41 +1148,97 @@
       document.getElementById("instructions-modal").classList.add("hidden");
     }
 
-    // --- 拖曳排序功能核心 ---
-
+    // --- 拖曳排序功能核心 (絲滑動畫版) ---
     // 1. 開始拖曳
     function handleDragStart(e, id) {
       e.dataTransfer.setData("text/plain", id);
       e.dataTransfer.effectAllowed = "move";
-      // 讓被拖的卡片稍微變透明，增加視覺回饋
       e.target.style.opacity = '0.4';
+
+      // ★ 關鍵新增：告訴整個網頁「現在進入拖曳模式了！」觸發 CSS 幽靈狀態
+      document.body.classList.add('is-dragging');
     }
 
-    // 2. 拖曳結束 (不管有沒有成功放下，都要把透明度改回來)
+    // 2. 拖曳結束
     function handleDragEnd(e) {
       e.target.style.opacity = '1';
+
+      // ★ 關鍵新增：解除拖曳模式，按鈕與文字恢復正常
+      document.body.classList.remove('is-dragging');
+
+      // 確保清除所有殘留的拖曳提示樣式
+      document.querySelectorAll('.schedule-card').forEach(c => {
+        c.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'opacity-60', 'z-50');
+      });
     }
 
-    // 3. 放下卡片 (交換順序)
     function handleDrop(e, targetId) {
       e.preventDefault();
       e.stopPropagation();
 
-      const sourceId = e.dataTransfer.getData("text/plain");
-      if (sourceId === targetId) return; // 自己丟自己，不做事
+      const sourceId = String(e.dataTransfer.getData("text/plain"));
+      const tId = String(targetId);
 
-      // 調整陣列順序
+      if (sourceId === tId) return;
+
       const fromIndex = _userSortOrder.indexOf(sourceId);
-      const toIndex = _userSortOrder.indexOf(targetId);
+      const toIndex = _userSortOrder.indexOf(tId);
 
       if (fromIndex > -1 && toIndex > -1) {
-        // 把原本的那張拿出來
         _userSortOrder.splice(fromIndex, 1);
-        // 插隊到新目標的位置
         _userSortOrder.splice(toIndex, 0, sourceId);
 
-        // ★ 重新繪圖！這樣畫面才會變
+        // 背景儲存資料庫 (不卡住畫面動畫)
+        if (currentTid) {
+          const orderStr = _userSortOrder.join(',');
+          localStorage.setItem(`sort_order_${currentTid}`, orderStr);
+          _client.from("teachers").update({ card_order: orderStr }).eq("id", currentTid)
+            .then(({ error }) => {
+              if (!error) setStatus("順序已永久儲存", "success");
+            });
+          const t = allTeachers.find(t => t.id === currentTid);
+          if (t) t.card_order = orderStr;
+        }
+
+        // ★ 動畫 Step 1: 紀錄重繪前的「舊位置」
+        const oldPositions = new Map();
+        document.querySelectorAll('.schedule-card').forEach(card => {
+          oldPositions.set(card.dataset.id, card.getBoundingClientRect());
+        });
+
+        // 重新繪製新順序的卡片
         renderSchedule(_cachedSchedule, _cachedRecords);
+
+        // ★ 動畫 Step 2: 計算位移，播放滑動與綠色發光特效
+        requestAnimationFrame(() => {
+          document.querySelectorAll('.schedule-card').forEach(card => {
+            const id = card.dataset.id;
+
+            // 1. 滑動動畫 (FLIP)
+            if (oldPositions.has(id)) {
+              const oldPos = oldPositions.get(id);
+              const newPos = card.getBoundingClientRect();
+              const dx = oldPos.left - newPos.left;
+              const dy = oldPos.top - newPos.top;
+
+              if (dx !== 0 || dy !== 0) {
+                card.style.transition = 'none';
+                card.style.transform = `translate(${dx}px, ${dy}px)`;
+                card.style.zIndex = '100'; // 動畫期間拉到最上層
+
+                requestAnimationFrame(() => {
+                  card.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                  card.style.transform = 'translate(0, 0)';
+                  setTimeout(() => {
+                    card.style.transition = '';
+                    card.style.transform = '';
+                    card.style.zIndex = '';
+                  }, 400);
+                });
+              }
+            }
+          });
+        });
       }
     }
 
@@ -1112,41 +1311,28 @@
       }, 550);
     };
 
-    // 查身分函式 (更新版：同步更新介面)
+    // 1. 登入檢查防呆
     async function fetchUserProfile(email) {
-      const { data, error } = await _client
-        .from("teachers")
-        .select("*")
-        .eq("email", email)
-        .maybeSingle();
+      const { data, error } = await _client.from("teachers").select("*").eq("email", email).maybeSingle();
 
       if (error || !data) {
-        alert("錯誤：您的帳號未綁定教師資料，請聯繫管理員！");
+        await sysAlert("錯誤：您的帳號未綁定教師資料，請聯繫管理員！", "登入失敗");
         await _client.auth.signOut();
         window.location.href = "login.html";
         return;
       }
 
-      // 存起來
       currentUserInfo = data;
-      console.log("登入者:", currentUserInfo.name);
-
-      // ★★★ 新增：更新側邊欄的名片資訊 ★★★
       const initialEl = document.getElementById("current-user-initial");
       const nameEl = document.getElementById("current-user-name");
       const roleEl = document.getElementById("current-user-role");
 
       if (initialEl && nameEl && roleEl) {
-        // 1. 設定大頭貼文字 (名字的第一個字)
         initialEl.textContent = data.name.charAt(0);
-
-        // 2. 設定名字
         nameEl.textContent = data.name;
-
-        // 3. 設定職稱 (根據是否為 Admin 顯示不同文字與顏色)
         if (data.is_admin) {
           roleEl.innerHTML = `<i data-lucide="shield-alert" class="w-3 h-3 text-amber-500"></i> 系統管理員`;
-          roleEl.classList.add("text-amber-600"); // 管理員用橘色字
+          roleEl.classList.add("text-amber-600");
         } else {
           roleEl.innerHTML = `<i data-lucide="user" class="w-3 h-3"></i> 授課教師`;
           roleEl.classList.remove("text-amber-600");
@@ -1154,9 +1340,29 @@
       }
     }
 
+    // 2. 儲存權限防呆
+    async function savePermissions() {
+      const checkboxes = document.querySelectorAll('#perm-checkbox-list input[type="checkbox"]:checked:not(:disabled)');
+      const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+      if (!selectedIds.includes(String(editingPermTeacherId))) {
+        selectedIds.push(String(editingPermTeacherId));
+      }
+      const idsString = selectedIds.join(',');
+      const res = await _client.from('teachers').update({ viewable_teachers: idsString }).eq('id', editingPermTeacherId);
+
+      if (res.error) {
+        await sysAlert('儲存失敗：' + res.error.message, "系統錯誤");
+      } else {
+        const t = allTeachers.find(t => t.id === editingPermTeacherId);
+        if (t) t.viewable_teachers = idsString;
+        setStatus('權限名單已成功儲存！', 'success');
+        closePermissionsModal();
+      }
+    }
+
     // 登出函式
     async function handleLogout() {
-      if (!confirm("確定要登出嗎？")) return;
+      if (!(await sysConfirm("您確定要登出系統嗎？", "登出確認", "info"))) return;
       await _client.auth.signOut();
       window.location.href = "login.html";
     }
@@ -1178,11 +1384,18 @@
       menu.innerHTML = "";
       select.innerHTML = "";
 
-      // 1. 過濾側邊欄名單
+      // 1. 過濾側邊欄名單 (★ 升級版：讀取剛剛設定的專屬權限)
+      // 取得目前登入者「被允許看到」的老師 ID 陣列
+      const viewableIds = currentUserInfo.viewable_teachers ? currentUserInfo.viewable_teachers.split(',') : [];
+
       const visibleTeachers = data.filter(t => {
         if (t.is_hidden) return false;
+
+        // 如果登入的是管理員，無條件顯示所有人
         if (currentUserInfo.is_admin) return true;
-        return t.id === currentUserInfo.id || t.is_public;
+
+        // 如果是一般老師，只顯示「自己」或「管理員勾給他看的人」
+        return t.id === currentUserInfo.id || viewableIds.includes(String(t.id));
       });
 
       // 2. 渲染側邊欄按鈕
@@ -1244,26 +1457,29 @@
       currentTid = tid;
       document.getElementById("main-title").textContent = `${name} · 本週課表`;
 
-      // ▼ 關鍵修改 2：處理按鈕變色邏輯 ▼
-      // 1. 先移除所有按鈕的 active 狀態
+      // 處理按鈕變色邏輯
       document.querySelectorAll(".teacher-item").forEach((btn) => {
-        btn.classList.remove("active"); // 移除 CSS 定義的深色樣式
-        btn.classList.remove("bg-gray-100"); // 移除原本可能殘留的淺色背景
+        btn.classList.remove("active");
+        btn.classList.remove("bg-gray-100");
       });
 
-      // 2. 找到現在點擊的這位老師的按鈕，加上 active
       const activeBtn = document.querySelector(`.teacher-item[data-id="${tid}"]`);
       if (activeBtn) {
         activeBtn.classList.add("active");
       }
-      // ▲ 修改結束 ▲
 
-
-      // --- 下面維持您原本的備忘錄與資料讀取邏輯 ---
+      // 讀取備忘錄
       const targetTeacher = allTeachers.find(t => t.id === tid);
       const memoInput = document.getElementById("teacher-memo");
       if (memoInput) {
         memoInput.value = (targetTeacher && targetTeacher.memo) ? targetTeacher.memo : "";
+      }
+
+      // ★★★ 關鍵修改 1：從資料庫讀取這位老師專屬的卡片順序 ★★★
+      if (targetTeacher && targetTeacher.card_order) {
+        _userSortOrder = targetTeacher.card_order.split(',');
+      } else {
+        _userSortOrder = [];
       }
 
       if (window.innerWidth < 768) {
@@ -1321,30 +1537,23 @@
       }, 800);
     }
 
-    // 2. 重新整理資料 (修改版：以 currentBaseDate 為起點，往後推 7 天)
+    // 2. 重新整理資料
     async function refreshData() {
       if (!currentTid) return;
 
-      // --- 修改重點開始 ---
-      // 原本：const monday = getMonday(currentBaseDate);
-      // 現在：直接用 currentBaseDate 當作開始日
       const startDate = new Date(currentBaseDate);
-      const endDate = addDays(startDate, 6); // 往後推 6 天 (共 7 天)
+      const endDate = addDays(startDate, 6);
 
       const startStr = formatDate(startDate);
       const endStr = formatDate(endDate);
-      // --- 修改重點結束 ---
 
       document.getElementById("current-date-range").textContent = `${startStr} ~ ${endStr}`;
-
-      // 同步隱藏日曆的值
       const picker = document.getElementById("date-picker");
       if (picker) picker.value = startStr;
 
       setStatus("正在同步紀錄...");
 
       try {
-        // A. 抓母版 (邏輯不變：只要日期有重疊或是常駐的都抓)
         const { data: sData, error: sErr } = await _client
           .from("schedules")
           .select("*")
@@ -1352,7 +1561,6 @@
           .or(`target_date.is.null,and(target_date.gte.${startStr},target_date.lte.${endStr})`);
         if (sErr) throw sErr;
 
-        // B. 抓日記 (抓這 7 天的紀錄)
         const { data: rData, error: rErr } = await _client.from("lesson_records").select("*")
           .eq("teacher_id", currentTid)
           .gte("actual_date", startStr)
@@ -1362,118 +1570,203 @@
         _cachedSchedule = sData || [];
         _cachedRecords = rData || [];
 
-        // C. 執行繪圖 (把 startDate 傳進去，因為繪圖需要知道第一天是誰)
+        // ★ 同步排序清單
+        let isOrderUpdated = false;
+        _cachedSchedule.forEach(item => {
+          const strId = String(item.id);
+          if (!_userSortOrder.includes(strId)) {
+            _userSortOrder.push(strId);
+            isOrderUpdated = true;
+          }
+        });
+
+        if (isOrderUpdated && currentTid) {
+          const orderStr = _userSortOrder.join(',');
+
+          // ★★★ 關鍵修復：這裡也加上 await ★★★
+          await _client.from("teachers").update({ card_order: orderStr }).eq("id", currentTid);
+          localStorage.setItem(`sort_order_${currentTid}`, orderStr);
+
+          const t = allTeachers.find(t => t.id === currentTid);
+          if (t) t.card_order = orderStr;
+        }
+
         renderSchedule(_cachedSchedule, _cachedRecords, startDate);
 
-        // ... (下方的計算統計邏輯維持不變) ...
-        const total = _cachedSchedule.length;
-        const attendedOrAbsent = _cachedRecords.filter(r =>
-          ['attended', 'status-present', 'absent', 'status-absent'].includes(r.status)
-        ).length;
-        const onLeave = _cachedRecords.filter(r =>
-          ['leave', 'status-leave'].includes(r.status)
-        ).length;
-        setStatus(`總堂數：${total} | 已點名+曠課：${attendedOrAbsent} | 請假：${onLeave}`, "success");
-
+        updateStatsUI();
       } catch (e) {
         console.error(e);
         setStatus(`連線錯誤: ${e.message}`, "error");
       }
     }
 
-    // --- 新增：快速切換課程狀態 ---
+    // 1. 卡片點名切換狀態防呆
     async function toggleCourseStatus(id, currentStatus) {
-      // 定義狀態循環順序：灰 -> 綠 -> 咖 -> 紅 -> 灰
-      const statusCycle = {
-        'status-pending': 'status-present', // 灰 -> 綠 (點名)
-        'status-present': 'status-leave',   // 綠 -> 咖 (請假)
-        'status-leave': 'status-absent',    // 咖 -> 紅 (曠課)
-        'status-absent': 'status-pending'   // 紅 -> 灰 (重置)
-      };
-
-      // 如果目前的狀態不在循環中 (例如舊資料)，預設轉為綠色
+      const statusCycle = { 'status-pending': 'status-present', 'status-present': 'status-leave', 'status-leave': 'status-absent', 'status-absent': 'status-pending' };
       const nextStatus = statusCycle[currentStatus] || 'status-present';
-
-      // 更新資料庫
-      const { error } = await _client
-        .from("schedules")
-        .update({ color_class: nextStatus })
-        .eq("id", id);
+      const { error } = await _client.from("schedules").update({ color_class: nextStatus }).eq("id", id);
 
       if (!error) {
-        // 更新成功後，重新讀取資料以刷新畫面
         await refreshData();
       } else {
-        alert("狀態切換失敗");
+        await sysAlert("狀態切換失敗", "系統錯誤");
       }
     }
 
-    // 3. 繪圖函式 (只優化卡片顯示，邏輯不變)
+    // 3. 繪圖函式 (數學精準撐高版 + 支援備註手動換行)
     function renderSchedule(list, records = [], startDate) {
       const container = document.getElementById("schedule-container");
       if (!container) return;
       container.innerHTML = "";
 
-      const slots = ["09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23"];
-      const ROW_HEIGHT = 120;
-      const HEADER_HEIGHT = 60;
+      const slots = ["09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24"];
+      const BASE_ROW_HEIGHT = 120;
       const START_HOUR = 9;
-      const CARD_WIDTH = 140; // 卡片寬度固定
+      const CARD_WIDTH = 140;
       const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+      const baseDate = startDate || currentBaseDate;
 
-      // 1. 左側時間軸
+      function parseTime(tStr) {
+        if (!tStr) return { h: 0, m: 0 };
+        let h = parseInt(tStr.split(":")[0]);
+        let m = parseInt(tStr.split(":")[1]);
+        if (h === 0) h = 24;
+        return { h, m };
+      }
+
+      let validItems = list.filter(item => {
+        if (!item.start_time || !item.end_time) return false;
+        return parseTime(item.start_time).h >= START_HOUR;
+      });
+
+      validItems.sort((a, b) => {
+        const indexA = _userSortOrder.indexOf(String(a.id));
+        const indexB = _userSortOrder.indexOf(String(b.id));
+        let weightA = indexA === -1 ? 9999 : indexA;
+        let weightB = indexB === -1 ? 9999 : indexB;
+        if (weightA !== weightB) return weightA - weightB;
+
+        const aTime = parseTime(a.start_time);
+        const bTime = parseTime(b.start_time);
+        return (aTime.h * 60 + aTime.m) - (bTime.h * 60 + bTime.m);
+      });
+
+      let hourHeights = new Array(slots.length).fill(BASE_ROW_HEIGHT);
+
+      for (let i = 0; i < 7; i++) {
+        const thisDayDate = addDays(baseDate, i);
+        const thisDayDateStr = formatDate(thisDayDate);
+        const dbDay = thisDayDate.getDay() === 0 ? 7 : thisDayDate.getDay();
+        const dayItems = validItems.filter(item => item.day_of_week === dbDay);
+
+        dayItems.forEach(item => {
+          const sT = parseTime(item.start_time);
+          const eT = parseTime(item.end_time);
+          const durationMins = (eT.h * 60 + eT.m) - (sT.h * 60 + sT.m);
+          if (durationMins <= 0) return;
+
+          let reqPx = 80;
+          const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
+          reqPx += phoneList.length * 16;
+
+          const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
+          const remarkText = record ? record.remark : "";
+
+          // ★★★ 數學引擎升級：精準計算「手動換行」需要的高度 ★★★
+          if (remarkText) {
+            const manualLines = remarkText.split('\n'); // 找出使用者按了幾次 Enter
+            let totalLines = 0;
+            manualLines.forEach(line => {
+              // 每行如果超過 8 個字，也會自動折行
+              totalLines += Math.max(1, Math.ceil(line.length / 8));
+            });
+            reqPx += 16 + (totalLines * 14);
+          }
+
+          const basePx = (durationMins / 60) * BASE_ROW_HEIGHT;
+
+          if (reqPx > basePx) {
+            const hIdx = sT.h - START_HOUR;
+            if (hIdx >= 0 && hIdx < slots.length) {
+              const extraNeeded = reqPx - basePx;
+              hourHeights[hIdx] = Math.max(hourHeights[hIdx], BASE_ROW_HEIGHT + extraNeeded + 15);
+            }
+          }
+        });
+      }
+
+      function getDynamicTop(h, m) {
+        let top = 0;
+        const hIdx = h - START_HOUR;
+        for (let i = 0; i < hIdx && i < slots.length; i++) {
+          top += hourHeights[i];
+        }
+        if (hIdx >= 0 && hIdx < slots.length) {
+          top += (m / 60) * hourHeights[hIdx];
+        }
+        return top;
+      }
+
       const timeCol = document.createElement("div");
       timeCol.className = "sticky left-0 z-[500] bg-white border-r border-[#e9e9e7] flex flex-col shrink-0 w-[60px] md:w-[90px]";
       const timeHeader = document.createElement("div");
       timeHeader.className = "sticky top-0 z-[600] bg-gray-50 border-b border-[#e9e9e7] text-xs md:text-sm font-bold text-gray-600 flex items-center justify-center h-[60px]";
       timeHeader.textContent = "時間";
       timeCol.appendChild(timeHeader);
-      slots.forEach(h => {
+
+      slots.forEach((h, index) => {
         const cell = document.createElement("div");
-        cell.className = "flex items-center justify-center text-xs font-semibold text-gray-400 border-b border-[#e9e9e7] bg-gray-50/30";
-        cell.style.height = `${ROW_HEIGHT}px`;
+        cell.className = "flex items-center justify-center text-xs font-semibold text-gray-400 border-b border-[#e9e9e7] bg-gray-50/30 transition-all duration-300";
+        cell.style.height = `${hourHeights[index]}px`;
         cell.textContent = `${h}:00`;
         timeCol.appendChild(cell);
       });
       container.appendChild(timeCol);
 
-      const baseDate = startDate || currentBaseDate;
-
-      // 2. 渲染 7 天
       for (let i = 0; i < 7; i++) {
         const thisDayDate = addDays(baseDate, i);
         const thisDayDateStr = formatDate(thisDayDate);
         const jsDay = thisDayDate.getDay();
         const dbDay = jsDay === 0 ? 7 : jsDay;
-        const dayItems = list.filter(item => item.day_of_week === dbDay);
+        const dayItems = validItems.filter(item => item.day_of_week === dbDay);
 
-        // ★ 步驟 A：先算出這一天「最多同時有幾堂課」
-        // 這樣我們才知道這一天的欄位要撐多寬
-        let maxConcurrent = 1;
+        const columns = [];
+        const cardColIndex = {};
         dayItems.forEach(item => {
-          const [sH, sM] = item.start_time.split(":").map(Number);
-          const [eH, eM] = item.end_time.split(":").map(Number);
-          const startMin = (sH - START_HOUR) * 60 + sM;
-          const endMin = (eH - START_HOUR) * 60 + eM;
+          const sT = parseTime(item.start_time);
+          const eT = parseTime(item.end_time);
+          const startMin = sT.h * 60 + sT.m;
+          const endMin = eT.h * 60 + eT.m;
 
-          const overlaps = dayItems.filter(other => {
-            const [osH, osM] = other.start_time.split(":").map(Number);
-            const [oeH, oeM] = other.end_time.split(":").map(Number);
-            const oStart = (osH - START_HOUR) * 60 + osM;
-            const oEnd = (oeH - START_HOUR) * 60 + oeM;
-            return (startMin < oEnd && endMin > oStart);
-          });
-          if (overlaps.length > maxConcurrent) maxConcurrent = overlaps.length;
+          let placed = false;
+          for (let col = 0; col < columns.length; col++) {
+            const hasOverlap = columns[col].some(other => {
+              const osT = parseTime(other.start_time);
+              const oeT = parseTime(other.end_time);
+              const oStart = osT.h * 60 + osT.m;
+              const oEnd = oeT.h * 60 + oeT.m;
+              return (startMin < oEnd && endMin > oStart);
+            });
+            if (!hasOverlap) {
+              columns[col].push(item);
+              cardColIndex[item.id] = col;
+              placed = true;
+              break;
+            }
+          }
+          if (!placed) {
+            columns.push([item]);
+            cardColIndex[item.id] = columns.length - 1;
+          }
         });
 
-        // ★ 設定欄位寬度：有幾堂重疊，就乘以幾倍寬
+        const maxConcurrent = columns.length || 1;
         const colWidth = maxConcurrent * CARD_WIDTH + 1;
 
         const dayCol = document.createElement("div");
-        dayCol.className = "flex flex-col border-r border-[#e9e9e7] shrink-0 relative bg-white";
-        dayCol.style.width = `${colWidth}px`; // 動態寬度
+        dayCol.className = "flex flex-col border-r border-[#e9e9e7] shrink-0 relative bg-white transition-all duration-300";
+        dayCol.style.width = `${colWidth}px`;
 
-        // 標題
         const header = document.createElement("div");
         header.className = "sticky top-0 z-[400] bg-gray-50 border-b border-[#e9e9e7] flex flex-col items-center justify-center h-[60px]";
         const isToday = formatDate(new Date()) === thisDayDateStr;
@@ -1482,46 +1775,32 @@
 
         const contentLayer = document.createElement("div");
         contentLayer.className = "relative w-full";
-        contentLayer.style.height = `${slots.length * ROW_HEIGHT}px`;
+        contentLayer.style.height = `${hourHeights.reduce((a, b) => a + b, 0)}px`;
 
-        // 格線 (畫長一點，跟著欄位寬度跑)
-        slots.forEach(() => {
+        slots.forEach((_, index) => {
           const line = document.createElement("div");
-          line.className = "border-b border-[#e9e9e7] w-full";
-          line.style.height = `${ROW_HEIGHT}px`;
+          line.className = "border-b border-[#e9e9e7] w-full transition-all duration-300";
+          line.style.height = `${hourHeights[index]}px`;
           contentLayer.appendChild(line);
         });
 
-        // ★ 步驟 B：繪製卡片，算出它該排在第幾列
         dayItems.forEach((item) => {
-          const [sH, sM] = item.start_time.split(":").map(Number);
-          const [eH, eM] = item.end_time.split(":").map(Number);
-          if (sH < START_HOUR) return;
+          const sT = parseTime(item.start_time);
+          const eT = parseTime(item.end_time);
 
-          const startMin = (sH - START_HOUR) * 60 + sM;
-          const endMin = (eH - START_HOUR) * 60 + eM;
-          const topPx = (startMin / 60) * ROW_HEIGHT;
-          const heightPx = ((endMin - startMin) / 60) * ROW_HEIGHT;
+          const topPx = getDynamicTop(sT.h, sT.m);
+          const bottomPx = getDynamicTop(eT.h, eT.m);
+          const heightPx = bottomPx - topPx;
 
-          // 找出重疊的兄弟們
-          const overlaps = dayItems.filter(other => {
-            const [osH, osM] = other.start_time.split(":").map(Number);
-            const [oeH, oeM] = other.end_time.split(":").map(Number);
-            const oStart = (osH - START_HOUR) * 60 + osM;
-            const oEnd = (oeH - START_HOUR) * 60 + oeM;
-            return (startMin < oEnd && endMin > oStart);
-          });
-
-          // 排序後找出自己是老幾 (0, 1, 2...)
-          overlaps.sort((a, b) => a.id.localeCompare(b.id));
-          const myIndex = overlaps.findIndex(i => i.id === item.id);
-
-          // ★ 並排位置：第幾個就往右移幾個 CARD_WIDTH
+          const myIndex = cardColIndex[item.id];
           const leftPos = myIndex * CARD_WIDTH;
 
           const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
           let displayStatus = record ? record.status : (item.color_class || 'status-pending');
-          const remarkText = (record && record.remark) ? record.remark : (item.remark || "");
+          const remarkText = record ? record.remark : "";
+
+          // ★★★ 翻譯蒟蒻：把 \n 轉成 <br> 讓畫面可以換行 ★★★
+          const displayRemark = remarkText ? remarkText.replace(/\n/g, '<br>') : "";
 
           let statusBorder = 'border-l-4 border-gray-300';
           let bgClass = 'bg-white';
@@ -1531,66 +1810,62 @@
           else if (displayStatus === 'status-practice') { statusBorder = 'border-l-4 border-blue-400'; bgClass = 'bg-blue-50'; }
 
           const card = document.createElement("div");
-          // ★ 加入 shadow-md 讓並排時邊界清楚
-          card.className = `absolute rounded-r-md rounded-l-sm p-2 text-sm shadow-md flex flex-col transition-all duration-200 group box-border overflow-hidden hover:shadow-xl hover:z-50 ${statusBorder} ${bgClass}`;
-
-          // ★ 這裡設定寬度固定為 CARD_WIDTH，位置完全錯開
-          card.style.cssText = `top: ${topPx}px; height: ${heightPx + 1}px; left: ${leftPos}px; width: ${CARD_WIDTH}px; z-index: 20;`;
+          card.className = `schedule-card absolute rounded-r-md rounded-l-sm p-2 pb-3 text-sm shadow-md flex flex-col transition-all duration-200 group box-border hover:shadow-xl ${statusBorder} ${bgClass}`;
+          card.dataset.id = item.id;
+          card.style.cssText = `top: ${topPx}px; min-height: ${heightPx}px; height: max-content; left: ${leftPos}px; width: ${CARD_WIDTH}px; z-index: 20;`;
 
           card.draggable = true;
           card.ondragstart = (e) => handleDragStart(e, item.id);
           card.ondragend = (e) => handleDragEnd(e);
-          card.ondragover = (e) => e.preventDefault();
-          card.ondrop = (e) => handleDrop(e, item.id);
+          card.ondragover = (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+          };
+          card.ondragenter = (e) => {
+            e.preventDefault();
+            card.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'opacity-60', 'z-50');
+          };
+          card.ondragleave = (e) => {
+            card.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'opacity-60', 'z-50');
+          };
+          card.ondrop = (e) => {
+            card.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'opacity-60', 'z-50');
+            handleDrop(e, item.id);
+          };
 
-          const phoneMain = (item.phone || "").replace(/\D/g, "");
+          const phoneRaw = item.phone || "";
+          const phoneList = phoneRaw.split(/\s+/).filter(p => p.trim() !== "");
+          let phoneHtml = phoneList.map(p => `<div class="flex items-center gap-0.5 text-[10px] text-gray-500 leading-tight group-hover:text-neutral-800 transition-colors"><i data-lucide="phone" class="w-2.5 h-2.5 text-green-500 shrink-0"></i><span class="font-mono tracking-tight">${p}</span></div>`).join('');
+
           const roomDisplay = item.room_no || "無教室";
           const amountDisplay = item.amount ? `$${item.amount}` : "$0";
           const subjectDisplay = item.subject || "";
 
-          // 卡片內容 (這段保持按鈕修復後的版本)
           card.innerHTML = `
-            <div class="absolute top-1 right-1 flex flex-col gap-1 opacity-60 group-hover:opacity-100 transition-opacity duration-200 z-[60]" 
+            <div class="absolute top-1 right-1 flex flex-row items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-[60] bg-white/95 backdrop-blur-sm px-1.5 py-1 rounded-full shadow-md border border-gray-200" 
                  style="pointer-events: auto;"
                  onmousedown="event.stopPropagation();"
                  ondragstart="return false;"
                  onclick="event.stopPropagation();">
-                
-                <button type="button" onclick="openRemarkModal('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 bg-white rounded-full text-yellow-600 shadow border border-yellow-100 hover:scale-110 hover:bg-yellow-50 transition-transform cursor-pointer" title="設定備註">
-                    <i data-lucide="sticky-note" class="w-3 h-3 pointer-events-none"></i>
-                </button>
-                <button type="button" onclick="openEditModal('${item.id}', '${displayStatus}', '${thisDayDateStr}'); return false;" class="p-1 bg-white rounded-full text-blue-600 shadow border border-blue-100 hover:scale-110 hover:bg-blue-50 transition-transform cursor-pointer" title="修改固定課表">
-                    <i data-lucide="pencil" class="w-3 h-3 pointer-events-none"></i>
-                </button>
-                <button type="button" onclick="copyCourse('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 bg-white rounded-full text-gray-500 shadow border border-gray-100 hover:text-amber-600 hover:scale-110 transition-transform cursor-pointer" title="複製課程">
-                    <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
-                </button>
-                <button type="button" onmousedown="event.stopPropagation()" onclick="deleteCourse('${item.id}');" class="p-1 bg-white rounded-full text-red-500 shadow border border-red-100 hover:scale-110 hover:bg-red-50 transition-transform cursor-pointer" title="刪除課程">
-                    <i data-lucide="trash-2" class="w-3 h-3 pointer-events-none"></i>
-                </button>
+                <button type="button" onclick="openRemarkModal('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-yellow-600 hover:scale-110 hover:bg-yellow-50 transition-all cursor-pointer" title="設定備註"><i data-lucide="sticky-note" class="w-3.5 h-3.5 pointer-events-none"></i></button>
+                <button type="button" onclick="openEditModal('${item.id}', '${displayStatus}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-blue-600 hover:scale-110 hover:bg-blue-50 transition-all cursor-pointer" title="修改固定課表"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>
+                <button type="button" onclick="copyCourse('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-gray-500 hover:text-amber-600 hover:scale-110 transition-all cursor-pointer" title="複製課程"><i data-lucide="copy" class="w-3.5 h-3.5 pointer-events-none"></i></button>
+                <button type="button" onmousedown="event.stopPropagation()" onclick="deleteCourse('${item.id}');" class="p-1 rounded-full text-red-500 hover:scale-110 hover:bg-red-50 transition-all cursor-pointer" title="刪除課程"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>
             </div>
-
+            
             <div class="flex flex-col h-full min-w-0 pr-1 cursor-pointer relative z-10" onclick="toggleRecordStatus('${item.id}', '${thisDayDateStr}', '${displayStatus}')">
                 <div class="flex items-baseline gap-1 min-w-0 pointer-events-none">
                     <span class="font-bold text-neutral-900 text-[13px] truncate leading-tight">${item.course_name}</span>
                     ${subjectDisplay ? `<span class="text-[10px] text-gray-500 truncate bg-gray-100 px-1 rounded">${subjectDisplay}</span>` : ''}
                 </div>
-                <div class="text-[10px] text-gray-400 font-mono mt-0.5 leading-none pointer-events-none">
-                   ${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}
-                </div>
+                <div class="text-[10px] text-gray-400 font-mono mt-0.5 leading-none pointer-events-none">${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}</div>
                 <div class="mt-1.5 flex flex-col gap-0.5 pointer-events-none">
-                    <div class="flex items-center gap-0.5 text-[10px] text-gray-600 leading-tight">
-                        <i data-lucide="map-pin" class="w-2.5 h-2.5 text-blue-400"></i>
-                        <span class="truncate">${roomDisplay}</span>
-                    </div>
-                    <div class="flex items-center gap-0.5 text-[10px] text-gray-600 leading-tight">
-                        <i data-lucide="coins" class="w-2.5 h-2.5 text-amber-500"></i>
-                        <span class="font-mono text-gray-700">${amountDisplay}</span>
-                    </div>
-                    ${phoneMain ? `<div class="flex items-center gap-0.5 text-[10px] text-gray-500 leading-tight group-hover:text-neutral-800 transition-colors"><i data-lucide="phone" class="w-2.5 h-2.5 text-green-500"></i><span class="font-mono tracking-tight">${phoneMain}</span></div>` : ''}
+                    <div class="flex items-center gap-0.5 text-[10px] text-gray-600 leading-tight"><i data-lucide="map-pin" class="w-2.5 h-2.5 text-blue-400"></i><span class="truncate">${roomDisplay}</span></div>
+                    <div class="flex items-center gap-0.5 text-[10px] text-gray-600 leading-tight"><i data-lucide="coins" class="w-2.5 h-2.5 text-amber-500"></i><span class="font-mono text-gray-700">${amountDisplay}</span></div>
+                    ${phoneHtml}
                 </div>
                 <div class="mt-auto pt-1 pointer-events-none">
-                    ${remarkText ? `<div class="flex items-start gap-0.5 p-1 rounded bg-red-50 border border-red-100 text-red-700 text-[10px] font-bold leading-tight break-words"><i data-lucide="pin" class="w-2.5 h-2.5 shrink-0 mt-0.5"></i> <span>${remarkText}</span></div>` : ''}
+                    ${displayRemark ? `<div class="flex items-start gap-0.5 p-1 rounded bg-red-50 border border-red-100 text-red-700 text-[10px] font-bold leading-tight break-words"><i data-lucide="pin" class="w-2.5 h-2.5 shrink-0 mt-0.5"></i> <span class="w-full">${displayRemark}</span></div>` : ''}
                 </div>
             </div>
           `;
@@ -1602,50 +1877,69 @@
       lucide.createIcons();
     }
 
-    // --- 2. 複製課程功能 (修正版：自動加標記) ---
+    // --- 2. 複製課程功能 (升級版：預設帶入所點擊的日期) ---
     function copyCourse(itemId, dateStr) {
-      // 1. 先打開編輯視窗，填入原本的資料
+      // 先打開編輯視窗，把舊資料都填進去
       openEditModal(itemId, null, dateStr);
 
-      // 2. 修改視窗標題，讓你知道現在是複製模式
-      document.querySelector("#course-modal h3").textContent = "複製並新增課程";
+      document.querySelector("#course-modal h3").textContent = "複製並排入新日期";
+      editingId = null; // 變成新增模式
 
-      // 3. ★ 關鍵：把 editingId 清空，變成「新增模式」
-      editingId = null;
-
-      // 4. 自動勾選「僅限本週」(通常複製都是為了臨時調課)
+      // ★ 自動切換為「單次/臨時課程」模式，並展開日曆
       const tempCheckbox = document.getElementById("is_temporary");
+      const dateWrapper = document.getElementById("temp-date-wrapper");
+      const dateInput = document.getElementById("target_date_input");
+
       if (tempCheckbox) tempCheckbox.checked = true;
-
-      // 5. ★ 新增技巧：自動在名字後面加上 "(副本)"
-      // 這樣可以避免資料完全一模一樣被擋住，妳也容易分辨哪一個是複製出來的
-      const nameInput = document.querySelector('input[name="course_name"]');
-      if (nameInput) {
-        nameInput.value = nameInput.value + " (副本)";
+      if (dateWrapper) dateWrapper.classList.remove('hidden');
+      if (dateInput) {
+        // ★ 關鍵修改：將 formatDate(new Date()) 改成 dateStr
+        // 這樣日曆就會直接預設為「妳點擊的那一天」！
+        dateInput.value = dateStr;
       }
-
-      // 6. 提醒使用者
-      // 如果妳的資料庫設定非常嚴格（連時間重疊都不行），妳可能還需要微調時間
-      console.log("已進入複製模式，若無法儲存，請嘗試微調開始時間 (例如晚 1 分鐘)。");
     }
 
+    // --- 點名狀態切換核心邏輯 (升級版：樂觀更新，點多快都不漏算！) ---
     async function toggleRecordStatus(scheduleId, dateStr, currentStatus) {
       let nextStatus = '';
-      let action = 'save';
 
-      // 簡化後的循環：灰 -> 綠 -> 咖 -> 紅 -> 刪除(回到灰)
+      // 1. 決定下一個狀態 (循環：灰 -> 綠 -> 咖 -> 紅 -> 灰)
       if (!currentStatus || currentStatus === 'status-pending') {
-        nextStatus = 'attended'; // 變綠色
+        nextStatus = 'status-present';
       } else if (currentStatus === 'attended' || currentStatus === 'status-present') {
-        nextStatus = 'leave';    // 變咖啡色
+        nextStatus = 'status-leave';
       } else if (currentStatus === 'leave' || currentStatus === 'status-leave') {
-        nextStatus = 'absent';   // 變紅色
+        nextStatus = 'status-absent';
       } else {
-        action = 'delete';       // 移除紀錄 (回到灰色)
+        nextStatus = 'status-pending';
       }
 
+      // 2. 取得這堂課母版的「預設狀態」
+      const masterItem = _cachedSchedule.find(s => s.id === scheduleId);
+      const masterDefault = (masterItem && masterItem.color_class) ? masterItem.color_class : 'status-pending';
+
+      // ★★★ 3. 樂觀更新 (Optimistic UI)：直接竄改本地記憶體，不等資料庫了！ ★★★
+      let existingRecordIndex = _cachedRecords.findIndex(r => r.schedule_id === scheduleId && r.actual_date === dateStr);
+
+      if (nextStatus === masterDefault) {
+        // 如果切回預設狀態，就從記憶體裡把這筆特別紀錄刪掉
+        if (existingRecordIndex !== -1) _cachedRecords.splice(existingRecordIndex, 1);
+      } else {
+        // 否則，更新記憶體，或是塞一筆新的進去
+        if (existingRecordIndex !== -1) {
+          _cachedRecords[existingRecordIndex].status = nextStatus;
+        } else {
+          _cachedRecords.push({ schedule_id: scheduleId, teacher_id: currentTid, actual_date: dateStr, status: nextStatus, remark: "" });
+        }
+      }
+
+      // ★ 瞬間重畫卡片顏色，並瞬間更新左上角的數字！(0延遲)
+      renderSchedule(_cachedSchedule, _cachedRecords);
+      updateStatsUI();
+
+      // 4. 背景默默存檔
       try {
-        if (action === 'delete') {
+        if (nextStatus === masterDefault) {
           await _client.from("lesson_records").delete().eq("schedule_id", scheduleId).eq("actual_date", dateStr);
         } else {
           const { data: existing } = await _client.from("lesson_records").select("id").eq("schedule_id", scheduleId).eq("actual_date", dateStr).maybeSingle();
@@ -1655,9 +1949,18 @@
             await _client.from("lesson_records").insert({ schedule_id: scheduleId, teacher_id: currentTid, actual_date: dateStr, status: nextStatus });
           }
         }
-        setTimeout(() => { refreshData(); }, 150);
+
+        // ★ 監視器：寫入點名日誌 (把英文狀態翻譯成中文比較好看)
+        const statusZhMap = { 'status-present': '上課', 'status-leave': '請假', 'status-absent': '曠課', 'status-pending': '尚未點名', 'status-practice': '練習' };
+        const statusZh = statusZhMap[nextStatus] || nextStatus;
+
+        await recordLog('修改點名', `將 [${masterItem.course_name}] 在 ${dateStr} 的狀態改為 [${statusZh}]`, 'lesson_records',
+          { schedule_id: scheduleId, actual_date: dateStr, status: currentStatus }, // 舊狀態
+          { schedule_id: scheduleId, actual_date: dateStr, status: nextStatus }     // 新狀態
+        );
+
       } catch (err) {
-        console.error("點名失敗:", err);
+        console.error("點名狀態存檔失敗:", err);
       }
     }
 
@@ -1691,13 +1994,6 @@
       await fetchTeachers();
     }
 
-    async function deleteTeacher(id) {
-      if (!confirm("確定刪除老師嗎？相關課程也會一併刪除。")) return;
-      await _client.from("teachers").delete().eq("id", id);
-      if (currentTid === id) currentTid = null;
-      await fetchTeachers();
-    }
-
     // 6. 輔助函數 (加大版：px-2.5, py-1, -ml-2)
     function setStatus(msg, type = "warn") {
       const el = document.getElementById("status-tag");
@@ -1711,6 +2007,64 @@
       // 套用樣式 (同步加大與對齊修正)
       el.className = `text-[10px] md:text-xs px-2.5 py-1 rounded-md font-medium mt-0.5 -ml-2 ${colorClass}`;
     }
+
+    // --- 獨立的統計數字更新器 (所見即所得精準版) ---
+    function updateStatsUI() {
+      if (!_cachedSchedule) return;
+
+      const START_HOUR = 9;
+
+      // 工具：處理時間格式
+      function parseTime(tStr) {
+        if (!tStr) return { h: 0, m: 0 };
+        let h = parseInt(tStr.split(":")[0]);
+        let m = parseInt(tStr.split(":")[1]);
+        if (h === 0) h = 24;
+        return { h, m };
+      }
+
+      // 1. 抓出真正有顯示在畫面上的課 (過濾掉沒時間或太早的)
+      let validItems = _cachedSchedule.filter(item => {
+        if (!item.start_time || !item.end_time) return false;
+        return parseTime(item.start_time).h >= START_HOUR;
+      });
+
+      let total = 0;
+      let presentOrAbsentCount = 0;
+      let leaveCount = 0;
+
+      const baseDate = currentBaseDate;
+
+      // 2. 模擬畫 7 天的卡片，精準結算每一天每一堂課的「最終顏色」
+      for (let i = 0; i < 7; i++) {
+        const thisDayDate = addDays(baseDate, i);
+        const thisDayDateStr = formatDate(thisDayDate);
+        const dbDay = thisDayDate.getDay() === 0 ? 7 : thisDayDate.getDay();
+
+        // 找出這天所有的課
+        const dayItems = validItems.filter(item => item.day_of_week === dbDay);
+
+        dayItems.forEach(item => {
+          total++; // 只要這天有這堂課，總堂數就 +1
+
+          // ★ 核心邏輯：判斷這堂課「最終顯示」的狀態
+          // (優先看有沒有特別的點名紀錄，沒有的話就看母版的預設狀態)
+          const record = _cachedRecords.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
+          const displayStatus = record ? record.status : (item.color_class || 'status-pending');
+
+          // 根據最終顯示狀態來加總
+          if (['attended', 'status-present', 'absent', 'status-absent'].includes(displayStatus)) {
+            presentOrAbsentCount++;
+          } else if (['leave', 'status-leave'].includes(displayStatus)) {
+            leaveCount++;
+          }
+        });
+      }
+
+      // 3. 輸出到畫面上
+      setStatus(`總堂數：${total} | 已點名+曠課：${presentOrAbsentCount} | 請假：${leaveCount}`, "success");
+    }
+
     // 新增這個函式，讓彈窗可以打開
     function openModal() {
       document.getElementById("course-modal").classList.remove("hidden");
@@ -1729,7 +2083,6 @@
     }
 
     // 7. 修改與刪除
-    // 修改後：第一個參數接收 itemId (字串)，而不是 item (物件)
     function openEditModal(id, status, dateStr) {
       editingId = id;
       editingDateStr = dateStr;
@@ -1738,8 +2091,6 @@
       if (!item) return;
 
       const form = document.getElementById("course-form");
-
-      // 填入基本資料
       form.day_of_week.value = item.day_of_week;
       form.teacher_id.value = item.teacher_id;
       form.course_name.value = item.course_name;
@@ -1750,83 +2101,164 @@
       form.phone.value = item.phone || "";
       form.subject.value = item.subject || "";
 
-      // 處理狀態 (如果當天有點名狀態，優先顯示當天的)
       const record = _cachedRecords.find(r => r.schedule_id === id && r.actual_date === dateStr);
       let displayStatus = item.color_class || 'status-pending';
       if (record) displayStatus = record.status;
 
-      // 這裡要做一個簡單的對應，把狀態代碼轉回選單的 value
-      // 雖然選單 value 其實就是 status-xxx，但以防萬一
       form.color_class.value = displayStatus;
       if (displayStatus === 'attended') form.color_class.value = 'status-present';
       if (displayStatus === 'leave') form.color_class.value = 'status-leave';
       if (displayStatus === 'absent') form.color_class.value = 'status-absent';
 
-      // 處理「僅限本週」勾選
+      // ★ 處理單次課程勾選與日期顯示
       const tempCheckbox = document.getElementById("is_temporary");
-      if (tempCheckbox) tempCheckbox.checked = item.is_temporary || false;
+      const dateWrapper = document.getElementById("temp-date-wrapper");
+      const dateInput = document.getElementById("target_date_input");
 
-      // ★ 關鍵：原本這裡會讀取 record_remark，現在這行刪掉了，所以不會報錯了！
+      if (tempCheckbox) {
+        tempCheckbox.checked = item.is_temporary || false;
+        if (dateWrapper) dateWrapper.classList.toggle('hidden', !tempCheckbox.checked);
+        if (dateInput) {
+          // 如果這堂課本來就是單次課，填入它的指定日期；否則預設帶入當天
+          dateInput.value = item.target_date || dateStr || formatDate(new Date());
+        }
+      }
 
       document.querySelector("#course-modal h3").textContent = "修改固定課表";
       openModal();
     }
 
     async function deleteCourse(id) {
-      if (!confirm("確定要刪除嗎？")) return;
-      await _client.from("schedules").delete().eq("id", id);
+      // 注意：前面一定要加 await 喔！
+      if (!(await sysConfirm("確定要刪除這堂課嗎？<br><span class='text-xs text-red-500'>*此操作將會記錄在系統日誌中</span>", "刪除確認", "danger"))) return;
+
+      // ★ 監視器：先偷偷記住死者的長相 (為了之後能復活他)
+      const oldData = _cachedSchedule.find(s => s.id === id);
+
+      const { error } = await _client.from("schedules").delete().eq("id", id);
+
+      if (!error && oldData) {
+        // ★ 監視器：寫入日誌
+        await recordLog('刪除課程', `刪除了 [${oldData.course_name}] 的課程`, 'schedules', oldData, null);
+      }
+
       await refreshData();
     }
 
-    // 8. 表單提交 (修正版：同步儲存 is_temporary 欄位)
-    // --- 3. 表單存檔 (已修正：只存課程資訊，不存備註) ---
+    // 8. 表單提交 (支援 00:00 跨夜邏輯與指定日期智慧推算)
     document.getElementById("course-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const f = new FormData(e.target);
 
-      // 檢查時間
-      if (f.get("start_time") >= f.get("end_time")) {
-        return alert("結束時間必須晚於開始時間");
+      let sTime = f.get("start_time");
+      let eTime = f.get("end_time");
+      let checkETime = eTime === "00:00" ? "24:00" : eTime;
+
+      if (sTime >= checkETime) {
+        return sysAlert("結束時間必須晚於開始時間", "時間設定錯誤");
       }
 
-      // 處理單次課程勾選
       const isTemporary = document.getElementById("is_temporary").checked;
-      const monday = getMonday(currentBaseDate);
-      const targetDate = isTemporary ? formatDate(addDays(monday, parseInt(f.get("day_of_week")) - 1)) : null;
+      let finalTargetDate = null;
+      let dayOfWeek = parseInt(f.get("day_of_week"));
 
-      // 準備要存入資料庫的資料 (★這裡已經移除了 remark)
+      // ★ 神級防呆：如果勾選了單次課程，直接拿妳選的日期來反推星期幾！
+      // (這樣妳就不用管上面那個「上課星期」的下拉選單了)
+      if (isTemporary) {
+        finalTargetDate = f.get("target_date");
+        if (!finalTargetDate) return sysAlert("請選擇單次課程的日期！", "資料不齊全");
+
+        const d = new Date(finalTargetDate);
+        dayOfWeek = d.getDay();
+        if (dayOfWeek === 0) dayOfWeek = 7; // 週日轉換為 7
+      }
+
       const data = {
         teacher_id: f.get("teacher_id"),
-        day_of_week: parseInt(f.get("day_of_week")),
+        day_of_week: dayOfWeek, // 這裡已經是自動算好的正確星期了
         course_name: f.get("course_name"),
-        start_time: f.get("start_time") + ":00",
-        end_time: f.get("end_time") + ":00",
+        start_time: sTime + ":00",
+        end_time: eTime + ":00",
         room_no: f.get("room_no"),
         amount: parseInt(f.get("amount")) || 0,
         phone: f.get("phone"),
         subject: f.get("subject"),
         color_class: f.get("color_class"),
-        target_date: targetDate,
+        target_date: finalTargetDate,
         is_temporary: isTemporary
       };
 
-      // 判斷是「新增」還是「修改」
+      // ★ 監視器：拍照記下修改前的樣子
+      const oldData = editingId ? _cachedSchedule.find(s => s.id === editingId) : null;
+
+      // ★ 加上 .select() 讓資料庫存完後順便把新資料傳回來給我們
       const res = editingId
-        ? await _client.from("schedules").update(data).eq("id", editingId)
-        : await _client.from("schedules").insert([data]);
+        ? await _client.from("schedules").update(data).eq("id", editingId).select()
+        : await _client.from("schedules").insert([data]).select();
 
       if (res.error) {
-        return alert("操作失敗: " + res.error.message);
+        return sysAlert("操作失敗: " + res.error.message, "系統錯誤");
       }
 
-      // 如果是在修改狀態下，順便更新當天的點名狀態 (★只更新 status，不碰 remark)
+      // ★ 監視器升級：精準抓出到底「改了哪些欄位」
+      const newData = res.data[0];
+      let actionType = '新增課程';
+      let actionDesc = `[${newData.course_name}]：新增了一堂課`;
+
+      // 如果是修改模式，啟動差異比對引擎！
+      if (editingId && oldData) {
+        actionType = '修改課程';
+        let changes = [];
+
+        // 定義我們要檢查的欄位，以及它們的中文名稱
+        const fieldMap = {
+          course_name: '姓名', phone: '電話', subject: '科目', amount: '金額',
+          day_of_week: '星期', start_time: '開始時間', end_time: '結束時間',
+          room_no: '教室', is_temporary: '單次屬性'
+        };
+        const dayMap = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '日' };
+
+        for (let key in fieldMap) {
+          let oldV = oldData[key];
+          let newV = newData[key];
+
+          // 針對特殊格式進行翻譯 (例如星期 1 要變成 星期一)
+          if (key === 'day_of_week') {
+            oldV = dayMap[oldV] || oldV; newV = dayMap[newV] || newV;
+          } else if (key === 'is_temporary') {
+            oldV = oldV ? '是' : '否'; newV = newV ? '是' : '否';
+          } else if (key === 'start_time' || key === 'end_time') {
+            oldV = oldV ? String(oldV).slice(0, 5) : ''; newV = newV ? String(newV).slice(0, 5) : '';
+          }
+
+          // 清理空白並把 null 轉成空字串，防止誤判
+          let sOld = (oldV === null || oldV === undefined) ? '' : String(oldV).trim();
+          let sNew = (newV === null || newV === undefined) ? '' : String(newV).trim();
+
+          // 如果不一樣，就把這條改變寫進清單裡
+          if (sOld !== sNew) {
+            changes.push(`${fieldMap[key]}: ${sOld || '無'} ➔ ${sNew || '無'}`);
+          }
+        }
+
+        // 組裝最終的白話文
+        if (changes.length > 0) {
+          // 把所有改變用 | 串起來
+          actionDesc = `[${newData.course_name}]：${changes.join(' | ')}`;
+        } else {
+          actionDesc = `[${newData.course_name}]：點擊了儲存 (無欄位變動)`;
+        }
+      }
+
+      // 寫入日誌
+      await recordLog(actionType, actionDesc, 'schedules', oldData, newData);
+
       if (editingId && editingDateStr) {
         await _client.from("lesson_records")
           .update({ status: data.color_class })
           .match({ schedule_id: editingId, actual_date: editingDateStr });
       }
 
-      // 關閉視窗並刷新
       closeModal();
       await refreshData();
     });
@@ -1864,6 +2296,9 @@
             <div class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center font-bold text-gray-500 text-xs">${t.name.charAt(0)}</div>
             <span class="text-sm font-bold text-gray-700 flex-1">${t.name}</span>
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="openPermissionsModal('${t.id}')" class="p-1.5 text-gray-400 hover:text-yellow-600 rounded" title="設定側邊欄權限">
+                    <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
                 <button onclick="toggleEditMode('${t.id}')" class="p-1.5 text-gray-400 hover:text-blue-600 rounded"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                 <button onclick="deleteTeacher('${t.id}')" class="p-1.5 text-gray-400 hover:text-red-600 rounded"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </div>
@@ -1899,53 +2334,41 @@
       }
     }
 
-    // --- 新增的功能：執行更新老師名字 ---
+    // 1. 修改老師名字防呆
     async function updateTeacher(id, newName) {
       newName = newName.trim();
-      if (!newName) return alert("老師名字不能為空！");
+      if (!newName) return sysAlert("老師名字不能為空！", "資料錯誤");
 
       setStatus("正在更新資料...");
-
-      // 1. 更新資料庫
-      const { error } = await _client
-        .from("teachers")
-        .update({ name: newName })
-        .eq("id", id);
+      const { error } = await _client.from("teachers").update({ name: newName }).eq("id", id);
 
       if (error) {
         setStatus("更新失敗", "error");
-        alert("更新失敗: " + error.message);
+        await sysAlert("更新失敗: " + error.message, "系統錯誤");
       } else {
         setStatus("更新成功", "success");
-
-        // 2. 如果目前正好選中這位老師，要同步更新標題
-        if (currentTid === id) {
-          document.getElementById("main-title").textContent = `${newName} · 本週課表`;
-        }
-
-        // 3. 重新整理列表與側邊欄
-        await fetchTeachers(); // 更新側邊欄
-        await renderTeacherManageList(); // 更新管理列表 (會自動切回顯示模式)
+        if (currentTid === id) document.getElementById("main-title").textContent = `${newName} · 本週課表`;
+        await fetchTeachers();
+        await renderTeacherManageList();
       }
     }
 
-    // 4. 執行新增老師到資料庫
+    // 2. 新增老師防呆
     async function addTeacher() {
       const input = document.getElementById("new-teacher-name");
       const name = input.value.trim();
 
-      if (!name) return alert("請輸入老師姓名");
+      if (!name) return sysAlert("請輸入老師姓名", "資料不齊全");
 
       setStatus("正在新增老師...");
       const { error } = await _client.from("teachers").insert([{ name }]);
 
       if (error) {
         setStatus("新增失敗", "error");
-        alert("新增失敗: " + error.message);
+        await sysAlert("新增失敗: " + error.message, "系統錯誤");
       } else {
         input.value = "";
         setStatus("老師新增成功", "success");
-        // 關鍵：新增完後要同時更新側邊欄與管理清單
         await fetchTeachers();
         await renderTeacherManageList();
       }
@@ -1953,15 +2376,14 @@
 
     // 5. 執行刪除老師 (會連動刪除該老師的課表)
     async function deleteTeacher(id) {
-      if (!confirm("確定要刪除這位老師嗎？相關的所有課程將會一併消失！"))
-        return;
+      if (!(await sysConfirm("確定要刪除這位老師嗎？<br><span class='text-xs text-red-500'>相關的所有課程將會一併消失！</span>", "刪除老師", "danger"))) return;
 
       setStatus("正在刪除老師...");
       const { error } = await _client.from("teachers").delete().eq("id", id);
 
       if (error) {
         setStatus("刪除失敗", "error");
-        alert("刪除失敗: " + error.message);
+        await sysAlert("刪除失敗: " + error.message, "系統錯誤");
       } else {
         setStatus("老師已刪除", "success");
         // 如果刪除的是當前選取的老師，重置 ID 避免顯示錯誤
@@ -2034,13 +2456,13 @@
       const endStr = document.getElementById("freeze-end-date").value;
       const teacherName = document.getElementById("main-title").textContent.split(' · ')[0];
 
-      if (!startStr || !endStr) return alert("請完整選擇日期範圍！");
+      if (!startStr || !endStr) return sysAlert("請完整選擇日期範圍！", "資料不齊全");
 
       const startDate = new Date(startStr);
       const endDate = new Date(endStr);
-      if (startDate > endDate) return alert("起始日期不能晚於結束日期唷！");
+      if (startDate > endDate) return sysAlert("起始日期不能晚於結束日期唷！", "日期錯誤");
 
-      if (!confirm(`確定要保留「${teacherName}」老師\n從 ${startStr} 到 ${endStr} 的紀錄嗎？`)) return;
+      if (!(await sysConfirm(`確定要保留「<b class="text-amber-600">${teacherName}</b>」老師<br>從 ${startStr} 到 ${endStr} 的紀錄嗎？`, "凍結確認", "warning"))) return;
 
       closeFreezeModal();
       setStatus(`正在保護 ${startStr} ~ ${endStr} 的歷史紀錄...`);
@@ -2127,74 +2549,33 @@
       const startStr = document.getElementById("salary-start-date").value;
       const endStr = document.getElementById("salary-end-date").value;
 
-      if (!startStr || !endStr) return alert("請選擇日期範圍");
-
+      if (!startStr || !endStr) return sysAlert("請選擇日期範圍", "資料不齊全");
       setStatus("正在計算薪資...");
 
       try {
-        // A. 撈取資料 (記得 lesson_records 裡要有 actual_amount 欄位)
-        const { data: records, error: rErr } = await _client
-          .from("lesson_records")
-          .select("*, schedules(course_name, amount, subject)")
-          .eq("teacher_id", currentTid)
-          .gte("actual_date", startStr)
-          .lte("actual_date", endStr);
-
+        const { data: records, error: rErr } = await _client.from("lesson_records")
+          .select("*, schedules(course_name, amount, subject)").eq("teacher_id", currentTid).gte("actual_date", startStr).lte("actual_date", endStr);
         if (rErr) throw rErr;
 
-        // B. 整理資料到記憶體
-        let totalSalary = 0;
-        let totalCount = 0;
-
+        let totalSalary = 0; let totalCount = 0;
         _salaryData = records.map(r => {
           const isPayable = ['attended', 'status-present', 'absent', 'status-absent'].includes(r.status);
           const courseInfo = r.schedules || { course_name: '(未知課程)', amount: 0, subject: '' };
-
-          // ★★★ 關鍵邏輯：金額判定 ★★★
-          // 1. 先看「日記」有沒有特別記一筆錢 (r.actual_amount)
-          // 2. 如果沒有 (是 null)，就用「母版」的錢 (courseInfo.amount)
-          let finalAmount = 0;
-          if (r.actual_amount !== null && r.actual_amount !== undefined) {
-            finalAmount = r.actual_amount;
-          } else {
-            finalAmount = courseInfo.amount || 0;
-          }
-
-          // 如果是不支薪的狀態 (如請假)，強制歸零
-          // (除非妳希望請假也能手動填金額，那就要把這行拿掉)
+          let finalAmount = (r.actual_amount !== null && r.actual_amount !== undefined) ? r.actual_amount : (courseInfo.amount || 0);
           if (!isPayable) finalAmount = 0;
-
-          if (isPayable) {
-            totalSalary += finalAmount;
-            totalCount++;
-          }
-
-          return {
-            id: r.id,
-            schedule_id: r.schedule_id,
-            date: r.actual_date,
-            course_name: courseInfo.course_name,
-            subject: courseInfo.subject,
-            status: r.status,
-            amount: finalAmount, // 這裡存的是最終決定的金額
-            isPayable: isPayable
-          };
+          if (isPayable) { totalSalary += finalAmount; totalCount++; }
+          return { id: r.id, schedule_id: r.schedule_id, date: r.actual_date, course_name: courseInfo.course_name, subject: courseInfo.subject, status: r.status, amount: finalAmount, isPayable: isPayable };
         });
 
-        // C. 更新總數面板
         document.getElementById("total-salary").textContent = `$${totalSalary.toLocaleString()}`;
         document.getElementById("total-count").textContent = `${totalCount} 堂`;
-
-        // D. 排序並渲染
         sortSalary('date');
-
         document.getElementById("salary-result").classList.remove("hidden");
         setStatus("薪資計算完成", "success");
-
       } catch (err) {
         console.error(err);
         setStatus("計算失敗", "error");
-        alert("計算失敗：" + err.message);
+        await sysAlert("計算失敗：" + err.message, "系統錯誤");
       }
     }
 
@@ -2277,7 +2658,7 @@
 
     // A1. 匯出薪資報表 (修正版：標示姓名不可修改)
     function exportDailyReport() {
-      if (_salaryData.length === 0) return alert("請先按「開始計算」產生資料！");
+      if (_salaryData.length === 0) return sysAlert("請先按「開始計算」產生資料！", "尚未計算");
 
       const exportData = _salaryData.map(item => {
         let statusText = '未知';
@@ -2438,11 +2819,9 @@
       const file = input.files[0];
       if (!file) return;
 
-      if (!confirm("⚠️ 確定要匯入並覆蓋嗎？\n這會更新所有「固定課表」的設定 (包含電話、備註等)。")) {
-        input.value = "";
-        return;
+      if (!(await sysConfirm("確定要匯入並覆蓋嗎？<br><span class='text-xs text-amber-600'>這會更新所有「固定課表」的設定 (包含電話、備註等)。</span>", "匯入確認", "warning"))) {
+        input.value = ""; return;
       }
-
       setStatus("正在讀取 Excel...");
       const reader = new FileReader();
 
@@ -2451,52 +2830,26 @@
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
           const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { raw: false });
-
-          // 定義狀態對照
-          const statusMap = {
-            '上課': 'status-present', '請假': 'status-leave',
-            '曠課': 'status-absent', '尚未點名': 'status-pending',
-            '學生練習': 'status-practice'
-          };
-
+          const statusMap = { '上課': 'status-present', '請假': 'status-leave', '曠課': 'status-absent', '尚未點名': 'status-pending', '學生練習': 'status-practice' };
           const updates = [];
 
           for (const row of jsonRows) {
             const id = row["課程編號(請勿修改)"];
             if (!id) continue;
-
-            updates.push({
-              id: id,
-              course_name: row["學生姓名"],
-              phone: row["電話"] || "",
-              subject: row["科目"] || "",
-              amount: parseInt(row["金額"]) || 0,
-              day_of_week: parseInt(row["星期(1-7)"]),
-              start_time: row["開始時間"],
-              end_time: row["結束時間"],
-              room_no: row["教室"] || "",
-              color_class: statusMap[row["預設狀態"]] || 'status-pending',
-              remark: row["常駐備註"] || "",
-              is_temporary: row["僅限本週(是/否)"] === "是" // 轉換 "是" -> true
-            });
+            updates.push({ id: id, course_name: row["學生姓名"], phone: row["電話"] || "", subject: row["科目"] || "", amount: parseInt(row["金額"]) || 0, day_of_week: parseInt(row["星期(1-7)"]), start_time: row["開始時間"], end_time: row["結束時間"], room_no: row["教室"] || "", color_class: statusMap[row["預設狀態"]] || 'status-pending', remark: row["常駐備註"] || "", is_temporary: row["僅限本週(是/否)"] === "是" });
           }
 
-          if (updates.length === 0) return alert("無有效資料，請確認 Excel 格式。");
-
+          if (updates.length === 0) return sysAlert("無有效資料，請確認 Excel 格式。", "匯入失敗");
           setStatus(`正在更新 ${updates.length} 筆課程資料...`);
-
           const { error } = await _client.from("schedules").upsert(updates, { onConflict: 'id' });
-
           if (error) throw error;
-
           setStatus("母版資料全欄位更新成功！", "success");
           input.value = "";
           closeBatchModal();
-          await refreshData(); // 刷新畫面
-
+          await refreshData();
         } catch (err) {
           console.error(err);
-          alert("匯入失敗: " + err.message);
+          await sysAlert("匯入發生錯誤: " + err.message, "系統錯誤");
           setStatus("匯入發生錯誤", "error");
         }
       };
@@ -2518,38 +2871,60 @@
       const newPwd = document.getElementById("new-password").value;
 
       if (newPwd.length < 6) {
-        alert("為了安全，密碼長度至少需要 6 位數唷！");
+        await sysAlert("為了安全，密碼長度至少需要 6 位數唷！", "密碼太短");
         return;
       }
 
-      // 呼叫 Supabase 更新使用者密碼
-      const { data, error } = await _client.auth.updateUser({
-        password: newPwd
-      });
+      const { data, error } = await _client.auth.updateUser({ password: newPwd });
 
       if (error) {
-        alert("變更失敗：" + error.message);
+        await sysAlert("變更失敗：" + error.message, "系統錯誤");
       } else {
-        alert("密碼變更成功！下次請用新密碼登入。");
+        await sysAlert("密碼變更成功！<br>下次登入請使用新密碼。", "變更成功");
         closePasswordModal();
       }
     }
 
-    // --- 補上缺失的備註功能邏輯 ---
+    // --- 補上缺失的備註功能邏輯 (升級版：智慧偵測備註範圍) ---
     let remarkTargetId = null;
     let remarkTargetWeekDay = null;
 
-    function openRemarkModal(id, dateStr) {
+    // ★ 關鍵修改 1：前面加上 async，因為我們要去資料庫查範圍
+    async function openRemarkModal(id, dateStr) {
       remarkTargetId = id;
       const master = _cachedSchedule.find(s => s.id === id);
       if (master) remarkTargetWeekDay = master.day_of_week;
 
       const record = _cachedRecords.find(r => r.schedule_id === id && r.actual_date === dateStr);
+      const currentRemark = record ? record.remark : "";
 
-      // 自動填入日期
-      document.getElementById("remark-start-date").value = dateStr;
-      document.getElementById("remark-end-date").value = dateStr;
-      document.getElementById("quick-remark-input").value = record ? record.remark : "";
+      // 預設日期為點擊的當天
+      let detectedStart = dateStr;
+      let detectedEnd = dateStr;
+
+      // ★ 關鍵修改 2：如果這堂課目前有備註，去資料庫找出它的頭跟尾
+      if (currentRemark) {
+        setStatus("正在偵測備註範圍...");
+
+        // 尋找相同 schedule_id 且備註內容完全一樣的所有紀錄
+        const { data, error } = await _client
+          .from("lesson_records")
+          .select("actual_date")
+          .eq("schedule_id", id)
+          .eq("remark", currentRemark)
+          .order("actual_date", { ascending: true }); // 照日期從小排到大
+
+        if (!error && data && data.length > 0) {
+          detectedStart = data[0].actual_date; // 第一筆就是開始日
+          detectedEnd = data[data.length - 1].actual_date; // 最後一筆就是結束日
+        }
+        setStatus("就緒", "success");
+      }
+
+      // 自動填入偵測到的日期與備註內容
+      document.getElementById("remark-start-date").value = detectedStart;
+      document.getElementById("remark-end-date").value = detectedEnd;
+      document.getElementById("quick-remark-input").value = currentRemark;
 
       document.getElementById("remark-modal").classList.remove("hidden");
     }
@@ -2561,19 +2936,20 @@
     // --- 快速備註功能 (修正版：支援清空) ---
     async function saveQuickRemark(forceClear = false) {
       if (!remarkTargetId) return;
-
-      // 如果是清空模式，文字就是空的；否則抓取輸入框文字
       const text = forceClear ? "" : document.getElementById("quick-remark-input").value;
       const startStr = document.getElementById("remark-start-date").value;
       const endStr = document.getElementById("remark-end-date").value;
 
-      if (!startStr || !endStr) return alert("請選擇日期範圍");
-      if (startStr > endStr) return alert("結束日期不能早於開始日期");
+      if (!startStr || !endStr) {
+        await sysAlert("請選擇日期範圍", "資料不完整");
+        return;
+      }
+      if (startStr > endStr) {
+        await sysAlert("結束日期不能早於開始日期", "日期錯誤");
+        return;
+      }
 
-      // 提示訊息不同
-      const msg = forceClear ? "正在清空備註..." : "正在儲存備註...";
-      setStatus(msg);
-
+      setStatus(forceClear ? "正在清空備註..." : "正在儲存備註...");
       const updates = [];
       let loopDate = new Date(startStr);
       const endDate = new Date(endStr);
@@ -2581,26 +2957,18 @@
       while (loopDate <= endDate) {
         let day = loopDate.getDay();
         if (day === 0) day = 7;
-
         if (day === remarkTargetWeekDay) {
           const dStr = formatDate(loopDate);
           const exist = _cachedRecords.find(r => r.schedule_id === remarkTargetId && r.actual_date === dStr);
           const master = _cachedSchedule.find(s => s.id === remarkTargetId);
           const status = exist ? exist.status : (master.color_class || 'status-pending');
-
-          updates.push({
-            schedule_id: remarkTargetId,
-            teacher_id: currentTid,
-            actual_date: dStr,
-            status: status,
-            remark: text // 這裡會寫入新的文字，或者是空字串(清空)
-          });
+          updates.push({ schedule_id: remarkTargetId, teacher_id: currentTid, actual_date: dStr, status: status, remark: text });
         }
         loopDate.setDate(loopDate.getDate() + 1);
       }
 
       if (updates.length === 0) {
-        alert("範圍內沒有這堂課的排程");
+        await sysAlert("範圍內沒有這堂課的排程", "無效的日期範圍");
         setStatus("無資料更新", "warn");
         return;
       }
@@ -2608,7 +2976,7 @@
       const { error } = await _client.from("lesson_records").upsert(updates, { onConflict: 'schedule_id,actual_date' });
 
       if (error) {
-        alert("操作失敗: " + error.message);
+        await sysAlert("操作失敗: " + error.message, "系統錯誤");
         setStatus("操作失敗", "error");
       } else {
         setStatus(forceClear ? "備註已清空" : "備註已更新", "success");
@@ -2661,6 +3029,8 @@
       // 2. 資料載入
       if (tabName === 'directory') loadDirectoryData();
       if (tabName === 'teachers') renderTeacherManageList();
+      // ★ 加上這行：
+      if (tabName === 'logs') loadLogs();
     }
 
     // --- Tab 1: 通訊錄 ---
@@ -2686,7 +3056,7 @@
       renderDirectory(); // 重新整理畫面
     }
 
-    // --- Tab 1: 通訊錄 (修正版：支援排序 + 點擊複製) ---
+    // --- Tab 1: 通訊錄 (終極版：支援多電話獨立點擊複製) ---
     function renderDirectory() {
       const keyword = document.getElementById("dir-search").value.toLowerCase();
       const listBody = document.getElementById("directory-list");
@@ -2703,97 +3073,84 @@
         if (match && !uniqueMap.has(key)) uniqueMap.set(key, s);
       });
 
-      // 2. ★ 排序核心邏輯
+      // 2. 排序
       let list = Array.from(uniqueMap.values());
-
       list.sort((a, b) => {
         let valA = "", valB = "";
         const k = _dirSortState.key;
-
-        // 根據不同欄位取值
         if (k === 'name') { valA = a.course_name || ""; valB = b.course_name || ""; }
         else if (k === 'phone') { valA = a.phone || ""; valB = b.phone || ""; }
         else if (k === 'subject') { valA = a.subject || ""; valB = b.subject || ""; }
         else if (k === 'teacher') { valA = a.teachers?.name || ""; valB = b.teachers?.name || ""; }
-
-        // 使用 localeCompare 進行中文筆畫排序
         return valA.localeCompare(valB, "zh-Hant") * _dirSortState.dir;
       });
 
-      // 3. 渲染列表
+      // 3. 渲染
       list.forEach(s => {
         const teacherName = s.teachers ? s.teachers.name : "未知";
         const name = s.course_name || "";
-        const phone = s.phone || "-";
         const subject = s.subject || "-";
         const tName = teacherName || "";
 
+        // ★★★ 關鍵修改：將每一支電話包裝成獨立、可點擊的區塊 ★★★
+        const phoneRaw = s.phone || "";
+        const phoneList = phoneRaw.split(/\s+/).filter(p => p.trim() !== "");
+
+        let phoneHtml = "-";
+        if (phoneList.length > 0) {
+          // 為每個電話號碼加上獨立的 onclick 事件與 hover 效果
+          phoneHtml = phoneList.map(p => `
+                <div class="cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors py-1 px-2 -mx-2 rounded"
+                     onclick="copyToClipboard('${p}', this)" title="複製此電話">
+                    ${p}
+                </div>
+            `).join('');
+        }
+
         const row = `
                 <tr class="border-b border-gray-100 transition-colors">
-                    <td class="p-4 font-bold text-neutral-800 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200" 
+                    <td class="p-4 font-bold text-neutral-800 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 align-top" 
                         onclick="copyToClipboard('${name}', this)" title="複製姓名">${name}</td>
                     
-                    <td class="p-4 font-mono text-gray-600 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200" 
-                        onclick="copyToClipboard('${phone}', this)" title="複製電話">${phone}</td>
+                    <td class="p-4 font-mono text-gray-600 align-top">
+                        ${phoneHtml}
+                    </td>
                     
-                    <td class="p-4 text-gray-600 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200" 
+                    <td class="p-4 text-gray-600 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 align-top" 
                         onclick="copyToClipboard('${subject}', this)" title="複製科目">${subject}</td>
                     
-                    <td class="p-4 text-xs text-gray-500 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200"
+                    <td class="p-4 text-xs text-gray-500 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 align-top"
                         onclick="copyToClipboard('${tName}', this)" title="複製老師">
                         <span class="bg-gray-100 px-2 py-1 rounded-full pointer-events-none">${tName}</span>
                     </td>
                 </tr>`;
         listBody.innerHTML += row;
       });
-      lucide.createIcons(); // 記得重新渲染箭頭圖示
+      lucide.createIcons();
     }
 
     // --- 複製功能 (升級版：直接在格子內顯示提示) ---
     function copyToClipboard(text, element) {
       if (!text || text === '-') return;
-
       navigator.clipboard.writeText(text).then(() => {
-        // 1. (選用) 還是可以在下方顯示全域狀態，如果妳想保留的話
-        // setStatus(`已複製：${text}`, "success");
-
         if (element) {
-          // --- 視覺特效開始 ---
-
-          // A. 確保父元素有定位屬性 (為了讓標籤對齊)
           element.classList.add('relative');
-
-          // B. 檢查是否已經有標籤 (避免連點時堆疊)
           const existingBadge = element.querySelector('.copy-badge');
           if (existingBadge) existingBadge.remove();
-
-          // C. 創造一個「已複製」的小標籤
           const badge = document.createElement('div');
-          // 設定樣式：絕對定位、置中、黑底白字、圓角、過渡效果
           badge.className = 'copy-badge absolute inset-0 flex items-center justify-center bg-neutral-800/90 text-white text-xs font-bold rounded opacity-0 transition-opacity duration-200 z-10 pointer-events-none';
           badge.innerHTML = `<span class="flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> 已複製!</span>`;
-
-          // D. 放進格子裡
           element.appendChild(badge);
-          // 重新渲染裡面的 icon
           lucide.createIcons();
-
-          // E. 動畫流程
-          // 1. 顯示 (稍微延遲確保 DOM 渲染)
-          requestAnimationFrame(() => {
-            badge.classList.remove('opacity-0');
-          });
-
-          // 2. 停留 0.8 秒後消失
+          requestAnimationFrame(() => badge.classList.remove('opacity-0'));
           setTimeout(() => {
             badge.classList.add('opacity-0');
-            // 等待淡出動畫結束後，把標籤從 HTML 移除
             setTimeout(() => badge.remove(), 200);
           }, 800);
         }
       }).catch(err => {
         console.error('複製失敗', err);
-        alert("複製失敗，請手動複製");
+        sysAlert("複製失敗，請手動複製", "系統提示");
       });
     }
 
@@ -2845,39 +3202,23 @@
       const teacherId = document.getElementById("stat-teacher").value;
       const studentName = document.getElementById("stat-student").value.trim();
 
-      if (!start || !end) return alert("請選擇日期範圍");
-
+      if (!start || !end) return sysAlert("請選擇日期範圍", "資料不齊全");
       setStatus("正在分析數據...");
 
-      // 查詢紀錄
-      let query = _client.from("lesson_records")
-        .select("status, teacher_id, schedules(course_name)")
-        .gte("actual_date", start)
-        .lte("actual_date", end);
-
+      let query = _client.from("lesson_records").select("status, teacher_id, schedules(course_name)").gte("actual_date", start).lte("actual_date", end);
       if (teacherId !== 'all') query = query.eq("teacher_id", teacherId);
 
       const { data, error } = await query;
-      if (error) return alert("分析失敗");
+      if (error) return sysAlert("分析失敗", "系統錯誤");
 
-      // 前端過濾學生姓名
       let filteredData = data;
-      if (studentName) {
-        filteredData = data.filter(r => {
-          const cName = r.schedules ? r.schedules.course_name : "";
-          return cName === studentName; // 這裡改成精準比對，因為我們是用選單選的
-        });
-      }
+      if (studentName) filteredData = data.filter(r => (r.schedules ? r.schedules.course_name : "") === studentName);
 
-      // ... (下方畫圖邏輯完全不用動，照舊) ...
       const total = filteredData.length;
-      if (total === 0) { /* ...顯示無資料... */ return; }
-
-      // ... 統計與畫圖代碼 ...
-      // (為了節省篇幅，這裡省略畫圖的舊代碼，請保留原本的內容)
-
-      // 這裡只要補回這段統計核心就好，或者妳直接用上一版給妳的 calculateStats 也可以
-      // 唯一的差別是 studentName 比對建議改成 === (精準)，因為現在是用選的了
+      if (total === 0) {
+        document.getElementById("stat-details").innerHTML = `<p class="text-center text-gray-400 text-sm py-10">此範圍內沒有任何紀錄</p>`;
+        return;
+      }
 
       let c = { 'present': 0, 'leave': 0, 'absent': 0, 'pending': 0 };
       filteredData.forEach(r => {
@@ -2887,22 +3228,19 @@
         else c.pending++;
       });
 
-      // 更新圓餅圖
       const p1 = (c.present / total) * 100, p2 = p1 + (c.leave / total) * 100, p3 = p2 + (c.absent / total) * 100;
-      const gradient = `conic-gradient(#22c55e 0% ${p1}%, #fbbf24 ${p1}% ${p2}%, #ef4444 ${p2}% ${p3}%, #d1d5db ${p3}% 100%)`;
-
-      document.getElementById("stat-pie-chart").style.background = gradient;
+      document.getElementById("stat-pie-chart").style.background = `conic-gradient(#22c55e 0% ${p1}%, #fbbf24 ${p1}% ${p2}%, #ef4444 ${p2}% ${p3}%, #d1d5db ${p3}% 100%)`;
       document.getElementById("stat-total-lessons").textContent = total;
       document.getElementById("label-present").textContent = Math.round((c.present / total) * 100) + "%";
       document.getElementById("label-leave").textContent = Math.round((c.leave / total) * 100) + "%";
       document.getElementById("label-absent").textContent = Math.round((c.absent / total) * 100) + "%";
 
       document.getElementById("stat-details").innerHTML = `
-            <div class="flex justify-between p-2 bg-green-50 rounded border border-green-100"><span class="text-green-800 font-bold">✅ 正常上課</span><span class="font-mono font-bold">${c.present}</span></div>
-            <div class="flex justify-between p-2 bg-amber-50 rounded border border-amber-100"><span class="text-amber-800 font-bold">☕ 請假</span><span class="font-mono font-bold">${c.leave}</span></div>
-            <div class="flex justify-between p-2 bg-red-50 rounded border border-red-100"><span class="text-red-800 font-bold">❌ 曠課</span><span class="font-mono font-bold">${c.absent}</span></div>
-            <div class="flex justify-between p-2 bg-gray-50 rounded border border-gray-200"><span class="text-gray-600 font-bold">⬜ 尚未點名</span><span class="font-mono font-bold">${c.pending}</span></div>
-        `;
+        <div class="flex justify-between p-2 bg-green-50 rounded border border-green-100"><span class="text-green-800 font-bold">✅ 正常上課</span><span class="font-mono font-bold">${c.present}</span></div>
+        <div class="flex justify-between p-2 bg-amber-50 rounded border border-amber-100"><span class="text-amber-800 font-bold">☕ 請假</span><span class="font-mono font-bold">${c.leave}</span></div>
+        <div class="flex justify-between p-2 bg-red-50 rounded border border-red-100"><span class="text-red-800 font-bold">❌ 曠課</span><span class="font-mono font-bold">${c.absent}</span></div>
+        <div class="flex justify-between p-2 bg-gray-50 rounded border border-gray-200"><span class="text-gray-600 font-bold">⬜ 尚未點名</span><span class="font-mono font-bold">${c.pending}</span></div>
+      `;
       setStatus(`分析完成：共 ${total} 筆`, "success");
     }
 
@@ -3014,6 +3352,381 @@
         listEl.classList.add('hidden');
       }
     });
+
+    // --- 權限設定邏輯 (側邊欄可見名單) ---
+    let editingPermTeacherId = null;
+
+    function openPermissionsModal(teacherId) {
+      editingPermTeacherId = teacherId;
+      const targetTeacher = allTeachers.find(t => t.id === teacherId);
+      if (!targetTeacher) return;
+
+      // 設定標題
+      document.getElementById('perm-modal-title').innerHTML = `<i data-lucide="eye" class="w-4 h-4 text-blue-500"></i> 設定【${targetTeacher.name}】的可見名單`;
+
+      const listContainer = document.getElementById('perm-checkbox-list');
+      listContainer.innerHTML = '';
+
+      // 取出這名老師原本就設定好的可見名單 (如果是 null 就給空陣列)
+      const viewableArr = targetTeacher.viewable_teachers ? targetTeacher.viewable_teachers.split(',') : [];
+
+      // 產生所有老師的打勾選項
+      allTeachers.forEach(t => {
+        // 隱藏管理員 (上一動加的)
+        if (t.is_hidden) return;
+
+        // 預設自己一定看得到自己，或是被勾選的人
+        const isSelf = t.id === teacherId;
+        const isChecked = viewableArr.includes(String(t.id)) || isSelf;
+
+        // ★ 關鍵進化：把外層的 div 換成了 label，不用寫 onclick 也能全區感應！
+        const labelRow = document.createElement('label');
+        // 加入 select-none 防止連點時反白文字
+        labelRow.className = `flex items-center gap-3 p-3 rounded-lg transition-colors select-none ${isSelf ? 'bg-blue-50/50 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'}`;
+
+        labelRow.innerHTML = `
+            <input type="checkbox" id="perm_${t.id}" value="${t.id}" 
+                   class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 ${isSelf ? 'cursor-not-allowed' : 'cursor-pointer'}" 
+                   ${isChecked ? 'checked' : ''} 
+                   ${isSelf ? 'disabled' : ''}>
+            <div class="flex-1 flex items-center gap-2 text-sm font-bold text-gray-700">
+                ${t.name}
+                ${isSelf ? '<span class="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded">本人 (強制顯示)</span>' : ''}
+            </div>
+        `;
+
+        // 把這一行加進清單裡
+        listContainer.appendChild(labelRow);
+      });
+
+      document.getElementById('permissions-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closePermissionsModal() {
+      document.getElementById('permissions-modal').classList.add('hidden');
+    }
+
+    // ==========================================
+    // 🌟 目標二：上帝視角操作日誌與復原系統 (絕對防禦版)
+    // ==========================================
+
+    // 1. 核心機器人 (增加隱形斗篷)
+    async function recordLog(actionType, description, targetTable, oldData, newData) {
+      if (!currentUserInfo) return;
+
+      // ★ 隱形斗篷：如果是開發者帳號 (Ccy)，就直接當作沒看到，不存入資料庫！
+      // (加上轉小寫 toLowerCase() 避免大小寫打錯)
+      if (currentUserInfo.name.toLowerCase() === 'Ccy') return;
+
+      try {
+        const { error } = await _client.from('action_logs').insert([{
+          actor_name: currentUserInfo.name,
+          action_type: actionType,
+          description: description,
+          target_table: targetTable,
+          old_data: oldData || null,
+          new_data: newData || null
+        }]);
+
+        if (error) {
+          console.error("🚨 Supabase 寫入日誌失敗:", error.message);
+        }
+      } catch (err) {
+        console.error("🚨 寫入日誌發生例外錯誤:", err);
+      }
+    }
+
+    // 2. 讀取並畫出日誌畫面 (隱藏開發者歷史紀錄)
+    async function loadLogs() {
+      const list = document.getElementById("logs-list");
+      list.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i> 讀取天眼中...</td></tr>`;
+      lucide.createIcons();
+
+      // ★ 加上 .neq('actor_name', 'Ccy')，把 ccy 的紀錄直接排除在畫面外！
+      const { data, error } = await _client
+        .from('action_logs')
+        .select('*')
+        .neq('actor_name', 'Ccy')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        list.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-bold">載入失敗：${error.message}</td></tr>`;
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        list.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400">目前沒有任何操作紀錄</td></tr>`;
+        return;
+      }
+
+      list.innerHTML = "";
+      data.forEach(log => {
+        const d = new Date(log.created_at);
+        const timeStr = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+        // 使用安全的通用顏色，避免 Tailwind CDN 漏抓
+        let badgeColor = "border-gray-200 text-gray-600 bg-gray-50";
+        if (log.action_type.includes('新增')) badgeColor = "border-green-200 text-green-700 bg-green-50";
+        if (log.action_type.includes('修改') || log.action_type.includes('點名')) badgeColor = "border-blue-200 text-blue-700 bg-blue-50";
+        if (log.action_type.includes('刪除')) badgeColor = "border-red-200 text-red-700 bg-red-50";
+
+        const canUndo = log.old_data && (log.action_type.includes('修改') || log.action_type.includes('刪除') || log.action_type.includes('點名'));
+
+        const row = document.createElement("tr");
+        row.className = "hover:bg-blue-50/50 transition-colors";
+        row.innerHTML = `
+          <td class="p-4 text-xs font-mono text-gray-500 whitespace-nowrap">${timeStr}</td>
+          <td class="p-4 font-bold text-neutral-800 whitespace-nowrap">${log.actor_name || '未知'}</td>
+          <td class="p-4 whitespace-nowrap"><span class="px-2 py-1 rounded text-[10px] font-bold border ${badgeColor}">${log.action_type}</span></td>
+          <td class="p-4 text-xs text-gray-700 leading-relaxed">${log.description}</td>
+          <td class="p-4 text-center whitespace-nowrap">
+              ${canUndo ? `
+                  <button onclick="executeUndo('${log.id}')" class="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 rounded shadow-sm text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1 mx-auto">
+                      <i data-lucide="undo-2" class="w-3.5 h-3.5"></i> 復原
+                  </button>
+              ` : `<span class="text-xs text-gray-300">-</span>`}
+          </td>
+        `;
+        list.appendChild(row);
+      });
+      lucide.createIcons();
+    }
+
+    // ==========================================
+    // 🌟 精緻版復原系統 UI 控制與執行
+    // ==========================================
+
+    // 暫存要復原的日誌資料
+    let pendingUndoLogId = null;
+    let pendingUndoLogData = null;
+
+    // 1. 讀取並打開漂亮視窗 (終極版：加上課程原時段與操作人時間)
+    async function executeUndo(logId) {
+      setStatus("正在讀取復原資訊...");
+      const { data: log, error: fetchErr } = await _client.from('action_logs').select('*').eq('id', logId).single();
+
+      if (fetchErr || !log) {
+        setStatus("讀取失敗", "error");
+        return sysAlert("找不到日誌，可能已經失效或已被復原過了！", "讀取失敗");
+      }
+
+      // ... 後面的 UI 渲染保持原樣
+      pendingUndoLogId = logId;
+      pendingUndoLogData = log;
+      const titleEl = document.getElementById('undo-modal-title');
+      const contentEl = document.getElementById('undo-modal-content');
+      const warningEl = document.getElementById('undo-modal-warning');
+
+      let scheduleInfoHtml = '';
+      const refData = log.old_data || log.new_data;
+      if (refData) {
+        if (log.target_table === 'schedules') {
+          const dayMap = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '日' };
+          let dStr = refData.is_temporary && refData.target_date ? `單次 ${refData.target_date.slice(5)} (週${dayMap[refData.day_of_week]})` : `固定 每週${dayMap[refData.day_of_week]}`;
+          let tRange = (refData.start_time && refData.end_time) ? `${refData.start_time.slice(0, 5)} - ${refData.end_time.slice(0, 5)}` : '';
+          scheduleInfoHtml = `<i data-lucide="clock" class="w-3.5 h-3.5 text-blue-400"></i> ${dStr} ${tRange}`;
+        } else if (log.target_table === 'lesson_records') {
+          scheduleInfoHtml = `<i data-lucide="calendar" class="w-3.5 h-3.5 text-blue-400"></i> 點名日期：${refData.actual_date}`;
+        }
+      }
+
+      const d = new Date(log.created_at);
+      const actionTimeStr = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const actionInfoHtml = `
+        <div class="mt-3 pt-2 border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-400 font-sans">
+            <span class="flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> 操作人：${log.actor_name || '未知'}</span>
+            <span class="flex items-center gap-1"><i data-lucide="history" class="w-3 h-3"></i> 於 ${actionTimeStr} 變更</span>
+        </div>
+      `;
+
+      if (log.action_type === '新增課程') {
+        titleEl.textContent = '確定要【撤銷新增】嗎？';
+        contentEl.innerHTML = `<div class="text-gray-800 font-bold text-center pt-2">${log.description}</div><div class="text-[11px] text-gray-500 font-medium mt-1.5 flex items-center justify-center gap-1">${scheduleInfoHtml}</div>${actionInfoHtml}`;
+        warningEl.innerHTML = '<i data-lucide="trash-2" class="w-3.5 h-3.5 inline mr-1"></i> 執行後，這堂課將從課表中徹底刪除！';
+      }
+      else if (log.action_type === '刪除課程') {
+        titleEl.textContent = '確定要【復活課程】嗎？';
+        contentEl.innerHTML = `<div class="text-gray-800 font-bold text-center pt-2">${log.description}</div><div class="text-[11px] text-gray-500 font-medium mt-1.5 flex items-center justify-center gap-1">${scheduleInfoHtml}</div>${actionInfoHtml}`;
+        warningEl.innerHTML = '<i data-lucide="sparkles" class="w-3.5 h-3.5 inline mr-1"></i> 執行後，這堂課將重新回到課表上！';
+      }
+      else {
+        titleEl.textContent = '確定要【退回修改】嗎？';
+        warningEl.innerHTML = '<i data-lucide="history" class="w-3.5 h-3.5 inline mr-1"></i> 執行後，資料將拋棄紅字，退回綠色狀態！';
+        let htmlContent = '';
+        const parts = log.description.split('：');
+        if (parts.length > 1) {
+          const namePart = parts[0];
+          const changesPart = parts.slice(1).join('：');
+          htmlContent += `<div class="mb-3 border-b border-blue-200 pb-2"><div class="font-bold text-blue-800 flex items-center gap-1.5 text-sm"><i data-lucide="file-edit" class="w-4 h-4"></i> ${namePart}</div><div class="text-[11px] text-gray-500 font-medium mt-1.5 flex items-center justify-start gap-1">${scheduleInfoHtml}</div></div>`;
+          const changes = changesPart.split(' | ');
+          changes.forEach(change => {
+            const cParts = change.split(': ');
+            if (cParts.length > 1) {
+              const field = cParts[0];
+              const vals = cParts.slice(1).join(': ').split(' ➔ ');
+              if (vals.length === 2) {
+                htmlContent += `<div class="flex items-center gap-2 my-2 bg-white p-2 rounded border border-gray-100 shadow-sm"><span class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[10px] w-14 text-center shrink-0 font-bold">${field}</span><span class="line-through text-red-400 truncate flex-1 text-right" title="即將拋棄的新資料">${vals[1]}</span><i data-lucide="arrow-left" class="w-4 h-4 text-amber-500 shrink-0 mx-1"></i><span class="font-bold text-green-600 truncate flex-1" title="即將還原的舊資料">${vals[0]}</span></div>`;
+              } else { htmlContent += `<div>${change}</div>`; }
+            } else {
+              const ptParts = change.split(' ➔ ');
+              if (ptParts.length === 2) {
+                htmlContent += `<div class="flex items-center gap-2 my-2 bg-white p-2 rounded border border-gray-100 shadow-sm"><span class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[10px] w-14 text-center shrink-0 font-bold">狀態</span><span class="line-through text-red-400 truncate flex-1 text-right" title="即將拋棄的新狀態">${ptParts[1]}</span><i data-lucide="arrow-left" class="w-4 h-4 text-amber-500 shrink-0 mx-1"></i><span class="font-bold text-green-600 truncate flex-1" title="即將還原的舊狀態">${ptParts[0]}</span></div>`;
+              } else { htmlContent += `<div>${change}</div>`; }
+            }
+          });
+        } else {
+          htmlContent = `<div class="py-2 text-center font-bold text-gray-800">${log.description}</div><div class="text-[11px] text-gray-500 font-medium mt-1 flex items-center justify-center gap-1">${scheduleInfoHtml}</div>`;
+        }
+        htmlContent += actionInfoHtml;
+        contentEl.innerHTML = htmlContent;
+      }
+      document.getElementById('undo-modal').classList.remove('hidden');
+      lucide.createIcons();
+      setStatus("就緒", "success");
+    }
+
+    // 2. 關閉視窗
+    function closeUndoModal() {
+      document.getElementById('undo-modal').classList.add('hidden');
+      pendingUndoLogId = null;
+      pendingUndoLogData = null;
+    }
+
+    // 3. 按下按鈕，真正執行時光倒流！
+    async function confirmExecuteUndo() {
+      const logId = pendingUndoLogId;
+      const log = pendingUndoLogData;
+      if (!logId || !log) return;
+
+      closeUndoModal();
+      setStatus("正在還原資料...");
+
+      try {
+        if (log.action_type === '新增課程') {
+          await _client.from(log.target_table).delete().eq('id', log.new_data.id);
+        }
+        else if (log.action_type === '刪除課程') {
+          await _client.from(log.target_table).insert([log.old_data]);
+        }
+        else if (log.action_type === '修改課程') {
+          await _client.from(log.target_table).update(log.old_data).eq('id', log.old_data.id);
+        }
+        else if (log.action_type === '修改點名') {
+          const oldStatus = log.old_data.status;
+          const master = _cachedSchedule.find(s => String(s.id) === String(log.old_data.schedule_id));
+          const defaultStatus = master ? (master.color_class || 'status-pending') : 'status-pending';
+
+          if (oldStatus === defaultStatus || oldStatus === 'status-pending') {
+            await _client.from('lesson_records').delete().eq('schedule_id', log.old_data.schedule_id).eq('actual_date', log.old_data.actual_date);
+          } else {
+            await _client.from('lesson_records').upsert([{
+              schedule_id: log.old_data.schedule_id,
+              teacher_id: currentTid,
+              actual_date: log.old_data.actual_date,
+              status: oldStatus
+            }], { onConflict: 'schedule_id,actual_date' });
+          }
+        }
+        await _client.from('action_logs').delete().eq('id', logId);
+        setStatus("時光倒流成功！", "success");
+        await refreshData();
+        loadLogs();
+      } catch (err) {
+        await sysAlert("復原失敗: " + err.message, "系統錯誤");
+      }
+    }
+
+    // ==========================================
+    // 🌟 全域極簡對話框控制引擎
+    // ==========================================
+    let _sysDialogResolve = null;
+
+    // 取代原本的 confirm()
+    function sysConfirm(message, title = "系統確認", type = "danger") {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('sys-dialog-modal');
+        const box = document.getElementById('sys-dialog-box');
+        const titleEl = document.getElementById('sys-dialog-title');
+        const msgEl = document.getElementById('sys-dialog-msg');
+        const confirmBtn = document.getElementById('sys-dialog-confirm');
+        const cancelBtn = document.getElementById('sys-dialog-cancel');
+
+        // 設定文字 (支援 \n 換行)
+        titleEl.innerHTML = title;
+        msgEl.innerHTML = message.replace(/\n/g, '<br>');
+        cancelBtn.classList.remove('hidden');
+
+        // 根據類型設定按鈕顏色
+        if (type === 'danger') {
+          confirmBtn.className = "px-4 py-2 text-sm bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors font-bold shadow-sm active:scale-95";
+          confirmBtn.textContent = "確定刪除";
+        } else if (type === 'warning') {
+          confirmBtn.className = "px-4 py-2 text-sm bg-amber-500 text-white hover:bg-amber-600 rounded-lg transition-colors font-bold shadow-sm active:scale-95";
+          confirmBtn.textContent = "確定執行";
+        } else {
+          confirmBtn.className = "px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors font-bold shadow-sm active:scale-95";
+          confirmBtn.textContent = "確定";
+        }
+
+        _sysDialogResolve = resolve;
+
+        // 顯示動畫
+        modal.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          modal.classList.remove('opacity-0');
+          box.classList.remove('scale-95');
+        });
+      });
+    }
+
+    // 取代原本的 alert()
+    function sysAlert(message, title = "系統提示") {
+      return new Promise((resolve) => {
+        const modal = document.getElementById('sys-dialog-modal');
+        const box = document.getElementById('sys-dialog-box');
+
+        document.getElementById('sys-dialog-title').innerHTML = title;
+        document.getElementById('sys-dialog-msg').innerHTML = message.replace(/\n/g, '<br>');
+
+        const confirmBtn = document.getElementById('sys-dialog-confirm');
+        document.getElementById('sys-dialog-cancel').classList.add('hidden'); // 隱藏取消按鈕
+
+        confirmBtn.className = "px-4 py-2 text-sm bg-neutral-800 text-white hover:bg-black rounded-lg transition-colors font-bold shadow-sm active:scale-95";
+        confirmBtn.textContent = "我知道了";
+
+        _sysDialogResolve = resolve;
+
+        modal.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          modal.classList.remove('opacity-0');
+          box.classList.remove('scale-95');
+        });
+      });
+    }
+
+    function closeSysDialog() {
+      const modal = document.getElementById('sys-dialog-modal');
+      const box = document.getElementById('sys-dialog-box');
+      modal.classList.add('opacity-0');
+      box.classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        if (_sysDialogResolve) { _sysDialogResolve(false); _sysDialogResolve = null; }
+      }, 200); // 等待動畫播完
+    }
+
+    function execSysDialog() {
+      const modal = document.getElementById('sys-dialog-modal');
+      const box = document.getElementById('sys-dialog-box');
+      modal.classList.add('opacity-0');
+      box.classList.add('scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        if (_sysDialogResolve) { _sysDialogResolve(true); _sysDialogResolve = null; }
+      }, 200);
+    }
   </script>
 </body>
 
