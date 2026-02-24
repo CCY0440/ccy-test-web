@@ -170,14 +170,6 @@
     #schedule-wrapper {
       -webkit-overflow-scrolling: touch;
     }
-
-    @media (max-width: 768px) {
-
-      /* 讓手機版的時間軸窄一點點，留更多空間給課表 */
-      #schedule-container>div:first-child {
-        width: 60px !important;
-      }
-    }
   </style>
 </head>
 
@@ -528,7 +520,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.1 正式版)
+          📅 系統使用指南 (v1.11 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1931,20 +1923,27 @@
               return top;
             }
 
-            // --- ★ 步驟二：同步繪製 (達成線條吸附效果) ---
+            // --- ★ 步驟二：完美比例 GPU 渲染繪製 ---
 
             const timeCol = document.createElement("div");
-            timeCol.className = "sticky left-0 z-[500] bg-white border-r border-[#e9e9e7] flex flex-col shrink-0 w-[60px] md:w-[90px]";
+            // 移除了 md:w-[90px] w-[60px] 這些固定寬度 class
+            timeCol.className = "sticky left-0 z-[500] bg-white border-r border-[#e9e9e7] flex flex-col shrink-0";
+            // 寬度套用變數
+            timeCol.style.width = `calc(60px * var(--z, 1))`;
+
             const timeHeader = document.createElement("div");
-            timeHeader.className = "sticky top-0 z-[600] bg-gray-50 border-b border-[#e9e9e7] text-xs md:text-sm font-bold text-gray-600 flex items-center justify-center h-[60px]";
-            timeHeader.textContent = "時間";
+            timeHeader.className = "sticky top-0 z-[600] bg-gray-50 border-b border-[#e9e9e7] text-xs font-bold text-gray-600 flex items-center justify-center";
+            // 高度套用變數
+            timeHeader.style.height = `calc(60px * var(--z, 1))`;
+            // 內部文字也進行等比例縮放
+            timeHeader.innerHTML = `<span style="display:inline-block; transform: scale(var(--z, 1)); transform-origin: center;">時間</span>`;
             timeCol.appendChild(timeHeader);
 
             slots.forEach((h, index) => {
               const cell = document.createElement("div");
               cell.className = "flex items-center justify-center text-xs font-semibold text-gray-400 border-b border-[#e9e9e7] bg-gray-50/30";
               cell.style.height = `calc(${hourHeights[index]}px * var(--z, 1))`;
-              cell.textContent = `${h}:00`;
+              cell.innerHTML = `<span style="display:inline-block; transform: scale(var(--z, 1)); transform-origin: center;">${h}:00</span>`;
               timeCol.appendChild(cell);
             });
             container.appendChild(timeCol);
@@ -1977,9 +1976,14 @@
               dayCol.style.width = `calc(${Math.max(1, columns.length) * currentDayUnitWidth + 1}px * var(--z, 1))`;
 
               const header = document.createElement("div");
-              header.className = "sticky top-0 z-[400] bg-gray-50 border-b border-[#e9e9e7] flex flex-col items-center justify-center h-[60px]";
+              header.className = "sticky top-0 z-[400] bg-gray-50 border-b border-[#e9e9e7] flex flex-col items-center justify-center overflow-hidden";
+              header.style.height = `calc(60px * var(--z, 1))`;
               const isToday = formatDate(new Date()) === thisDayDateStr;
-              header.innerHTML = `<span class="${isToday ? 'text-blue-600 font-bold' : 'text-gray-800 font-bold'}">${dayNames[thisDayDate.getDay()]}</span><span class="text-[10px] text-gray-400">${thisDayDate.getMonth() + 1}/${thisDayDate.getDate()}</span>`;
+              header.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; transform: scale(var(--z, 1)); transform-origin: center;">
+                  <span class="${isToday ? 'text-blue-600 font-bold' : 'text-gray-800 font-bold'}">${dayNames[thisDayDate.getDay()]}</span>
+                  <span class="text-[10px] text-gray-400">${thisDayDate.getMonth() + 1}/${thisDayDate.getDate()}</span>
+                </div>`;
               dayCol.appendChild(header);
 
               const contentLayer = document.createElement("div");
@@ -1989,7 +1993,6 @@
               slots.forEach((_, index) => {
                 const line = document.createElement("div");
                 line.className = "border-b border-[#e9e9e7] w-full pointer-events-none";
-                // 替換下面這行 👇
                 line.style.height = `calc(${hourHeights[index]}px * var(--z, 1))`;
                 contentLayer.appendChild(line);
               });
@@ -2000,16 +2003,13 @@
                 const heightPx = getDynamicTop(eT.h, eT.m) - topPx;
                 const myIndex = cardColIndex[item.id];
 
-                // --- ★ 智慧鎖定邏輯：前兩個月以前自動鎖定 ★ ---
                 const today = new Date();
                 const cardDate = new Date(thisDayDateStr);
                 const currentYearMonth = today.getFullYear() * 12 + today.getMonth();
                 const cardYearMonth = cardDate.getFullYear() * 12 + cardDate.getMonth();
                 const monthDiff = currentYearMonth - cardYearMonth;
 
-                // 差距 >= 2 個月，且不是管理員(Ccy)就鎖定
                 const isLocked = monthDiff >= 2 && !currentUserInfo?.is_admin;
-                // -------------------------------------------
 
                 const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
                 let displayStatus = record ? record.status : (item.color_class || 'status-pending');
@@ -2023,42 +2023,42 @@
                 else if (displayStatus === 'status-practice') { statusBorder = 'border-l-4 border-blue-400'; bgClass = 'bg-blue-50'; }
 
                 const card = document.createElement("div");
-                // ★ 這裡加入了 ${isLocked ? 'card-locked' : '...'} 判定
                 card.className = `schedule-card absolute rounded-r-md rounded-l-sm p-2 pb-3 text-sm shadow-md flex flex-col transition-all duration-200 group box-border ${isLocked ? 'card-locked' : 'hover:shadow-xl hover:z-[70] cursor-pointer'} ${statusBorder} ${bgClass}`;
                 card.dataset.id = item.id;
 
-                // ★ 重新啟用拖曳、絲滑動畫與「藍色提示框」功能
                 if (!isLocked) {
                   card.draggable = true;
-
-                  // 1. 開始拖曳
                   card.ondragstart = (e) => handleDragStart(e, item.id);
-
-                  // 2. ★ 補上：拖曳滑過其他卡片時，顯示藍色提示框
                   card.ondragenter = (e) => {
                     e.preventDefault();
-                    // 加上藍色環與提升層級，讓提示更明顯
                     card.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'z-[80]');
                   };
-
-                  // 3. ★ 補上：滑離該卡片時，移除提示框
                   card.ondragleave = () => {
                     card.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'z-[80]');
                   };
-
                   card.ondragover = (e) => e.preventDefault();
-
-                  // 4. 放下卡片：執行排序動畫與存檔
                   card.ondrop = (e) => {
-                    // 放下前先確保提示框已移除
                     card.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'z-[80]');
                     handleDrop(e, item.id);
                   };
-
-                  // 5. 結束拖曳：還原狀態
                   card.ondragend = (e) => handleDragEnd(e);
                 }
-                card.style.cssText = `top: calc(${topPx}px * var(--z, 1)); min-height: calc(${heightPx}px * var(--z, 1)); height: calc(${heightPx}px * var(--z, 1)); left: calc(${myIndex * currentDayUnitWidth}px * var(--z, 1)); width: calc(${currentDayUnitWidth}px * var(--z, 1)); z-index: 20; overflow: hidden;`;
+
+                // ★ 終極魔法：
+                // 1. 座標 (top, left) 交給 calc(...) 數學運算，確保精準落點。
+                // 2. 實體寬高 (width, height) 保持原比例，確保文字絕不擠壓！
+                // 3. 利用 GPU (transform: scale) 直接將完整畫好的卡片等比例縮小。
+                card.style.cssText = `
+                    top: calc(${topPx}px * var(--z, 1)); 
+                    left: calc(${myIndex * currentDayUnitWidth}px * var(--z, 1)); 
+                    width: ${currentDayUnitWidth}px; 
+                    min-height: ${heightPx}px; 
+                    height: ${heightPx}px; 
+                    z-index: 20; 
+                    overflow: hidden;
+                    transform: scale(var(--z, 1));
+                    transform-origin: 0 0;
+                `;
 
                 const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
                 const phoneHtml = phoneList.map(p => `<div class="flex items-center gap-1.5 text-[16px] text-gray-500 w-full"><i data-lucide="phone" class="w-4 h-4 text-green-500 shrink-0"></i><span class="font-mono truncate flex-1 font-bold">${p}</span></div>`).join('');
