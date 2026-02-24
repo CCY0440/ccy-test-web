@@ -1456,7 +1456,7 @@
             }, 550);
           };
 
-          // --- 終極手機版：防皺疊 + 防飄移 雙效縮放引擎 ---
+          // --- 終極手機版：防暴衝 + 防飄移 雙效縮放引擎 ---
           let currentScale = 1;
           let startScale = 1;
           let startDist = 0;
@@ -1466,13 +1466,20 @@
           const wrapper = document.getElementById('schedule-wrapper');
           const container = document.getElementById('schedule-container');
 
+          // ★ 修復白底問題：讓外層底色變成純白，縮小時邊緣就不會出現斷層
+          if (wrapper) {
+            wrapper.style.backgroundColor = '#ffffff';
+          }
+
           if (wrapper && container) {
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
+                // ★ 關鍵修復 1：改用 clientX/Y，絕對不能用 pageX/Y！
+                // 這樣才能徹底阻斷「無限放大」的死亡迴圈
                 startDist = Math.hypot(
-                  e.touches[0].pageX - e.touches[1].pageX,
-                  e.touches[0].pageY - e.touches[1].pageY
+                  e.touches[0].clientX - e.touches[1].clientX,
+                  e.touches[0].clientY - e.touches[1].clientY
                 );
                 startScale = currentScale;
               }
@@ -1485,36 +1492,39 @@
                 ticking = true;
 
                 window.requestAnimationFrame(() => {
+                  // ★ 關鍵修復 1：同樣改用 clientX/Y 計算當前距離
                   const currentDist = Math.hypot(
-                    e.touches[0].pageX - e.touches[1].pageX,
-                    e.touches[0].pageY - e.touches[1].pageY
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
                   );
 
-                  let newScale = startScale * (currentDist / startDist);
-                  // 設定縮放限制：最小 0.2 倍，最大 2.0 倍
-                  newScale = Math.min(Math.max(newScale, 0.2), 2.0);
+                  // 加上防呆：手指距離變動大於 10px 才開始運算，防止微小震動導致抖動
+                  if (startDist > 10) {
+                    let newScale = startScale * (currentDist / startDist);
+                    // 設定縮放限制：最小 0.3 倍，最大 2.0 倍
+                    newScale = Math.min(Math.max(newScale, 0.3), 2.0);
 
-                  if (newScale !== currentScale) {
-                    const rect = wrapper.getBoundingClientRect();
-                    const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                    const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                    if (newScale !== currentScale) {
+                      const rect = wrapper.getBoundingClientRect();
+                      const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                      const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                    // 1. 紀錄縮放前，手指按住的內容絕對座標
-                    const contentX = (wrapper.scrollLeft + touchX) / currentScale;
-                    const contentY = (wrapper.scrollTop + touchY) / currentScale;
+                      const contentX = (wrapper.scrollLeft + touchX) / currentScale;
+                      const contentY = (wrapper.scrollTop + touchY) / currentScale;
 
-                    currentScale = newScale;
+                      currentScale = newScale;
 
-                    // 2. 執行縮放 (改回 transform，絕對不會讓卡片皺在一起)
-                    container.style.transform = `scale(${currentScale})`;
+                      // 執行縮放
+                      container.style.transform = `scale(${currentScale})`;
 
-                    // 3. 反向補償容器大小，確保縮小後依然可以滑到畫面最邊緣
-                    container.style.width = `${100 / currentScale}%`;
-                    container.style.height = `${100 / currentScale}%`;
+                      // ★ 關鍵修復 2：改用 minWidth，避免強迫拉伸導致白底變形
+                      container.style.minWidth = `${100 / currentScale}%`;
+                      container.style.minHeight = `${100 / currentScale}%`;
 
-                    // 4. 捲動補償，鎖定手感，讓時間軸和卡片乖乖待在手指下方
-                    wrapper.scrollLeft = contentX * currentScale - touchX;
-                    wrapper.scrollTop = contentY * currentScale - touchY;
+                      // 捲動補償，鎖定手感不飄移
+                      wrapper.scrollLeft = contentX * currentScale - touchX;
+                      wrapper.scrollTop = contentY * currentScale - touchY;
+                    }
                   }
                   ticking = false;
                 });
