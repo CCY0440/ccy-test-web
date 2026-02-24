@@ -158,10 +158,11 @@
       z-index: 25;
     }
 
-    /* 讓縮放過程更平滑，並確保縮放中心在左上角 */
+    /* 修改這段 CSS */
     #schedule-container {
       transition: transform 0.1s ease-out;
-      transform-origin: 0 0;
+      /* 將對齊點改為中心 */
+      transform-origin: center center;
     }
 
     @media (max-width: 768px) {
@@ -1469,24 +1470,26 @@
 
             wrapper.addEventListener('touchmove', (e) => {
               if (e.touches.length === 2 && initialDistance > 0) {
-                e.preventDefault(); // 防止瀏覽器原生縮放干擾
+                e.preventDefault();
 
                 const currentDistance = Math.hypot(
                   e.touches[0].pageX - e.touches[1].pageX,
                   e.touches[0].pageY - e.touches[1].pageY
                 );
 
-                // 計算縮放倍率 (設定範圍在 0.2倍 到 2倍 之間)
                 const zoomFactor = currentDistance / initialDistance;
                 let newScale = lastScale * zoomFactor;
+
+                // ★ 1. 設定最小值為 0.2，最大值為 2
                 newScale = Math.min(Math.max(newScale, 0.2), 2);
 
                 currentScale = newScale;
+
+                // ★ 2. 執行縮放
                 container.style.transform = `scale(${currentScale})`;
 
-                // 由於使用了 scale，需要動態調整 wrapper 的滾動範圍
-                // 這能確保縮放後依然可以完整捲動
-                container.style.width = `${(100 / currentScale)}%`;
+                // ★ 3. 重要：中心對齊時，不需要手動調整寬度，
+                // 請刪除或註解掉原本那行 container.style.width = ...
               }
             }, { passive: false });
 
