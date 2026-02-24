@@ -158,11 +158,11 @@
       z-index: 25;
     }
 
-    /* 修改這段 CSS */
     #schedule-container {
-      transition: transform 0.1s ease-out;
-      /* 將對齊點改為中心 */
-      transform-origin: center center;
+      /* 移除固定對齊，改由 JS 控制 */
+      transform-origin: 0 0;
+      /* 縮放時移除過渡效果，手感會更精準、不漂移 */
+      transition: none !important;
     }
 
     @media (max-width: 768px) {
@@ -1449,22 +1449,31 @@
             }, 550);
           };
 
-          // --- 手機版兩指縮放核心邏輯 ---
+          // --- 手機版：中心點對齊兩指縮放引擎 ---
           let currentScale = 1;
-          let initialDistance = 0;
           let lastScale = 1;
+          let initialDistance = 0;
 
           const wrapper = document.getElementById('schedule-wrapper');
           const container = document.getElementById('schedule-container');
 
           if (wrapper && container) {
             wrapper.addEventListener('touchstart', (e) => {
-              // 當有兩根手指按下時，計算初始距離
               if (e.touches.length === 2) {
+                // 1. 計算初始距離
                 initialDistance = Math.hypot(
                   e.touches[0].pageX - e.touches[1].pageX,
                   e.touches[0].pageY - e.touches[1].pageY
                 );
+
+                // 2. 計算兩指間的中點 (相對於容器)
+                const rect = container.getBoundingClientRect();
+                const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+                // 3. 即時將縮放中心設定在你的兩指之間
+                // 分母除以 currentScale 是為了修正已經縮放過的座標位移
+                container.style.transformOrigin = `${centerX / currentScale}px ${centerY / currentScale}px`;
               }
             }, { passive: false });
 
@@ -1480,16 +1489,11 @@
                 const zoomFactor = currentDistance / initialDistance;
                 let newScale = lastScale * zoomFactor;
 
-                // ★ 1. 設定最小值為 0.2，最大值為 2
+                // 設定縮放限制：最小 0.2 倍，最大 2 倍
                 newScale = Math.min(Math.max(newScale, 0.2), 2);
 
                 currentScale = newScale;
-
-                // ★ 2. 執行縮放
                 container.style.transform = `scale(${currentScale})`;
-
-                // ★ 3. 重要：中心對齊時，不需要手動調整寬度，
-                // 請刪除或註解掉原本那行 container.style.width = ...
               }
             }, { passive: false });
 
