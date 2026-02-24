@@ -170,6 +170,12 @@
     #schedule-wrapper {
       -webkit-overflow-scrolling: touch;
     }
+
+    /* ★ 縮放時強制關閉所有轉場動畫，找回 60fps 絲滑手感 */
+    body.is-pinching,
+    body.is-pinching * {
+      transition: none !important;
+    }
   </style>
 </head>
 
@@ -520,7 +526,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.1 正式版)
+          📅 系統使用指南 (v1.11 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1447,7 +1453,7 @@
             }, 550);
           };
 
-          // --- 終極手機版：CSS 變數聯動引擎 (零飄移、防擠壓) ---
+          // --- 終極手機版：CSS 變數聯動引擎 (零飄移、防擠壓、極致流暢版) ---
           let currentZoom = 1;
           let startZoom = 1;
           let startDist = 0;
@@ -1460,12 +1466,14 @@
           if (wrapper) wrapper.style.backgroundColor = '#ffffff';
 
           if (wrapper && container) {
-            // 初始化變數
             container.style.setProperty('--z', currentZoom);
 
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
+                // ★ 啟動消音器：告訴系統「正在縮放，所有動畫立刻閉嘴！」
+                document.body.classList.add('is-pinching');
+
                 startDist = Math.hypot(
                   e.touches[0].clientX - e.touches[1].clientX,
                   e.touches[0].clientY - e.touches[1].clientY
@@ -1495,16 +1503,13 @@
                       const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
                       const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                      // 比例運算捲動位置
                       const ratio = newZoom / currentZoom;
                       const newScrollX = (wrapper.scrollLeft + touchX) * ratio - touchX;
                       const newScrollY = (wrapper.scrollTop + touchY) * ratio - touchY;
 
                       currentZoom = newZoom;
 
-                      // ★ 核心魔法：將新比例寫入 CSS 變數，所有卡片與格線會跟著算式自動縮放！
                       container.style.setProperty('--z', currentZoom);
-
                       wrapper.scrollLeft = newScrollX;
                       wrapper.scrollTop = newScrollY;
                     }
@@ -1514,13 +1519,19 @@
               }
             }, { passive: false });
 
-            wrapper.addEventListener('touchend', (e) => {
+            // 建立一個關閉縮放的通用函式
+            const stopPinching = (e) => {
               if (e.touches.length < 2) {
                 isPinching = false;
+                // ★ 關閉消音器：放開手指後，把 Hover 等動畫效果還原
+                document.body.classList.remove('is-pinching');
                 startDist = 0;
                 ticking = false;
               }
-            });
+            };
+
+            wrapper.addEventListener('touchend', stopPinching);
+            wrapper.addEventListener('touchcancel', stopPinching); // 加上防呆，避免被來電打斷卡住
           }
 
           // 1. 登入檢查與稱號顯示優化 (Ccy 專屬稱號 + 老師顯示 Email)
