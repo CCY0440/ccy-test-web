@@ -1476,10 +1476,10 @@
                   e.touches[0].pageY - e.touches[1].pageY
                 );
 
-                // 計算縮放倍率 (設定範圍在 0.5倍 到 2倍 之間)
+                // 計算縮放倍率 (設定範圍在 0.2倍 到 2倍 之間)
                 const zoomFactor = currentDistance / initialDistance;
                 let newScale = lastScale * zoomFactor;
-                newScale = Math.min(Math.max(newScale, 0.5), 2);
+                newScale = Math.min(Math.max(newScale, 0.2), 2);
 
                 currentScale = newScale;
                 container.style.transform = `scale(${currentScale})`;
