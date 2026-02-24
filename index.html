@@ -159,7 +159,6 @@
     }
 
     #schedule-container {
-      /* 只保留這兩個，確保排版正常 */
       transform-origin: 0 0;
       transition: none !important;
     }
@@ -524,7 +523,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.13 正式版)
+          📅 系統使用指南 (v1.11 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1451,20 +1450,23 @@
             }, 550);
           };
 
-          // --- 終極冷凍視窗版 (修復隱形 Bug)：120fps 原生流暢 + 絕對不偏移 ---
+          // --- 終極防暴衝冷凍視窗版：解決原生衝突 + 找回消失卡片 ---
           const wrapper = document.getElementById('schedule-wrapper');
 
-          // 1. 自動建立一個「冷凍視窗」來包覆您原本完美的課表
+          // 如果還沒有建立冷凍視窗，就建立它
           if (wrapper && !wrapper.parentElement.classList.contains('zoom-viewport')) {
             const viewport = document.createElement('div');
             viewport.className = 'zoom-viewport';
-            // ★ 關鍵修復：這裡加上了 height: 100%，解決畫面變成 0 高度被吃掉的 Bug！
-            viewport.style.cssText = 'position: relative; width: 100%; height: 100%; overflow: hidden; background: #ffffff;';
+
+            // ★ 關鍵修復 1：height: 100% 找回因為 0 高度而消失的卡片
+            // ★ 關鍵修復 2：touch-action: pan-x pan-y 徹底封印手機的「原生縮放」，解決「一縮小就暴衝」的死迴圈干擾！
+            // ★ 關鍵修復 3：overscroll-behavior: none 防止畫面邊緣回彈干擾計算
+            viewport.style.cssText = 'position: relative; width: 100%; height: 100%; overflow: hidden; background: #ffffff; touch-action: pan-x pan-y; overscroll-behavior: none;';
 
             wrapper.parentNode.insertBefore(viewport, wrapper);
             viewport.appendChild(wrapper);
 
-            // 2. 解放原本的 wrapper，讓它可以被 GPU 當作一張圖來縮放
+            // 解放 wrapper 成為純粹的畫布
             wrapper.style.position = 'absolute';
             wrapper.style.top = '0';
             wrapper.style.left = '0';
@@ -1472,6 +1474,8 @@
             wrapper.style.height = '100%';
             wrapper.style.transformOrigin = '0 0';
             wrapper.style.transition = 'none';
+            // 防止瀏覽器雞婆調整捲動條位置
+            wrapper.style.overflowAnchor = 'none';
 
             let currentScale = 1;
             let startScale = 1;
@@ -1508,6 +1512,7 @@
 
             viewport.addEventListener('touchmove', (e) => {
               if (isPinching && e.touches.length === 2) {
+                // e.preventDefault() 配合 touch-action 雙重保護，絕對阻斷暴衝
                 e.preventDefault();
                 if (ticking) return;
                 ticking = true;
@@ -1518,26 +1523,27 @@
                     e.touches[0].clientY - e.touches[1].clientY
                   );
 
-                  let newScale = startScale * (currentDist / startDist);
-                  newScale = Math.min(Math.max(newScale, 0.2), 2.0); // 縮放限制 (20% ~ 200%)
+                  // 防呆機制：手指間距移動超過 10px 才開始算，避免微小觸碰引發誤判
+                  if (startDist > 10) {
+                    let newScale = startScale * (currentDist / startDist);
+                    newScale = Math.min(Math.max(newScale, 0.2), 2.0); // 縮放限制範圍
 
-                  if (newScale !== currentScale) {
-                    // 反向撐開內部畫布，讓邊界永遠卡死在螢幕邊緣
-                    wrapper.style.width = `${100 / newScale}%`;
-                    wrapper.style.height = `${100 / newScale}%`;
+                    if (newScale !== currentScale) {
+                      // 反向撐開虛擬畫布，讓邊界鎖死
+                      wrapper.style.width = `${100 / newScale}%`;
+                      wrapper.style.height = `${100 / newScale}%`;
+                      wrapper.style.transform = `scale(${newScale})`;
 
-                    // GPU 圖片級縮放 (保證如單指滑動般 120fps 流暢)
-                    wrapper.style.transform = `scale(${newScale})`;
+                      const rect = viewport.getBoundingClientRect();
+                      const currentTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                      const currentTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                    const rect = viewport.getBoundingClientRect();
-                    const currentTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                    const currentTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                      // 完美物理追蹤，鎖定手指下的卡片不偏移
+                      wrapper.scrollLeft = startScrollX + (startTouchX / startScale) - (currentTouchX / newScale);
+                      wrapper.scrollTop = startScrollY + (startTouchY / startScale) - (currentTouchY / newScale);
 
-                    // 完美的物理追蹤公式：解決以前亂飄的罪魁禍首
-                    wrapper.scrollLeft = startScrollX + (startTouchX / startScale) - (currentTouchX / newScale);
-                    wrapper.scrollTop = startScrollY + (startTouchY / startScale) - (currentTouchY / newScale);
-
-                    currentScale = newScale;
+                      currentScale = newScale;
+                    }
                   }
                   ticking = false;
                 });
