@@ -159,12 +159,11 @@
     }
 
     #schedule-container {
-      /* 這是讓 sticky (固定時間軸) 完美運作的唯一屬性 */
-      zoom: 1;
+      /* 啟動變數聯動引擎 */
+      --z: 1;
+      min-width: calc(800px * var(--z)) !important;
       transform-origin: 0 0;
       transition: none !important;
-      will-change: zoom;
-      /* ⚠️ 請檢查這裡，確保把之前的 transform: scale 徹底刪除了 */
     }
 
     /* 額外修正：確保縮放後格線依然清晰 */
@@ -529,7 +528,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.11 正式版)
+          📅 系統使用指南 (v1.1 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1456,7 +1455,7 @@
             }, 550);
           };
 
-          // --- 終極手機版：完美鎖定 + 防擠壓 縮放引擎 ---
+          // --- 終極手機版：CSS 變數聯動引擎 (零飄移、防擠壓) ---
           let currentZoom = 1;
           let startZoom = 1;
           let startDist = 0;
@@ -1466,11 +1465,12 @@
           const wrapper = document.getElementById('schedule-wrapper');
           const container = document.getElementById('schedule-container');
 
-          if (wrapper) {
-            wrapper.style.backgroundColor = '#ffffff';
-          }
+          if (wrapper) wrapper.style.backgroundColor = '#ffffff';
 
           if (wrapper && container) {
+            // 初始化變數
+            container.style.setProperty('--z', currentZoom);
+
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
@@ -1503,21 +1503,18 @@
                       const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
                       const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                      const contentX = (wrapper.scrollLeft + touchX) / currentZoom;
-                      const contentY = (wrapper.scrollTop + touchY) / currentZoom;
+                      // 比例運算捲動位置
+                      const ratio = newZoom / currentZoom;
+                      const newScrollX = (wrapper.scrollLeft + touchX) * ratio - touchX;
+                      const newScrollY = (wrapper.scrollTop + touchY) * ratio - touchY;
 
                       currentZoom = newZoom;
 
-                      // 1. 執行縮放 (確保時間軸鎖定)
-                      container.style.zoom = currentZoom;
+                      // ★ 核心魔法：將新比例寫入 CSS 變數，所有卡片與格線會跟著算式自動縮放！
+                      container.style.setProperty('--z', currentZoom);
 
-                      // ★ 2. 核心修復：反向放大虛擬空間，給予卡片足夠排版空間，絕對不擠壓！
-                      container.style.minWidth = `${100 / currentZoom}%`;
-                      container.style.minHeight = `${100 / currentZoom}%`;
-
-                      // 3. 同步捲動位置，保持操作手感
-                      wrapper.scrollLeft = contentX * currentZoom - touchX;
-                      wrapper.scrollTop = contentY * currentZoom - touchY;
+                      wrapper.scrollLeft = newScrollX;
+                      wrapper.scrollTop = newScrollY;
                     }
                   }
                   ticking = false;
@@ -1946,7 +1943,7 @@
             slots.forEach((h, index) => {
               const cell = document.createElement("div");
               cell.className = "flex items-center justify-center text-xs font-semibold text-gray-400 border-b border-[#e9e9e7] bg-gray-50/30";
-              cell.style.height = `${hourHeights[index]}px`;
+              cell.style.height = `calc(${hourHeights[index]}px * var(--z, 1))`;
               cell.textContent = `${h}:00`;
               timeCol.appendChild(cell);
             });
@@ -1977,7 +1974,7 @@
 
               const dayCol = document.createElement("div");
               dayCol.className = "flex flex-col border-r border-[#e9e9e7] shrink-0 relative bg-white transition-all";
-              dayCol.style.width = `${Math.max(1, columns.length) * currentDayUnitWidth + 1}px`;
+              dayCol.style.width = `calc(${Math.max(1, columns.length) * currentDayUnitWidth + 1}px * var(--z, 1))`;
 
               const header = document.createElement("div");
               header.className = "sticky top-0 z-[400] bg-gray-50 border-b border-[#e9e9e7] flex flex-col items-center justify-center h-[60px]";
@@ -1987,12 +1984,13 @@
 
               const contentLayer = document.createElement("div");
               contentLayer.className = "relative w-full";
-              contentLayer.style.height = `${hourHeights.reduce((a, b) => a + b, 0)}px`;
+              contentLayer.style.height = `calc(${hourHeights.reduce((a, b) => a + b, 0)}px * var(--z, 1))`;
 
               slots.forEach((_, index) => {
                 const line = document.createElement("div");
                 line.className = "border-b border-[#e9e9e7] w-full pointer-events-none";
-                line.style.height = `${hourHeights[index]}px`;
+                // 替換下面這行 👇
+                line.style.height = `calc(${hourHeights[index]}px * var(--z, 1))`;
                 contentLayer.appendChild(line);
               });
 
@@ -2060,8 +2058,7 @@
                   // 5. 結束拖曳：還原狀態
                   card.ondragend = (e) => handleDragEnd(e);
                 }
-
-                card.style.cssText = `top: ${topPx}px; min-height: ${heightPx}px; height: ${heightPx}px; left: ${myIndex * currentDayUnitWidth}px; width: ${currentDayUnitWidth}px; z-index: 20; overflow: hidden;`;
+                card.style.cssText = `top: calc(${topPx}px * var(--z, 1)); min-height: calc(${heightPx}px * var(--z, 1)); height: calc(${heightPx}px * var(--z, 1)); left: calc(${myIndex * currentDayUnitWidth}px * var(--z, 1)); width: calc(${currentDayUnitWidth}px * var(--z, 1)); z-index: 20; overflow: hidden;`;
 
                 const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
                 const phoneHtml = phoneList.map(p => `<div class="flex items-center gap-1.5 text-[16px] text-gray-500 w-full"><i data-lucide="phone" class="w-4 h-4 text-green-500 shrink-0"></i><span class="font-mono truncate flex-1 font-bold">${p}</span></div>`).join('');
