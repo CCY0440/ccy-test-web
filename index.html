@@ -160,13 +160,11 @@
 
     /* 修改這段 CSS */
     #schedule-container {
-      /* 讓 zoom 預設為 1，這是讓 sticky 運作的基礎 */
-      zoom: 1;
-      /* 移除所有過渡效果，縮放必須 100% 實時跟隨手指才會有手感 */
+      /* 鎖定左上角，這是讓頂部和左邊時間不亂飄的基礎 */
+      transform-origin: 0 0 !important;
+      /* 移除動畫延遲，確保手感同步 */
       transition: none !important;
-      /* 鎖定佈局，防止縮放時產生多餘的邊距 */
-      transform-origin: 0 0;
-      will-change: zoom;
+      /* (請確保裡面沒有 zoom 或 will-change: zoom 的字眼) */
     }
 
     /* 額外修正：確保縮放後格線依然清晰 */
@@ -1458,11 +1456,12 @@
             }, 550);
           };
 
-          // --- 手機版：零漂移錨定縮放引擎 ---
-          let currentZoom = 1;
-          let startZoom = 1;
+          // --- 終極手機版：防皺疊 + 防飄移 雙效縮放引擎 ---
+          let currentScale = 1;
+          let startScale = 1;
           let startDist = 0;
           let isPinching = false;
+          let ticking = false;
 
           const wrapper = document.getElementById('schedule-wrapper');
           const container = document.getElementById('schedule-container');
@@ -1471,49 +1470,54 @@
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
-                // 1. 紀錄初始距離
                 startDist = Math.hypot(
                   e.touches[0].pageX - e.touches[1].pageX,
                   e.touches[0].pageY - e.touches[1].pageY
                 );
-                startZoom = currentZoom;
+                startScale = currentScale;
               }
             }, { passive: false });
 
             wrapper.addEventListener('touchmove', (e) => {
               if (isPinching && e.touches.length === 2) {
-                e.preventDefault(); // 禁用瀏覽器原生縮放
+                e.preventDefault();
+                if (ticking) return;
+                ticking = true;
 
-                const currentDist = Math.hypot(
-                  e.touches[0].pageX - e.touches[1].pageX,
-                  e.touches[0].pageY - e.touches[1].pageY
-                );
+                window.requestAnimationFrame(() => {
+                  const currentDist = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                  );
 
-                // 2. 計算新倍率 (範圍 0.2 ~ 2.0)
-                let newZoom = startZoom * (currentDist / startDist);
-                newZoom = Math.min(Math.max(newZoom, 0.2), 2.0);
+                  let newScale = startScale * (currentDist / startDist);
+                  // 設定縮放限制：最小 0.2 倍，最大 2.0 倍
+                  newScale = Math.min(Math.max(newScale, 0.2), 2.0);
 
-                if (newZoom !== currentZoom) {
-                  const rect = wrapper.getBoundingClientRect();
-                  // 計算兩指中心點在畫面上的位置
-                  const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                  const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                  if (newScale !== currentScale) {
+                    const rect = wrapper.getBoundingClientRect();
+                    const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                    const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                  // 3. ★ 零漂移核心算法 ★
-                  // 先算出縮放前，手指下方的內容絕對座標
-                  const preZoomContentX = (wrapper.scrollLeft + touchX) / currentZoom;
-                  const preZoomContentY = (wrapper.scrollTop + touchY) / currentZoom;
+                    // 1. 紀錄縮放前，手指按住的內容絕對座標
+                    const contentX = (wrapper.scrollLeft + touchX) / currentScale;
+                    const contentY = (wrapper.scrollTop + touchY) / currentScale;
 
-                  // 4. 執行縮放
-                  currentZoom = newZoom;
-                  container.style.zoom = currentZoom;
+                    currentScale = newScale;
 
-                  // 5. ★ 立即補償捲動位移 ★
-                  // 根據新縮放倍率，重新把捲動位置「抓」回來
-                  // 這樣 sticky 元素（時間、標頭）就會發現捲動位置是連動的，進而鎖死在邊緣
-                  wrapper.scrollLeft = preZoomContentX * currentZoom - touchX;
-                  wrapper.scrollTop = preZoomContentY * currentZoom - touchY;
-                }
+                    // 2. 執行縮放 (改回 transform，絕對不會讓卡片皺在一起)
+                    container.style.transform = `scale(${currentScale})`;
+
+                    // 3. 反向補償容器大小，確保縮小後依然可以滑到畫面最邊緣
+                    container.style.width = `${100 / currentScale}%`;
+                    container.style.height = `${100 / currentScale}%`;
+
+                    // 4. 捲動補償，鎖定手感，讓時間軸和卡片乖乖待在手指下方
+                    wrapper.scrollLeft = contentX * currentScale - touchX;
+                    wrapper.scrollTop = contentY * currentScale - touchY;
+                  }
+                  ticking = false;
+                });
               }
             }, { passive: false });
 
@@ -1521,6 +1525,7 @@
               if (e.touches.length < 2) {
                 isPinching = false;
                 startDist = 0;
+                ticking = false;
               }
             });
           }
