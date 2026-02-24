@@ -159,11 +159,12 @@
     }
 
     #schedule-container {
-      /* 啟動變數聯動引擎 */
-      --z: 1;
-      min-width: calc(800px * var(--z)) !important;
-      transform-origin: 0 0;
+      /* 這是讓頂部和左邊時間不亂飄的基礎 */
+      transform-origin: 0 0 !important;
+      /* 移除所有過渡效果，縮放必須 100% 實時跟隨手指 */
       transition: none !important;
+      /* 效能優化：強制使用顯卡渲染，找回絲滑感 */
+      will-change: transform;
     }
 
     /* 額外修正：確保縮放後格線依然清晰 */
@@ -250,7 +251,7 @@
       <div class="w-full border-t border-[#e9e9e7] my-4"></div>
 
       <div class="flex flex-col items-center justify-center text-gray-400 gap-1.5">
-        <div class="text-[10px] font-medium">網頁版本 v1.1 正式版</div>
+        <div class="text-[10px] font-medium">網頁版本 v1.11 正式版</div>
         <div class="text-[10px] font-mono opacity-60">Designed by @CCY</div>
       </div>
 
@@ -526,7 +527,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.1 正式版)
+          📅 系統使用指南 (v1.12 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1453,15 +1454,14 @@
             }, 550);
           };
 
-          // --- 終極手機版：純數學預測引擎 (120fps 零卡頓絲滑版) ---
-          let startZoom = 1;
+          // --- 終極手機版：GPU 加速 + 零漂移 縮放引擎 ---
+          let currentScale = 1;
+          let startScale = 1;
           let startDist = 0;
           let startTouchX = 0;
           let startTouchY = 0;
           let startScrollX = 0;
           let startScrollY = 0;
-          let rectLeft = 0;
-          let rectTop = 0;
           let isPinching = false;
           let ticking = false;
 
@@ -1471,85 +1471,79 @@
           if (wrapper) wrapper.style.backgroundColor = '#ffffff';
 
           if (wrapper && container) {
-            // 初始化變數 (若無則預設為 1)
-            let currentZ = parseFloat(container.style.getPropertyValue('--z')) || 1;
-            container.style.setProperty('--z', currentZ);
-
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
-
-                // ★ 啟動消音器：關閉所有 CSS 動畫，避免干擾運算
+                // 暫時關閉 Body 動畫，提升效能
                 document.body.classList.add('is-pinching');
 
-                // ★ 效能核心 1：只在「觸碰瞬間」讀取一次 DOM 元素狀態，拒絕邊滑邊讀！
                 const rect = wrapper.getBoundingClientRect();
-                rectLeft = rect.left;
-                rectTop = rect.top;
+                // 1. 紀錄觸碰瞬間的原始座標與捲動位置 (唯讀一次)
                 startScrollX = wrapper.scrollLeft;
                 startScrollY = wrapper.scrollTop;
 
-                // 紀錄初始手勢數據
                 startDist = Math.hypot(
                   e.touches[0].clientX - e.touches[1].clientX,
                   e.touches[0].clientY - e.touches[1].clientY
                 );
-                startTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rectLeft;
-                startTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rectTop;
 
-                startZoom = parseFloat(container.style.getPropertyValue('--z')) || 1;
+                startTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                startTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                startScale = currentScale;
               }
             }, { passive: false });
 
             wrapper.addEventListener('touchmove', (e) => {
               if (isPinching && e.touches.length === 2) {
-                e.preventDefault(); // 阻止瀏覽器原生滾動
-
-                if (ticking) return; // 防抖動：如果上一幀還沒畫完，就跳過
+                e.preventDefault();
+                if (ticking) return;
                 ticking = true;
 
-                // ★ 效能核心 2：在 rAF 之外先算好所有純數學，不佔用渲染時間
-                const currentDist = Math.hypot(
-                  e.touches[0].clientX - e.touches[1].clientX,
-                  e.touches[0].clientY - e.touches[1].clientY
-                );
-
-                const currentTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rectLeft;
-                const currentTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rectTop;
-
-                // 計算新縮放值 (限制 0.3 ~ 2.0 倍)
-                let newZoom = startZoom * (currentDist / startDist);
-                newZoom = Math.min(Math.max(newZoom, 0.3), 2.0);
-
-                // ★ 效能核心 3：純數學預測捲動座標！(完美支援一邊縮放、一邊雙指平移)
-                const ratio = newZoom / startZoom;
-                const newScrollX = (startScrollX + startTouchX) * ratio - currentTouchX;
-                const newScrollY = (startScrollY + startTouchY) * ratio - currentTouchY;
-
-                // 請求瀏覽器在下一幀畫面上重繪
                 window.requestAnimationFrame(() => {
-                  // ★ 效能核心 4：在這一格內「只有寫入，沒有讀取」，達成完美的 60/120fps 渲染！
-                  container.style.setProperty('--z', newZoom);
-                  wrapper.scrollLeft = newScrollX;
-                  wrapper.scrollTop = newScrollY;
+                  const currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                  );
+
+                  // 2. 計算新縮放倍率 (0.3 ~ 2.0)
+                  let newScale = startScale * (currentDist / startDist);
+                  newScale = Math.min(Math.max(newScale, 0.3), 2.0);
+
+                  if (newScale !== currentScale) {
+                    const rect = wrapper.getBoundingClientRect();
+                    const currentTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                    const currentTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+                    // 3. ★ 核心魔法：GPU 縮放與容器補償 ★
+                    container.style.transform = `scale(${newScale})`;
+
+                    // 補償容器大小，確保 sticky 元素不亂飄
+                    container.style.width = `${100 / newScale}%`;
+                    container.style.height = `${100 / newScale}%`;
+
+                    // 4. 捲動位置數學補償 (讓縮放中心跟隨手指)
+                    const ratio = newScale / startScale;
+                    wrapper.scrollLeft = (startScrollX + startTouchX) * ratio - currentTouchX;
+                    wrapper.scrollTop = (startScrollY + startTouchY) * ratio - currentTouchY;
+
+                    currentScale = newScale;
+                  }
                   ticking = false;
                 });
               }
             }, { passive: false });
 
-            // 關閉縮放狀態的共用函式
             const stopPinching = (e) => {
               if (e.touches.length < 2) {
                 isPinching = false;
                 startDist = 0;
                 ticking = false;
-                // ★ 解除消音器：手放開後，把 Hover 等按鈕動畫還給使用者
                 document.body.classList.remove('is-pinching');
               }
             };
 
             wrapper.addEventListener('touchend', stopPinching);
-            wrapper.addEventListener('touchcancel', stopPinching); // 防止被系統通知或來電打斷而卡死
+            wrapper.addEventListener('touchcancel', stopPinching);
           }
 
           // 1. 登入檢查與稱號顯示優化 (Ccy 專屬稱號 + 老師顯示 Email)
@@ -2078,8 +2072,8 @@
                 // 2. 實體寬高 (width, height) 保持原比例，確保文字絕不擠壓！
                 // 3. 利用 GPU (transform: scale) 直接將完整畫好的卡片等比例縮小。
                 card.style.cssText = `
-                    top: calc(${topPx}px * var(--z, 1)); 
-                    left: calc(${myIndex * currentDayUnitWidth}px * var(--z, 1)); 
+                    top: ${topPx}px; 
+                    left: ${myIndex * currentDayUnitWidth}px; 
                     width: ${currentDayUnitWidth}px; 
                     min-height: ${heightPx}px; 
                     height: ${heightPx}px; 
