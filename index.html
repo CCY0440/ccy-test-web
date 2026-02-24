@@ -158,11 +158,19 @@
       z-index: 25;
     }
 
+    /* 修改這段 CSS */
     #schedule-container {
-      /* 強制鎖定左上角，防止固定欄位飄移 */
-      transform-origin: 0 0 !important;
-      /* 縮放時移除過渡效果，手感才會跟手 */
+      /* 移除 transform，改用 zoom */
+      zoom: 1;
+      /* 確保縮放基點在左上角，這是讓 sticky 運作的關鍵 */
+      transform-origin: 0 0;
+      /* 移除 transition 讓縮放過程不會有「殘影」或「延遲感」 */
       transition: none !important;
+    }
+
+    /* 額外修正：確保縮放後格線依然清晰 */
+    #schedule-wrapper {
+      -webkit-overflow-scrolling: touch;
     }
 
     @media (max-width: 768px) {
@@ -1449,10 +1457,10 @@
             }, 550);
           };
 
-          // --- 手機版：完美對齊且不飄移的縮放引擎 ---
-          let currentScale = 1;
-          let lastScale = 1;
-          let initialDistance = 0;
+          // --- 手機版：全方位鎖定 (防飄移) 縮放引擎 ---
+          let currentZoom = 1;
+          let lastZoom = 1;
+          let startDistance = 0;
 
           const wrapper = document.getElementById('schedule-wrapper');
           const container = document.getElementById('schedule-container');
@@ -1460,17 +1468,17 @@
           if (wrapper && container) {
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
-                // 1. 紀錄初始手指距離
-                initialDistance = Math.hypot(
+                // 1. 紀錄初始手指距離與目前的縮放值
+                startDistance = Math.hypot(
                   e.touches[0].pageX - e.touches[1].pageX,
                   e.touches[0].pageY - e.touches[1].pageY
                 );
-                lastScale = currentScale;
+                startZoom = currentZoom;
               }
             }, { passive: false });
 
             wrapper.addEventListener('touchmove', (e) => {
-              if (e.touches.length === 2 && initialDistance > 0) {
+              if (e.touches.length === 2 && startDistance > 0) {
                 e.preventDefault();
 
                 const currentDistance = Math.hypot(
@@ -1479,33 +1487,34 @@
                 );
 
                 // 2. 計算新縮放倍率 (範圍 0.2 ~ 2.0)
-                const zoomFactor = currentDistance / initialDistance;
-                let newScale = lastScale * zoomFactor;
-                newScale = Math.min(Math.max(newScale, 0.2), 2.0);
+                let newZoom = startZoom * (currentDistance / startDistance);
+                newZoom = Math.min(Math.max(newZoom, 0.2), 2.0);
 
-                if (newScale !== currentScale) {
-                  // 3. 核心算法：計算手指中點在 wrapper 裡的相對位置
+                if (newZoom !== currentZoom) {
                   const rect = wrapper.getBoundingClientRect();
-                  const touchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                  const touchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                  // 手指中心點在螢幕上的位置
+                  const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                  const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                  // 4. 計算縮放造成的位移補償
-                  const scaleRatio = newScale / currentScale;
+                  // 3. 核心算法：計算縮放前，手指中心點對應到內容的「絕對座標」
+                  const contentX = (wrapper.scrollLeft + touchX) / currentZoom;
+                  const contentY = (wrapper.scrollTop + touchY) / currentZoom;
 
-                  // 5. 執行縮放
-                  currentScale = newScale;
-                  container.style.transform = `scale(${currentScale})`;
+                  // 4. 執行縮放 (使用 zoom)
+                  currentZoom = newZoom;
+                  container.style.zoom = currentZoom;
 
-                  // 6. ★ 關鍵補償：手動調整捲動位置，模擬中心點縮放手感
-                  wrapper.scrollLeft = (wrapper.scrollLeft + touchCenterX) * scaleRatio - touchCenterX;
-                  wrapper.scrollTop = (wrapper.scrollTop + touchCenterY) * scaleRatio - touchCenterY;
+                  // 5. ★ 關鍵補償：根據新縮放值重新定位捲動條，達成「中心點縮放」
+                  // 這能確保背景、卡片、時間軸三方永遠對齊，不會亂飄
+                  wrapper.scrollLeft = contentX * currentZoom - touchX;
+                  wrapper.scrollTop = contentY * currentZoom - touchY;
                 }
               }
             }, { passive: false });
 
             wrapper.addEventListener('touchend', (e) => {
               if (e.touches.length < 2) {
-                initialDistance = 0;
+                startDistance = 0;
               }
             });
           }
