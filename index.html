@@ -1453,88 +1453,109 @@
             }, 550);
           };
 
-          // --- 終極手機版：變數佈局 + 顯卡級流暢 混合縮放引擎 ---
-          let currentZoom = parseFloat(document.getElementById('schedule-container')?.style.getPropertyValue('--z')) || 1;
-          let startZoom = 1;
-          let startDist = 0;
-          let pinchCenterX = 0;
-          let pinchCenterY = 0;
-          let isPinching = false;
-
+          // --- 終極冷凍視窗版：120fps 原生流暢 + 絕對不偏移 ---
           const wrapper = document.getElementById('schedule-wrapper');
-          const container = document.getElementById('schedule-container');
 
-          if (wrapper) wrapper.style.backgroundColor = '#ffffff';
+          // 1. 自動建立一個「冷凍視窗」來包覆您原本完美的課表
+          if (wrapper && !wrapper.parentElement.classList.contains('zoom-viewport')) {
+            const viewport = document.createElement('div');
+            viewport.className = 'zoom-viewport';
+            // 讓 viewport 完美取代原本 wrapper 的排版位置
+            viewport.style.cssText = 'position: relative; width: 100%; flex: 1; overflow: hidden; background: #ffffff;';
 
-          if (wrapper && container) {
-            container.style.setProperty('--z', currentZoom);
+            wrapper.parentNode.insertBefore(viewport, wrapper);
+            viewport.appendChild(wrapper);
 
-            wrapper.addEventListener('touchstart', (e) => {
+            // 2. 解放原本的 wrapper，讓它可以被 GPU 當作一張圖來縮放
+            wrapper.style.position = 'absolute';
+            wrapper.style.top = '0';
+            wrapper.style.left = '0';
+            wrapper.style.width = '100%';
+            wrapper.style.height = '100%';
+            wrapper.style.transformOrigin = '0 0';
+            wrapper.style.transition = 'none';
+
+            let currentScale = 1;
+            let startScale = 1;
+            let startDist = 0;
+            let startScrollX = 0;
+            let startScrollY = 0;
+            let startTouchX = 0;
+            let startTouchY = 0;
+            let isPinching = false;
+            let ticking = false;
+
+            viewport.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
-                document.body.classList.add('is-pinching'); // 關閉卡片 hover 動畫防干擾
+                // 暫停所有 Hover 動畫，確保手機 CPU 專心處理縮放
+                document.body.classList.add('is-pinching');
 
                 startDist = Math.hypot(
                   e.touches[0].clientX - e.touches[1].clientX,
                   e.touches[0].clientY - e.touches[1].clientY
                 );
+                startScale = currentScale;
 
-                // 1. 鎖定雙指中心點為「顯卡縮放中心」
-                const rect = container.getBoundingClientRect();
-                pinchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                pinchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-                container.style.transformOrigin = `${pinchCenterX}px ${pinchCenterY}px`;
+                // 紀錄觸碰點在螢幕上的位置
+                const rect = viewport.getBoundingClientRect();
+                startTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                startTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                startZoom = currentZoom;
+                // 紀錄當下捲動條位置
+                startScrollX = wrapper.scrollLeft;
+                startScrollY = wrapper.scrollTop;
               }
             }, { passive: false });
 
-            wrapper.addEventListener('touchmove', (e) => {
+            viewport.addEventListener('touchmove', (e) => {
               if (isPinching && e.touches.length === 2) {
                 e.preventDefault();
+                if (ticking) return;
+                ticking = true;
 
-                const currentDist = Math.hypot(
-                  e.touches[0].clientX - e.touches[1].clientX,
-                  e.touches[0].clientY - e.touches[1].clientY
-                );
-
-                const ratio = currentDist / startDist;
-                let potentialZoom = startZoom * ratio;
-                potentialZoom = Math.min(Math.max(potentialZoom, 0.3), 2.0); // 限制 0.3 ~ 2.0 倍
-                const finalRatio = potentialZoom / startZoom;
-
-                // 2. ★ 解決流暢度：捏合過程中，純粹用顯卡 (transform) 放大縮小畫面
-                // 拒絕重新排版，達成跟單指滑動一樣的極致絲滑！
                 window.requestAnimationFrame(() => {
-                  container.style.transform = `scale(${finalRatio})`;
+                  const currentDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                  );
+
+                  let newScale = startScale * (currentDist / startDist);
+                  newScale = Math.min(Math.max(newScale, 0.2), 2.0); // 縮放限制 (20% ~ 200%)
+
+                  if (newScale !== currentScale) {
+                    // ★ 核心魔法：反向撐開內部畫布，讓邊界永遠卡死在螢幕邊緣
+                    wrapper.style.width = `${100 / newScale}%`;
+                    wrapper.style.height = `${100 / newScale}%`;
+
+                    // ★ GPU 圖片級縮放 (保證如單指滑動般 120fps 流暢)
+                    wrapper.style.transform = `scale(${newScale})`;
+
+                    const rect = viewport.getBoundingClientRect();
+                    const currentTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                    const currentTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+                    // ★ 真正正確的物理追蹤公式：解決以前亂飄的罪魁禍首
+                    wrapper.scrollLeft = startScrollX + (startTouchX / startScale) - (currentTouchX / newScale);
+                    wrapper.scrollTop = startScrollY + (startTouchY / startScale) - (currentTouchY / newScale);
+
+                    currentScale = newScale;
+                  }
+                  ticking = false;
                 });
               }
             }, { passive: false });
 
             const stopPinching = (e) => {
-              if (isPinching && e.touches.length < 2) {
+              if (e.touches.length < 2) {
                 isPinching = false;
-
-                // 取得剛才滑動結束時的最終倍率
-                const match = container.style.transform.match(/scale\(([^)]+)\)/);
-                const finalRatio = match ? parseFloat(match[1]) : 1;
-                currentZoom = startZoom * finalRatio;
-
-                // 3. ★ 恢復位置邏輯：放開瞬間，移除顯卡縮放，瞬間寫入您原本完美的 --z 變數
-                container.style.transform = 'none';
-                container.style.setProperty('--z', currentZoom);
-
-                // 補償捲動條，讓畫面精準維持在手指剛才放開的地方
-                wrapper.scrollLeft += pinchCenterX * (finalRatio - 1);
-                wrapper.scrollTop += pinchCenterY * (finalRatio - 1);
-
-                document.body.classList.remove('is-pinching');
                 startDist = 0;
+                document.body.classList.remove('is-pinching');
               }
             };
 
-            wrapper.addEventListener('touchend', stopPinching);
-            wrapper.addEventListener('touchcancel', stopPinching);
+            viewport.addEventListener('touchend', stopPinching);
+            viewport.addEventListener('touchcancel', stopPinching);
           }
 
           // 1. 登入檢查與稱號顯示優化 (Ccy 專屬稱號 + 老師顯示 Email)
