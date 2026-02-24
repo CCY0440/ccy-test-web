@@ -247,7 +247,7 @@
       <div class="w-full border-t border-[#e9e9e7] my-4"></div>
 
       <div class="flex flex-col items-center justify-center text-gray-400 gap-1.5">
-        <div class="text-[10px] font-medium">網頁版本 v1.1 正式版</div>
+        <div class="text-[10px] font-medium">網頁版本 v1.12 正式版</div>
         <div class="text-[10px] font-mono opacity-60">Designed by @CCY</div>
       </div>
 
@@ -523,7 +523,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.11 正式版)
+          📅 系統使用指南 (v1.12 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1619,12 +1619,17 @@
               if (t) t.viewable_teachers = idsString;
               setStatus('權限名單已成功儲存！', 'success');
               closePermissionsModal();
+              // 寫入日誌
+              const targetTeacher = allTeachers.find(t => t.id === editingPermTeacherId);
+              await recordLog('權限設定', `修改了老師 [${targetTeacher?.name}] 的側邊欄可見名單`, 'teachers', null, null);
             }
           }
 
           // 登出函式
           async function handleLogout() {
             if (!(await sysConfirm("您確定要登出系統嗎？", "登出確認", "info"))) return;
+            // ★ 寫入日誌
+            await recordLog('系統操作', '登出系統', 'auth', null, null);
             await _client.auth.signOut();
             window.location.href = "login.html";
           }
@@ -2607,6 +2612,8 @@
             newName = newName.trim();
             if (!newName) return sysAlert("老師名字不能為空！", "資料錯誤");
 
+            const oldTeacher = allTeachers.find(t => t.id === id);
+
             setStatus("正在更新資料...");
             const { error } = await _client.from("teachers").update({ name: newName }).eq("id", id);
 
@@ -2614,6 +2621,9 @@
               setStatus("更新失敗", "error");
               await sysAlert("更新失敗: " + error.message, "系統錯誤");
             } else {
+              // ★ 寫入日誌
+              await recordLog('修改老師', `將老師 [${oldTeacher?.name}] 更名為 [${newName}]`, 'teachers', oldTeacher, { ...oldTeacher, name: newName });
+
               setStatus("更新成功", "success");
               if (currentTid === id) document.getElementById("main-title").textContent = `${newName} · 本週課表`;
               await fetchTeachers();
@@ -2629,12 +2639,16 @@
             if (!name) return sysAlert("請輸入老師姓名", "資料不齊全");
 
             setStatus("正在新增老師...");
-            const { error } = await _client.from("teachers").insert([{ name }]);
+            // 加上 .select() 以便獲取新增後的 ID
+            const { data, error } = await _client.from("teachers").insert([{ name }]).select();
 
             if (error) {
               setStatus("新增失敗", "error");
               await sysAlert("新增失敗: " + error.message, "系統錯誤");
             } else {
+              // ★ 寫入日誌
+              await recordLog('新增老師', `建立了一位新老師：[${name}]`, 'teachers', null, data[0]);
+
               input.value = "";
               setStatus("老師新增成功", "success");
               await fetchTeachers();
@@ -2646,6 +2660,8 @@
           async function deleteTeacher(id) {
             if (!(await sysConfirm("確定要刪除這位老師嗎？<br><span class='text-xs text-red-500'>相關的所有課程將會一併消失！</span>", "刪除老師", "danger"))) return;
 
+            const oldTeacher = allTeachers.find(t => t.id === id);
+
             setStatus("正在刪除老師...");
             const { error } = await _client.from("teachers").delete().eq("id", id);
 
@@ -2653,8 +2669,10 @@
               setStatus("刪除失敗", "error");
               await sysAlert("刪除失敗: " + error.message, "系統錯誤");
             } else {
+              // ★ 寫入日誌
+              await recordLog('刪除老師', `刪除了老師名單：[${oldTeacher?.name}]`, 'teachers', oldTeacher, null);
+
               setStatus("老師已刪除", "success");
-              // 如果刪除的是當前選取的老師，重置 ID 避免顯示錯誤
               if (currentTid === id) currentTid = null;
               await fetchTeachers();
               await renderTeacherManageList();
@@ -2834,7 +2852,7 @@
           // --- 功能 A：薪資結算匯出/匯入 (只改狀態) ---
 
           // A1. 匯出薪資報表 (修正版：標示姓名不可修改)
-          function exportDailyReport() {
+          async function exportDailyReport() {
             if (_salaryData.length === 0) return sysAlert("請先按「開始計算」產生資料！", "尚未計算");
 
             const exportData = _salaryData.map(item => {
@@ -2869,7 +2887,10 @@
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "薪資結算");
+            // ★ 寫入日誌
             const teacherName = document.getElementById("main-title").textContent.split(' · ')[0] || "老師";
+            await recordLog('匯出報表', `下載了 [${teacherName}] 的薪資結算 Excel`, 'system', null, null);
+
             XLSX.writeFile(wb, `${teacherName}_薪資結算表.xlsx`);
           }
 
@@ -2914,8 +2935,11 @@
                 setStatus(`正在更新 ${updates.length} 筆紀錄...`);
 
                 const { error } = await _client.from("lesson_records").upsert(updates, { onConflict: 'schedule_id,actual_date' });
-
                 if (error) throw error;
+
+                // ★ 寫入日誌
+                const targetTeacherName = document.getElementById("main-title").textContent.split(' · ')[0] || "該老師";
+                await recordLog('匯入資料', `透過 Excel 批次修正了 [${targetTeacherName}] 的薪資與點名紀錄 (共 ${updates.length} 筆)`, 'lesson_records', null, null);
 
                 setStatus("薪資與金額更新成功！", "success");
                 input.value = "";
@@ -2973,7 +2997,10 @@
             const ws = XLSX.utils.json_to_sheet(exportData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "課表管理");
+            // ★ 寫入日誌
             const teacherName = document.getElementById("main-title").textContent.split(' · ')[0];
+            await recordLog('匯出資料', `下載了 [${teacherName}] 的完整課表 Excel`, 'system', null, null);
+
             XLSX.writeFile(wb, `${teacherName}_完整課表管理.xlsx`);
           }
 
@@ -3104,6 +3131,7 @@
             document.getElementById("new-password").value = "";
           }
 
+          // 修改密碼
           async function handleUpdatePassword() {
             const newPwd = document.getElementById("new-password").value;
 
@@ -3117,6 +3145,8 @@
             if (error) {
               await sysAlert("變更失敗：" + error.message, "系統錯誤");
             } else {
+              // ★ 寫入日誌
+              await recordLog('安全設定', '修改了登入密碼', 'auth', null, null);
               await sysAlert("密碼變更成功！<br>下次登入請使用新密碼。", "變更成功");
               closePasswordModal();
             }
@@ -3219,6 +3249,11 @@
               setStatus(forceClear ? "備註已清空" : "備註已更新", "success");
               closeRemarkModal();
               await refreshData();
+              // 寫入日誌
+              const master = _cachedSchedule.find(s => s.id === remarkTargetId);
+              const actionName = forceClear ? "清空備註" : "修改備註";
+              const detailText = forceClear ? "清空了該區間的備註" : `將備註更新為：「${text}」`;
+              await recordLog(actionName, `[${master?.course_name}] ${startStr} 至 ${endStr}：${detailText}`, 'lesson_records', null, null);
             }
           }
 
@@ -3709,7 +3744,9 @@
               if (log.action_type.includes('修改') || log.action_type.includes('點名')) badgeColor = "border-blue-200 text-blue-700 bg-blue-50";
               if (log.action_type.includes('刪除')) badgeColor = "border-red-200 text-red-700 bg-red-50";
 
-              const canUndo = log.old_data && (log.action_type.includes('修改') || log.action_type.includes('刪除') || log.action_type.includes('點名'));
+              // ▼ 替換為這段 ▼
+              const undoableTypes = ['新增課程', '刪除課程', '修改課程', '修改點名'];
+              const canUndo = undoableTypes.includes(log.action_type);
 
               const row = document.createElement("tr");
               row.className = "hover:bg-blue-50/50 transition-colors";
@@ -3867,6 +3904,11 @@
                 }
               }
               await _client.from('action_logs').delete().eq('id', logId);
+
+              // ★ 寫入日誌：紀錄是誰按下了復原，以及他復原了什麼
+              const undoTargetName = log.actor_name ? `(${log.actor_name} 執行的)` : '';
+              await recordLog('復原操作', `撤銷了先前的動作 ${undoTargetName}：[${log.action_type}]`, 'system', null, null);
+
               setStatus("時光倒流成功！", "success");
               await refreshData();
               loadLogs();
@@ -4031,6 +4073,9 @@
                 // 2. 寫入 Excel 的內容
                 const { error } = await _client.from("schedules").insert(newSchedules);
                 if (error) throw error;
+
+                // ★ 寫入日誌
+                await recordLog('匯入資料', `透過 Excel 覆蓋了 [${targetTeacherName}] 的完整課表 (共 ${newSchedules.length} 筆)`, 'schedules', null, null);
 
                 setStatus("同步成功", "success");
                 input.value = "";
