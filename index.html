@@ -526,7 +526,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.11 正式版)
+          📅 系統使用指南 (v1.1 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1453,10 +1453,15 @@
             }, 550);
           };
 
-          // --- 終極手機版：CSS 變數聯動引擎 (零飄移、防擠壓、極致流暢版) ---
-          let currentZoom = 1;
+          // --- 終極手機版：純數學預測引擎 (120fps 零卡頓絲滑版) ---
           let startZoom = 1;
           let startDist = 0;
+          let startTouchX = 0;
+          let startTouchY = 0;
+          let startScrollX = 0;
+          let startScrollY = 0;
+          let rectLeft = 0;
+          let rectTop = 0;
           let isPinching = false;
           let ticking = false;
 
@@ -1466,72 +1471,85 @@
           if (wrapper) wrapper.style.backgroundColor = '#ffffff';
 
           if (wrapper && container) {
-            container.style.setProperty('--z', currentZoom);
+            // 初始化變數 (若無則預設為 1)
+            let currentZ = parseFloat(container.style.getPropertyValue('--z')) || 1;
+            container.style.setProperty('--z', currentZ);
 
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
-                // ★ 啟動消音器：告訴系統「正在縮放，所有動畫立刻閉嘴！」
+
+                // ★ 啟動消音器：關閉所有 CSS 動畫，避免干擾運算
                 document.body.classList.add('is-pinching');
 
+                // ★ 效能核心 1：只在「觸碰瞬間」讀取一次 DOM 元素狀態，拒絕邊滑邊讀！
+                const rect = wrapper.getBoundingClientRect();
+                rectLeft = rect.left;
+                rectTop = rect.top;
+                startScrollX = wrapper.scrollLeft;
+                startScrollY = wrapper.scrollTop;
+
+                // 紀錄初始手勢數據
                 startDist = Math.hypot(
                   e.touches[0].clientX - e.touches[1].clientX,
                   e.touches[0].clientY - e.touches[1].clientY
                 );
-                startZoom = currentZoom;
+                startTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rectLeft;
+                startTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rectTop;
+
+                startZoom = parseFloat(container.style.getPropertyValue('--z')) || 1;
               }
             }, { passive: false });
 
             wrapper.addEventListener('touchmove', (e) => {
               if (isPinching && e.touches.length === 2) {
-                e.preventDefault();
-                if (ticking) return;
+                e.preventDefault(); // 阻止瀏覽器原生滾動
+
+                if (ticking) return; // 防抖動：如果上一幀還沒畫完，就跳過
                 ticking = true;
 
+                // ★ 效能核心 2：在 rAF 之外先算好所有純數學，不佔用渲染時間
+                const currentDist = Math.hypot(
+                  e.touches[0].clientX - e.touches[1].clientX,
+                  e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                const currentTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rectLeft;
+                const currentTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rectTop;
+
+                // 計算新縮放值 (限制 0.3 ~ 2.0 倍)
+                let newZoom = startZoom * (currentDist / startDist);
+                newZoom = Math.min(Math.max(newZoom, 0.3), 2.0);
+
+                // ★ 效能核心 3：純數學預測捲動座標！(完美支援一邊縮放、一邊雙指平移)
+                const ratio = newZoom / startZoom;
+                const newScrollX = (startScrollX + startTouchX) * ratio - currentTouchX;
+                const newScrollY = (startScrollY + startTouchY) * ratio - currentTouchY;
+
+                // 請求瀏覽器在下一幀畫面上重繪
                 window.requestAnimationFrame(() => {
-                  const currentDist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                  );
-
-                  if (startDist > 5) {
-                    let newZoom = startZoom * (currentDist / startDist);
-                    newZoom = Math.min(Math.max(newZoom, 0.3), 2.0);
-
-                    if (newZoom !== currentZoom) {
-                      const rect = wrapper.getBoundingClientRect();
-                      const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                      const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-
-                      const ratio = newZoom / currentZoom;
-                      const newScrollX = (wrapper.scrollLeft + touchX) * ratio - touchX;
-                      const newScrollY = (wrapper.scrollTop + touchY) * ratio - touchY;
-
-                      currentZoom = newZoom;
-
-                      container.style.setProperty('--z', currentZoom);
-                      wrapper.scrollLeft = newScrollX;
-                      wrapper.scrollTop = newScrollY;
-                    }
-                  }
+                  // ★ 效能核心 4：在這一格內「只有寫入，沒有讀取」，達成完美的 60/120fps 渲染！
+                  container.style.setProperty('--z', newZoom);
+                  wrapper.scrollLeft = newScrollX;
+                  wrapper.scrollTop = newScrollY;
                   ticking = false;
                 });
               }
             }, { passive: false });
 
-            // 建立一個關閉縮放的通用函式
+            // 關閉縮放狀態的共用函式
             const stopPinching = (e) => {
               if (e.touches.length < 2) {
                 isPinching = false;
-                // ★ 關閉消音器：放開手指後，把 Hover 等動畫效果還原
-                document.body.classList.remove('is-pinching');
                 startDist = 0;
                 ticking = false;
+                // ★ 解除消音器：手放開後，把 Hover 等按鈕動畫還給使用者
+                document.body.classList.remove('is-pinching');
               }
             };
 
             wrapper.addEventListener('touchend', stopPinching);
-            wrapper.addEventListener('touchcancel', stopPinching); // 加上防呆，避免被來電打斷卡住
+            wrapper.addEventListener('touchcancel', stopPinching); // 防止被系統通知或來電打斷而卡死
           }
 
           // 1. 登入檢查與稱號顯示優化 (Ccy 專屬稱號 + 老師顯示 Email)
