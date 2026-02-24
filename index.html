@@ -158,13 +158,13 @@
       z-index: 25;
     }
 
-    /* 修改這段 CSS */
     #schedule-container {
-      /* 鎖定左上角，這是讓頂部和左邊時間不亂飄的基礎 */
-      transform-origin: 0 0 !important;
-      /* 移除動畫延遲，確保手感同步 */
+      /* 這是讓 sticky (固定時間軸) 完美運作的唯一屬性 */
+      zoom: 1;
+      transform-origin: 0 0;
       transition: none !important;
-      /* (請確保裡面沒有 zoom 或 will-change: zoom 的字眼) */
+      will-change: zoom;
+      /* ⚠️ 請檢查這裡，確保把之前的 transform: scale 徹底刪除了 */
     }
 
     /* 額外修正：確保縮放後格線依然清晰 */
@@ -1456,9 +1456,9 @@
             }, 550);
           };
 
-          // --- 終極手機版：防暴衝 + 防飄移 雙效縮放引擎 ---
-          let currentScale = 1;
-          let startScale = 1;
+          // --- 終極手機版：完美鎖定時間軸 + 防暴衝縮放引擎 ---
+          let currentZoom = 1;
+          let startZoom = 1;
           let startDist = 0;
           let isPinching = false;
           let ticking = false;
@@ -1466,7 +1466,7 @@
           const wrapper = document.getElementById('schedule-wrapper');
           const container = document.getElementById('schedule-container');
 
-          // ★ 修復白底問題：讓外層底色變成純白，縮小時邊緣就不會出現斷層
+          // 讓外層底色變成純白，解決縮小後邊緣斷層的問題
           if (wrapper) {
             wrapper.style.backgroundColor = '#ffffff';
           }
@@ -1475,13 +1475,12 @@
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
-                // ★ 關鍵修復 1：改用 clientX/Y，絕對不能用 pageX/Y！
-                // 這樣才能徹底阻斷「無限放大」的死亡迴圈
+                // 使用 clientX/Y，忽略捲動條干擾，徹底解決「無限暴衝」死迴圈
                 startDist = Math.hypot(
                   e.touches[0].clientX - e.touches[1].clientX,
                   e.touches[0].clientY - e.touches[1].clientY
                 );
-                startScale = currentScale;
+                startZoom = currentZoom;
               }
             }, { passive: false });
 
@@ -1492,38 +1491,34 @@
                 ticking = true;
 
                 window.requestAnimationFrame(() => {
-                  // ★ 關鍵修復 1：同樣改用 clientX/Y 計算當前距離
                   const currentDist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
                   );
 
-                  // 加上防呆：手指距離變動大於 10px 才開始運算，防止微小震動導致抖動
-                  if (startDist > 10) {
-                    let newScale = startScale * (currentDist / startDist);
-                    // 設定縮放限制：最小 0.3 倍，最大 2.0 倍
-                    newScale = Math.min(Math.max(newScale, 0.3), 2.0);
+                  // 防呆機制：手指移動超過 5px 才運算，避免手抖造成畫面閃爍
+                  if (startDist > 5) {
+                    let newZoom = startZoom * (currentDist / startDist);
+                    // 限制範圍：最小 0.3 倍，最大 2.0 倍
+                    newZoom = Math.min(Math.max(newZoom, 0.3), 2.0);
 
-                    if (newScale !== currentScale) {
+                    if (newZoom !== currentZoom) {
                       const rect = wrapper.getBoundingClientRect();
                       const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
                       const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                      const contentX = (wrapper.scrollLeft + touchX) / currentScale;
-                      const contentY = (wrapper.scrollTop + touchY) / currentScale;
+                      // 計算縮放前，手指按住的內容絕對座標
+                      const contentX = (wrapper.scrollLeft + touchX) / currentZoom;
+                      const contentY = (wrapper.scrollTop + touchY) / currentZoom;
 
-                      currentScale = newScale;
+                      currentZoom = newZoom;
 
-                      // 執行縮放
-                      container.style.transform = `scale(${currentScale})`;
+                      // ★ 執行縮放：使用 zoom，這能確保時間軸乖乖鎖死在邊緣
+                      container.style.zoom = currentZoom;
 
-                      // ★ 關鍵修復 2：改用 minWidth，避免強迫拉伸導致白底變形
-                      container.style.minWidth = `${100 / currentScale}%`;
-                      container.style.minHeight = `${100 / currentScale}%`;
-
-                      // 捲動補償，鎖定手感不飄移
-                      wrapper.scrollLeft = contentX * currentScale - touchX;
-                      wrapper.scrollTop = contentY * currentScale - touchY;
+                      // 同步補償捲動位置，讓卡片完美跟隨手指不滑走
+                      wrapper.scrollLeft = contentX * currentZoom - touchX;
+                      wrapper.scrollTop = contentY * currentZoom - touchY;
                     }
                   }
                   ticking = false;
