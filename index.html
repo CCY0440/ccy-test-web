@@ -159,9 +159,9 @@
     }
 
     #schedule-container {
-      /* 移除固定對齊，改由 JS 控制 */
-      transform-origin: 0 0;
-      /* 縮放時移除過渡效果，手感會更精準、不漂移 */
+      /* 強制鎖定左上角，防止固定欄位飄移 */
+      transform-origin: 0 0 !important;
+      /* 縮放時移除過渡效果，手感才會跟手 */
       transition: none !important;
     }
 
@@ -1449,7 +1449,7 @@
             }, 550);
           };
 
-          // --- 手機版：中心點對齊兩指縮放引擎 ---
+          // --- 手機版：完美對齊且不飄移的縮放引擎 ---
           let currentScale = 1;
           let lastScale = 1;
           let initialDistance = 0;
@@ -1460,20 +1460,12 @@
           if (wrapper && container) {
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
-                // 1. 計算初始距離
+                // 1. 紀錄初始手指距離
                 initialDistance = Math.hypot(
                   e.touches[0].pageX - e.touches[1].pageX,
                   e.touches[0].pageY - e.touches[1].pageY
                 );
-
-                // 2. 計算兩指間的中點 (相對於容器)
-                const rect = container.getBoundingClientRect();
-                const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-
-                // 3. 即時將縮放中心設定在你的兩指之間
-                // 分母除以 currentScale 是為了修正已經縮放過的座標位移
-                container.style.transformOrigin = `${centerX / currentScale}px ${centerY / currentScale}px`;
+                lastScale = currentScale;
               }
             }, { passive: false });
 
@@ -1486,20 +1478,33 @@
                   e.touches[0].pageY - e.touches[1].pageY
                 );
 
+                // 2. 計算新縮放倍率 (範圍 0.2 ~ 2.0)
                 const zoomFactor = currentDistance / initialDistance;
                 let newScale = lastScale * zoomFactor;
+                newScale = Math.min(Math.max(newScale, 0.2), 2.0);
 
-                // 設定縮放限制：最小 0.2 倍，最大 2 倍
-                newScale = Math.min(Math.max(newScale, 0.2), 2);
+                if (newScale !== currentScale) {
+                  // 3. 核心算法：計算手指中點在 wrapper 裡的相對位置
+                  const rect = wrapper.getBoundingClientRect();
+                  const touchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                  const touchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                currentScale = newScale;
-                container.style.transform = `scale(${currentScale})`;
+                  // 4. 計算縮放造成的位移補償
+                  const scaleRatio = newScale / currentScale;
+
+                  // 5. 執行縮放
+                  currentScale = newScale;
+                  container.style.transform = `scale(${currentScale})`;
+
+                  // 6. ★ 關鍵補償：手動調整捲動位置，模擬中心點縮放手感
+                  wrapper.scrollLeft = (wrapper.scrollLeft + touchCenterX) * scaleRatio - touchCenterX;
+                  wrapper.scrollTop = (wrapper.scrollTop + touchCenterY) * scaleRatio - touchCenterY;
+                }
               }
             }, { passive: false });
 
             wrapper.addEventListener('touchend', (e) => {
               if (e.touches.length < 2) {
-                lastScale = currentScale;
                 initialDistance = 0;
               }
             });
