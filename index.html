@@ -159,12 +159,11 @@
     }
 
     #schedule-container {
-      /* 這是讓頂部和左邊時間不亂飄的基礎 */
-      transform-origin: 0 0 !important;
-      /* 移除所有過渡效果，縮放必須 100% 實時跟隨手指 */
+      /* 啟動變數聯動引擎 */
+      --z: 1;
+      min-width: calc(800px * var(--z)) !important;
+      transform-origin: 0 0;
       transition: none !important;
-      /* 效能優化：強制使用顯卡渲染，找回絲滑感 */
-      will-change: transform;
     }
 
     /* 額外修正：確保縮放後格線依然清晰 */
@@ -251,7 +250,7 @@
       <div class="w-full border-t border-[#e9e9e7] my-4"></div>
 
       <div class="flex flex-col items-center justify-center text-gray-400 gap-1.5">
-        <div class="text-[10px] font-medium">網頁版本 v1.11 正式版</div>
+        <div class="text-[10px] font-medium">網頁版本 v1.1 正式版</div>
         <div class="text-[10px] font-mono opacity-60">Designed by @CCY</div>
       </div>
 
@@ -527,7 +526,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.12 正式版)
+          📅 系統使用指南 (v1.1 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1454,16 +1453,13 @@
             }, 550);
           };
 
-          // --- 終極手機版：GPU 加速 + 零漂移 縮放引擎 ---
-          let currentScale = 1;
-          let startScale = 1;
+          // --- 終極手機版：變數佈局 + 顯卡級流暢 混合縮放引擎 ---
+          let currentZoom = parseFloat(document.getElementById('schedule-container')?.style.getPropertyValue('--z')) || 1;
+          let startZoom = 1;
           let startDist = 0;
-          let startTouchX = 0;
-          let startTouchY = 0;
-          let startScrollX = 0;
-          let startScrollY = 0;
+          let pinchCenterX = 0;
+          let pinchCenterY = 0;
           let isPinching = false;
-          let ticking = false;
 
           const wrapper = document.getElementById('schedule-wrapper');
           const container = document.getElementById('schedule-container');
@@ -1471,74 +1467,69 @@
           if (wrapper) wrapper.style.backgroundColor = '#ffffff';
 
           if (wrapper && container) {
+            container.style.setProperty('--z', currentZoom);
+
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
-                // 暫時關閉 Body 動畫，提升效能
-                document.body.classList.add('is-pinching');
-
-                const rect = wrapper.getBoundingClientRect();
-                // 1. 紀錄觸碰瞬間的原始座標與捲動位置 (唯讀一次)
-                startScrollX = wrapper.scrollLeft;
-                startScrollY = wrapper.scrollTop;
+                document.body.classList.add('is-pinching'); // 關閉卡片 hover 動畫防干擾
 
                 startDist = Math.hypot(
                   e.touches[0].clientX - e.touches[1].clientX,
                   e.touches[0].clientY - e.touches[1].clientY
                 );
 
-                startTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                startTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-                startScale = currentScale;
+                // 1. 鎖定雙指中心點為「顯卡縮放中心」
+                const rect = container.getBoundingClientRect();
+                pinchCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                pinchCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+                container.style.transformOrigin = `${pinchCenterX}px ${pinchCenterY}px`;
+
+                startZoom = currentZoom;
               }
             }, { passive: false });
 
             wrapper.addEventListener('touchmove', (e) => {
               if (isPinching && e.touches.length === 2) {
                 e.preventDefault();
-                if (ticking) return;
-                ticking = true;
 
+                const currentDist = Math.hypot(
+                  e.touches[0].clientX - e.touches[1].clientX,
+                  e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                const ratio = currentDist / startDist;
+                let potentialZoom = startZoom * ratio;
+                potentialZoom = Math.min(Math.max(potentialZoom, 0.3), 2.0); // 限制 0.3 ~ 2.0 倍
+                const finalRatio = potentialZoom / startZoom;
+
+                // 2. ★ 解決流暢度：捏合過程中，純粹用顯卡 (transform) 放大縮小畫面
+                // 拒絕重新排版，達成跟單指滑動一樣的極致絲滑！
                 window.requestAnimationFrame(() => {
-                  const currentDist = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                  );
-
-                  // 2. 計算新縮放倍率 (0.3 ~ 2.0)
-                  let newScale = startScale * (currentDist / startDist);
-                  newScale = Math.min(Math.max(newScale, 0.3), 2.0);
-
-                  if (newScale !== currentScale) {
-                    const rect = wrapper.getBoundingClientRect();
-                    const currentTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-                    const currentTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-
-                    // 3. ★ 核心魔法：GPU 縮放與容器補償 ★
-                    container.style.transform = `scale(${newScale})`;
-
-                    // 補償容器大小，確保 sticky 元素不亂飄
-                    container.style.width = `${100 / newScale}%`;
-                    container.style.height = `${100 / newScale}%`;
-
-                    // 4. 捲動位置數學補償 (讓縮放中心跟隨手指)
-                    const ratio = newScale / startScale;
-                    wrapper.scrollLeft = (startScrollX + startTouchX) * ratio - currentTouchX;
-                    wrapper.scrollTop = (startScrollY + startTouchY) * ratio - currentTouchY;
-
-                    currentScale = newScale;
-                  }
-                  ticking = false;
+                  container.style.transform = `scale(${finalRatio})`;
                 });
               }
             }, { passive: false });
 
             const stopPinching = (e) => {
-              if (e.touches.length < 2) {
+              if (isPinching && e.touches.length < 2) {
                 isPinching = false;
-                startDist = 0;
-                ticking = false;
+
+                // 取得剛才滑動結束時的最終倍率
+                const match = container.style.transform.match(/scale\(([^)]+)\)/);
+                const finalRatio = match ? parseFloat(match[1]) : 1;
+                currentZoom = startZoom * finalRatio;
+
+                // 3. ★ 恢復位置邏輯：放開瞬間，移除顯卡縮放，瞬間寫入您原本完美的 --z 變數
+                container.style.transform = 'none';
+                container.style.setProperty('--z', currentZoom);
+
+                // 補償捲動條，讓畫面精準維持在手指剛才放開的地方
+                wrapper.scrollLeft += pinchCenterX * (finalRatio - 1);
+                wrapper.scrollTop += pinchCenterY * (finalRatio - 1);
+
                 document.body.classList.remove('is-pinching');
+                startDist = 0;
               }
             };
 
@@ -2072,8 +2063,8 @@
                 // 2. 實體寬高 (width, height) 保持原比例，確保文字絕不擠壓！
                 // 3. 利用 GPU (transform: scale) 直接將完整畫好的卡片等比例縮小。
                 card.style.cssText = `
-                    top: ${topPx}px; 
-                    left: ${myIndex * currentDayUnitWidth}px; 
+                    top: calc(${topPx}px * var(--z, 1)); 
+                    left: calc(${myIndex * currentDayUnitWidth}px * var(--z, 1)); 
                     width: ${currentDayUnitWidth}px; 
                     min-height: ${heightPx}px; 
                     height: ${heightPx}px; 
