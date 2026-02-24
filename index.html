@@ -159,9 +159,7 @@
     }
 
     #schedule-container {
-      /* 啟動變數聯動引擎 */
-      --z: 1;
-      min-width: calc(800px * var(--z)) !important;
+      /* 只保留這兩個，確保排版正常 */
       transform-origin: 0 0;
       transition: none !important;
     }
@@ -526,7 +524,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.1 正式版)
+          📅 系統使用指南 (v1.13 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1453,15 +1451,15 @@
             }, 550);
           };
 
-          // --- 終極冷凍視窗版：120fps 原生流暢 + 絕對不偏移 ---
+          // --- 終極冷凍視窗版 (修復隱形 Bug)：120fps 原生流暢 + 絕對不偏移 ---
           const wrapper = document.getElementById('schedule-wrapper');
 
           // 1. 自動建立一個「冷凍視窗」來包覆您原本完美的課表
           if (wrapper && !wrapper.parentElement.classList.contains('zoom-viewport')) {
             const viewport = document.createElement('div');
             viewport.className = 'zoom-viewport';
-            // 讓 viewport 完美取代原本 wrapper 的排版位置
-            viewport.style.cssText = 'position: relative; width: 100%; flex: 1; overflow: hidden; background: #ffffff;';
+            // ★ 關鍵修復：這裡加上了 height: 100%，解決畫面變成 0 高度被吃掉的 Bug！
+            viewport.style.cssText = 'position: relative; width: 100%; height: 100%; overflow: hidden; background: #ffffff;';
 
             wrapper.parentNode.insertBefore(viewport, wrapper);
             viewport.appendChild(wrapper);
@@ -1524,18 +1522,18 @@
                   newScale = Math.min(Math.max(newScale, 0.2), 2.0); // 縮放限制 (20% ~ 200%)
 
                   if (newScale !== currentScale) {
-                    // ★ 核心魔法：反向撐開內部畫布，讓邊界永遠卡死在螢幕邊緣
+                    // 反向撐開內部畫布，讓邊界永遠卡死在螢幕邊緣
                     wrapper.style.width = `${100 / newScale}%`;
                     wrapper.style.height = `${100 / newScale}%`;
 
-                    // ★ GPU 圖片級縮放 (保證如單指滑動般 120fps 流暢)
+                    // GPU 圖片級縮放 (保證如單指滑動般 120fps 流暢)
                     wrapper.style.transform = `scale(${newScale})`;
 
                     const rect = viewport.getBoundingClientRect();
                     const currentTouchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
                     const currentTouchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                    // ★ 真正正確的物理追蹤公式：解決以前亂飄的罪魁禍首
+                    // 完美的物理追蹤公式：解決以前亂飄的罪魁禍首
                     wrapper.scrollLeft = startScrollX + (startTouchX / startScale) - (currentTouchX / newScale);
                     wrapper.scrollTop = startScrollY + (startTouchY / startScale) - (currentTouchY / newScale);
 
