@@ -5,7 +5,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>幕尼克音樂(金山校區)課表</title>
-  <meta name="color-scheme" content="light only">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <meta name="nightmode" content="disable">
+  <meta name="force-dark-mode" content="false">
   <meta name="darkreader-lock">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -13,20 +16,20 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      color-scheme: light !important;
+    * {
+      font-family: "Noto Sans TC", sans-serif !important;
+    }
+
+    .schedule-card * {
+      line-height: 1.15 !important;
     }
 
     html,
-    body {
-      background-color: #fbfbfa !important;
-      color: #262626 !important;
-    }
-
-    /* 保護所有卡片內的元素，告訴瀏覽器「不准動我的顏色！」 */
-    .schedule-card,
-    .schedule-card * {
-      forced-color-adjust: none !important;
+    body,
+    * {
+      -webkit-text-size-adjust: none !important;
+      -moz-text-size-adjust: none !important;
+      text-size-adjust: none !important;
     }
 
     /* 讓網頁載入前先隱形，並增加一點平滑過度的效果 */
@@ -99,16 +102,15 @@
       color: #374151 !important;
     }
 
-    /* 側邊欄選中狀態：加深背景色 */
+    /* 側邊欄選中狀態：統一色調版 */
     .teacher-item.active {
-      background-color: #e2e8f0 !important;
-      /* Slate-200 (比原本的灰色深) */
-      color: #0f172a !important;
-      /* 深藍黑色文字 */
+      background-color: #eff6ff !important;
+      /* Tailwind blue-50 */
+      color: #1d4ed8 !important;
+      /* Tailwind blue-700 */
       font-weight: 700 !important;
-      /* 加粗文字 */
-      border-right: 4px solid #3b82f6;
-      /* (選用) 右邊加一條藍色線條增加識別度 */
+      border-right: 4px solid #2563eb !important;
+      /* 強制加上明顯的右邊條 */
     }
 
     /* 展開狀態的卡片樣式 */
@@ -121,6 +123,24 @@
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
       padding-bottom: 12px !important;
       /* 增加底部緩衝 */
+    }
+
+    /* 鎖定卡片的外觀：微透明 + 禁用點擊 */
+    .card-locked {
+      opacity: 0.6 !important;
+      pointer-events: none !important;
+      /* 徹底禁止點擊與 Hover 效果 */
+      filter: grayscale(20%);
+    }
+
+    /* 鎖定標籤：在卡片右上角秀一個小鎖頭 */
+    .lock-icon-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+      padding: 2px;
     }
 
     /* 核心修正：強制讓隱形的日曆點擊感應區撐滿整個區域 */
@@ -258,12 +278,6 @@
           class="flex items-center gap-2 bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-indigo-100 transition-all shrink-0 shadow-sm">
           <i data-lucide="sheet" class="w-4 h-4"></i>
           <span>批次管理</span>
-        </button>
-
-        <button onclick="freezeTeacherHistory()"
-          class="flex items-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 px-3 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-amber-100 transition-all shrink-0 shadow-sm">
-          <i data-lucide="archive" class="w-4 h-4"></i>
-          <span>凍結歷史</span>
         </button>
 
         <button onclick="openModal()"
@@ -521,23 +535,19 @@
             <ul class="space-y-2 text-xs text-gray-700">
               <li class="flex items-start gap-2">
                 <i data-lucide="calendar" class="w-3.5 h-3.5 mt-0.5 text-blue-500"></i>
-                <span><b>日期切換：</b>點擊左右箭頭中間的日期可選起始日期，左右箭頭切換週次。</span>
+                <span><b>日期切換：</b>點擊左右箭頭中間的日期可選起始日，左右箭頭切換週次。</span>
               </li>
               <li class="flex items-start gap-2">
                 <i data-lucide="calculator" class="w-3.5 h-3.5 mt-0.5 text-emerald-600"></i>
-                <span><b>薪資試算：</b>計算指定日期範圍內的總薪資與堂數。</span>
+                <span><b>薪資試算：</b>計算指定日期範圍內的總薪資與堂數，支援匯出 Excel。</span>
               </li>
               <li class="flex items-start gap-2">
                 <i data-lucide="sheet" class="w-3.5 h-3.5 mt-0.5 text-indigo-600"></i>
-                <span><b>批次管理：</b>下載或匯入 Excel，可快速大量修改固定課表。</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <i data-lucide="archive" class="w-3.5 h-3.5 mt-0.5 text-amber-600"></i>
-                <span><b>凍結歷史：</b>更改固定課表前，可先凍結舊日期的紀錄，以免舊資料跑掉。</span>
+                <span><b>批次管理：</b>下載或匯入 Excel，可快速大量修改「固定課表」設定。</span>
               </li>
               <li class="flex items-start gap-2">
                 <i data-lucide="plus" class="w-3.5 h-3.5 mt-0.5 text-neutral-800"></i>
-                <span><b>新增課程：</b>建立一堂新的固定課程或單次課程。</span>
+                <span><b>新增課程：</b>建立一堂新的固定課程或單次/臨時課程。</span>
               </li>
             </ul>
           </div>
@@ -547,31 +557,43 @@
           <h4 class="font-bold text-neutral-900 text-base mb-2 flex items-center gap-2">
             <span
               class="bg-neutral-800 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">2</span>
-            日常操作 (點名與卡片)
+            日常操作 (點名與鎖定)
           </h4>
           <div class="grid gap-3">
+            <div class="bg-neutral-100 border-l-4 border-neutral-400 p-3 rounded-r-lg">
+              <h5 class="font-bold text-neutral-800 mb-1 flex items-center gap-1 text-xs">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i> 智慧鎖定機制 (New!)
+              </h5>
+              <p class="text-xs text-neutral-600">
+                系統將自動鎖定<b>「前兩個月以前」</b>的歷史資料。被鎖定的卡片會變淡且出現鎖頭，無法再進行點名或修改，確保薪資結算數據不被誤觸跑掉。
+              </p>
+              <p class="text-xs text-neutral-600">
+                <b>若有特殊更改需求可與管理者聯絡!</b>
+              </p>
+            </div>
+
             <div class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg">
               <h5 class="font-bold text-blue-800 mb-1 flex items-center gap-1 text-xs">
                 <i data-lucide="mouse-pointer-2" class="w-3.5 h-3.5"></i> 點擊卡片區塊 (點名)
               </h5>
               <p class="text-xs text-blue-900/80">
-                點一下切換狀態，顏色代表：(以此類推)<br>
+                點一下切換狀態：
                 <span class="font-bold text-green-700">綠(上課)</span> →
                 <span class="font-bold text-amber-700">咖(請假)</span> →
                 <span class="font-bold text-red-700">紅(曠課)</span> →
-                <span class="font-bold text-gray-500">灰(尚未點名)</span>。
+                <span class="font-bold text-gray-500">灰(未點名)</span>。
               </p>
             </div>
 
             <div class="bg-orange-50 border-l-4 border-orange-400 p-3 rounded-r-lg">
               <h5 class="font-bold text-orange-800 mb-1 flex items-center gap-1 text-xs">
-                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 卡片右側按鈕
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 卡片右上按鈕 (滑鼠移入顯示)
               </h5>
               <ul class="text-xs text-orange-900/80 list-disc pl-4 space-y-1">
-                <li><b class="text-yellow-700">黃色便利貼：</b>寫備註。支援<b>「日期區間」</b>，可一次設定多週備註 (如長假)。</li>
-                <li><b class="text-blue-700">藍色鉛筆：</b>修改這堂課的固定課表(如改電話、改上課時間等...)。</li>
-                <li><b class="text-gray-600">灰色複製：</b>複製一個資訊完全相同的卡片(適合臨時加課、調課)。</li>
-                <li><b class="text-red-600">紅色垃圾桶：</b>刪除這個的固定課表。</li>
+                <li><b class="text-yellow-700">黃色貼紙：</b>設定「日期區間」備註，可自動偵測重複備註。</li>
+                <li><b class="text-blue-700">藍色鉛筆：</b>修改本堂課在資料庫的固定母版設定。</li>
+                <li><b class="text-gray-600">灰色複製：</b>快速複製資料排入指定日期 (調課神器)。</li>
+                <li><b class="text-red-600">紅色垃圾桶：</b>刪除此課程的所有固定排程。</li>
               </ul>
             </div>
           </div>
@@ -587,15 +609,15 @@
             <ul class="space-y-2 text-xs text-emerald-900">
               <li class="flex items-start gap-2">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                <span><b>隨手備忘錄：</b>側邊欄的黃色便條紙打字後會自動儲存，可隨手紀錄。</span>
+                <span><b>自動對齊：</b>拖曳卡片可自訂當日的顯示順序，系統會自動記憶妳的習慣。</span>
               </li>
               <li class="flex items-start gap-2">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                <span><b>加課最速技：</b>按下「複製(灰)」按鈕 → 調整課堂資料 → 勾選「僅限本週」，就能快速新增本週課程。</span>
+                <span><b>隨手備忘錄：</b>側邊欄黃色便條紙會隨打隨存，適合紀錄特殊活動等。</span>
               </li>
               <li class="flex items-start gap-2">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                <span><b>調課最速技：</b>按下「複製(灰)」按鈕 → 調整時間 → 勾選「僅限本週」，就能快速安排單次的調課。</span>
+                <span><b>調課最速技：</b>按下「複製(灰)」按鈕 → 選取目標日期 → 存檔即完成調課。</span>
               </li>
             </ul>
           </div>
@@ -607,77 +629,22 @@
           <ul class="space-y-1.5 text-xs">
             <li class="flex gap-2 items-start">
               <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
-              <p>初次登入請務必更改密碼及記住密碼，後台僅能協助重設密碼。</p>
+              <p>初次登入請務必更改密碼並妥善保存，後台僅能協助重設。</p>
             </li>
             <li class="flex gap-2 items-start">
               <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
-              <p>若使用過程有任何錯誤訊息，請截圖保留錯誤資訊給 <b class="text-gray-500">鮪魚老師</b>，謝謝。</p>
+              <p>若有任何功能建議或錯誤回報，請截圖聯繫 <b class="text-gray-500">鮪魚老師</b> :D</p>
             </li>
-            <li class="flex gap-2 items-start">
-              <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
-              <p>有任何使用相關的問題或修改建議請聯繫 <b class="text-gray-500">鮪魚老師</b> :D</p>
-            </li>
-            <li class="flex gap-2 items-start">
-
           </ul>
         </section>
 
-        <section class="text-center space-y-3 pt-2">
+        <section class="text-center pt-2">
           <button onclick="closeInstructionsModal()"
             class="w-full bg-neutral-800 text-white py-3 rounded-xl font-bold hover:bg-black transition-all active:scale-95 shadow-md">
             我瞭解了
           </button>
         </section>
-
       </div>
-    </div>
-  </div>
-
-  <div id="freeze-date-modal"
-    class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[1200] backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-2xl w-80 shadow-2xl flex flex-col overflow-hidden border border-gray-100">
-
-      <div class="p-4 border-b border-amber-100 flex justify-between items-center bg-amber-50">
-        <h3 class="font-bold text-amber-800 flex items-center gap-2 m-0">
-          <i data-lucide="archive" class="w-5 h-5 text-amber-600"></i> 自訂凍結範圍
-        </h3>
-        <button onclick="closeFreezeModal()"
-          class="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 p-1.5 rounded-full transition-colors shadow-sm border border-gray-100">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <div class="p-5 bg-white space-y-5">
-        <div class="flex gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200 shadow-inner">
-          <button onclick="quickSetFreezeDates('current')"
-            class="flex-1 py-1.5 bg-white shadow-sm text-gray-600 text-xs font-bold rounded-lg hover:text-amber-600 hover:border-amber-200 border border-gray-100 transition-colors">設定本月</button>
-          <button onclick="quickSetFreezeDates('last')"
-            class="flex-1 py-1.5 bg-white shadow-sm text-gray-600 text-xs font-bold rounded-lg hover:text-amber-600 hover:border-amber-200 border border-gray-100 transition-colors">設定上月</button>
-        </div>
-
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs font-bold text-gray-500 mb-1">起始日期 (From)</label>
-            <input type="date" id="freeze-start-date"
-              class="w-full border border-gray-300 bg-gray-50 focus:bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 transition-all shadow-inner" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-gray-500 mb-1">結束日期 (To)</label>
-            <input type="date" id="freeze-end-date"
-              class="w-full border border-gray-300 bg-gray-50 focus:bg-white rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 transition-all shadow-inner" />
-          </div>
-        </div>
-      </div>
-
-      <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
-        <button onclick="closeFreezeModal()"
-          class="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-200 hover:text-gray-700 rounded-xl transition-colors">取消</button>
-        <button onclick="executeFreeze()"
-          class="px-5 py-2 bg-amber-600 text-white rounded-xl font-bold hover:bg-amber-700 transition-all text-sm shadow-md active:scale-95 flex items-center gap-2">
-          <i data-lucide="lock" class="w-4 h-4"></i> 確認凍結
-        </button>
-      </div>
-
     </div>
   </div>
 
@@ -1319,6 +1286,7 @@
       // B. 抓資料 (這裡會一路等待課表畫完)
       await fetchUserProfile(session.user.email);
       await fetchTeachers();
+      enableAutomation(); // 啟動自動化引擎
 
       // C. 圖示渲染
       lucide.createIcons();
@@ -1329,7 +1297,7 @@
       }, 550);
     };
 
-    // 1. 登入檢查防呆
+    // 1. 登入檢查與稱號顯示優化 (Ccy 專屬稱號 + 老師顯示 Email)
     async function fetchUserProfile(email) {
       const { data, error } = await _client.from("teachers").select("*").eq("email", email).maybeSingle();
 
@@ -1348,13 +1316,24 @@
       if (initialEl && nameEl && roleEl) {
         initialEl.textContent = data.name.charAt(0);
         nameEl.textContent = data.name;
+
         if (data.is_admin) {
-          roleEl.innerHTML = `<i data-lucide="shield-alert" class="w-3 h-3 text-amber-500"></i> 系統管理員`;
+          // 如果是 Ccy 且為管理員，顯示「系統開發者」
+          const isDev = data.name === "Ccy";
+          const roleTitle = isDev ? "系統開發者" : "系統管理員";
+          const roleIcon = isDev ? "code" : "shield-alert";
+
+          roleEl.innerHTML = `<i data-lucide="${roleIcon}" class="w-3 h-3 text-amber-500"></i> ${roleTitle}`;
           roleEl.classList.add("text-amber-600");
         } else {
-          roleEl.innerHTML = `<i data-lucide="user" class="w-3 h-3"></i> 授課教師`;
+          // ★ 關鍵修改：將一般的「授課教師」改成顯示使用者的 Email
+          // 並把圖示換成信封 (mail)
+          roleEl.innerHTML = `<i data-lucide="mail" class="w-3 h-3"></i> ${data.email}`;
           roleEl.classList.remove("text-amber-600");
         }
+
+        // 重新渲染圖示
+        lucide.createIcons();
       }
     }
 
@@ -1385,125 +1364,155 @@
       window.location.href = "login.html";
     }
 
-    // 2. 獲取老師列表 (修正版：開放批次管理給所有人)
+    // 2. 獲取老師列表 (完整權限與控制台恢復版)
     async function fetchTeachers() {
-      const { data, error } = await _client
-        .from("teachers")
-        .select("*")
-        .order("created_at");
+      setStatus("正在同步最新動態...", "loading");
 
-      if (error) return setStatus("載入失敗", "error");
+      try {
+        const { data: teachers, error: tErr } = await _client
+          .from("teachers")
+          .select("*")
+          .order("created_at");
 
-      allTeachers = data;
+        if (tErr) throw tErr;
 
-      const menu = document.getElementById("teacher-menu");
-      const select = document.querySelector('select[name="teacher_id"]');
+        allTeachers = teachers;
+        const menu = document.getElementById("teacher-menu");
+        if (!menu) return;
+        menu.innerHTML = "";
 
-      menu.innerHTML = "";
-      select.innerHTML = "";
+        // 相對時間工具
+        function getRelativeTime(dateStr) {
+          if (!dateStr) return "無紀錄";
+          const now = new Date();
+          const past = new Date(dateStr);
+          const diffMs = now - past;
+          const diffMins = Math.floor(diffMs / (1000 * 60));
+          if (diffMins < 1) return "剛剛";
+          if (diffMins < 60) return `${diffMins} 分鐘前`;
+          if (diffMins < 1440) return `${Math.floor(diffMins / 60)} 小時前`;
+          return `${Math.floor(diffMins / 1440)} 天前`;
+        }
 
-      // 1. 過濾側邊欄名單 (★ 升級版：讀取剛剛設定的專屬權限)
-      // 取得目前登入者「被允許看到」的老師 ID 陣列
-      const viewableIds = currentUserInfo.viewable_teachers ? currentUserInfo.viewable_teachers.split(',') : [];
+        const viewableIds = currentUserInfo.viewable_teachers ? currentUserInfo.viewable_teachers.split(',') : [];
+        const visibleTeachers = teachers.filter(t => {
+          if (t.is_hidden) return false;
+          if (currentUserInfo.is_admin) return true;
+          return t.id === currentUserInfo.id || viewableIds.includes(String(t.id));
+        });
 
-      const visibleTeachers = data.filter(t => {
-        if (t.is_hidden) return false;
+        visibleTeachers.forEach((t, index) => {
+          const btn = document.createElement("button");
+          btn.dataset.id = t.id;
 
-        // 如果登入的是管理員，無條件顯示所有人
-        if (currentUserInfo.is_admin) return true;
+          const isActive = String(currentTid) === String(t.id);
 
-        // 如果是一般老師，只顯示「自己」或「管理員勾給他看的人」
-        return t.id === currentUserInfo.id || viewableIds.includes(String(t.id));
-      });
+          btn.className = `teacher-item w-full flex items-center gap-2 py-2.5 px-2 rounded-lg text-left transition-all duration-200 
+            ${isActive ? "active bg-blue-50 text-blue-700 ring-1 ring-blue-100" : "hover:bg-gray-100 text-neutral-700"}`;
 
-      // 2. 渲染側邊欄按鈕
-      visibleTeachers.forEach((t, index) => {
-        const btn = document.createElement("button");
-        btn.dataset.id = t.id;
+          btn.onclick = () => switchTeacher(t.id, t.name);
 
-        // 樣式設定
-        btn.className = `teacher-item w-full flex items-center gap-2 py-1.5 px-2 rounded-lg text-left transition-all hover:bg-gray-100 ${currentTid === t.id ? "active bg-gray-100" : ""}`;
-        btn.onclick = () => switchTeacher(t.id, t.name);
+          const timeLabel = getRelativeTime(t.updated_at || t.created_at);
 
-        // 內容設定 (統一灰色圖示)
-        btn.innerHTML = `
-            <div class="w-6 h-6 rounded flex items-center justify-center bg-gray-200 text-gray-600 text-[10px] font-bold shrink-0">
-                ${t.name.charAt(0)}
-            </div>
-            <span class="font-medium text-sm truncate text-neutral-700">${t.name}</span>
-        `;
-        menu.appendChild(btn);
+          btn.innerHTML = `
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border transition-colors
+                ${isActive ? "bg-blue-600 text-white border-blue-600" : "bg-gray-100 text-gray-500 border-gray-200"}">
+                  ${t.name.charAt(0)}
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-bold text-sm truncate">${t.name}</span>
+                <span class="text-[10px] leading-tight mt-0.5 flex items-center gap-1 ${isActive ? "text-blue-500" : "text-gray-400"}">
+                  <span class="w-1.5 h-1.5 rounded-full ${isActive ? "bg-blue-500 animate-pulse" : "bg-green-400"}"></span>
+                  ${timeLabel}編輯
+                </span>
+              </div>
+          `;
+          menu.appendChild(btn);
+          if (!currentTid && index === 0) switchTeacher(t.id, t.name);
+        });
 
-        // 預設選中第一位
-        if (!currentTid && index === 0) switchTeacher(t.id, t.name);
-      });
+        // ★★★ 核心恢復：根據管理員權限顯示後台按鈕 ★★★
+        const adminEntryBtn = document.getElementById("admin-entry-btn");
+        if (adminEntryBtn && currentUserInfo) {
+          if (currentUserInfo.is_admin) {
+            adminEntryBtn.classList.remove("hidden"); // 如果是 Ccy 或管理員，秀出按鈕
+          } else {
+            adminEntryBtn.classList.add("hidden");    // 一般老師，隱藏按鈕
+          }
+        }
 
-      // 3. 渲染下拉選單
-      visibleTeachers.forEach(t => {
-        select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
-      });
+        lucide.createIcons();
+        setStatus("資料庫連線：連線成功", "success");
 
-      // ★★★ 權限按鈕控制 (修改重點在這裡) ★★★
-
-      // ★ 修改處：控制側邊欄「管理控制台」按鈕的顯示
-      const adminEntryBtn = document.getElementById("admin-entry-btn");
-      if (adminEntryBtn) {
-        if (currentUserInfo.is_admin) adminEntryBtn.classList.remove("hidden");
-        else adminEntryBtn.classList.add("hidden");
+      } catch (err) {
+        console.error("fetchTeachers Error:", err);
+        setStatus("資料庫連線：載入失敗", "error");
       }
+    }
 
-      // B. 批次管理 (★ 修改：無條件開放給所有人 ★)
-      const batchBtn = document.querySelector("button[onclick='openBatchModal()']");
-      if (batchBtn) {
-        // 移除隱藏 class，讓大家都看得到
-        batchBtn.classList.remove("hidden");
-      }
+    // ★ 全自動化核心邏輯
+    function enableAutomation() {
+      // A. 資料庫即時監聽 (Supabase Realtime)
+      // 只要這兩張表有任何 INSERT, UPDATE, DELETE，就自動執行重刷
+      _client
+        .channel('db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'lesson_records' }, () => {
+          console.log('Detected point-call change, auto-refreshing sidebar...');
+          fetchTeachers();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'schedules' }, () => {
+          console.log('Detected schedule change, auto-refreshing sidebar...');
+          fetchTeachers();
+        })
+        .subscribe();
 
-      // 只有管理員需要渲染管理列表
-      if (currentUserInfo.is_admin && typeof renderTeacherManageList === 'function') {
-        renderTeacherManageList();
-      }
-
-      if (!currentTid && visibleTeachers.length > 0) {
-        await switchTeacher(visibleTeachers[0].id, visibleTeachers[0].name);
-      }
-
-      lucide.createIcons();
+      // B. 時間標籤定時刷新 (每 60 秒刷一次，讓 "1分鐘前" 變 "2分鐘前")
+      setInterval(() => {
+        console.log('Refreshing relative time labels...');
+        fetchTeachers(); // 這裡也可以優化成只重繪文字，但先重抓資料最穩
+      }, 60000);
     }
 
     async function switchTeacher(tid, name) {
+      // 1. 立即更新數據 ID
       currentTid = tid;
       document.getElementById("main-title").textContent = `${name} · 本週課表`;
 
-      // 處理按鈕變色邏輯
+      // 2. ⚡ 快速 UI 切換：遍歷所有按鈕，只改類別（不重畫 HTML）
       document.querySelectorAll(".teacher-item").forEach((btn) => {
-        btn.classList.remove("active");
-        btn.classList.remove("bg-gray-100");
+        const isActive = String(btn.dataset.id) === String(tid);
+        const headshot = btn.querySelector(".w-9"); // 抓頭像區
+        const statusDot = btn.querySelector(".w-1\\.5"); // 抓狀態點
+
+        if (isActive) {
+          // 選中狀態
+          btn.className = btn.className.replace(/hover:bg-gray-50|text-neutral-700/g, "") + " active bg-blue-50 text-blue-700 ring-1 ring-blue-100";
+          if (headshot) headshot.className = "w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border transition-colors bg-blue-600 text-white border-blue-600";
+          if (statusDot) statusDot.className = "w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse";
+        } else {
+          // 未選中狀態
+          btn.classList.remove("active", "bg-blue-50", "text-blue-700", "ring-1", "ring-blue-100");
+          btn.classList.add("hover:bg-gray-50", "text-neutral-700");
+          if (headshot) headshot.className = "w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border transition-colors bg-gray-100 text-gray-500 border-gray-200";
+          if (statusDot) statusDot.className = "w-1.5 h-1.5 rounded-full bg-green-400";
+        }
       });
 
-      const activeBtn = document.querySelector(`.teacher-item[data-id="${tid}"]`);
-      if (activeBtn) {
-        activeBtn.classList.add("active");
-      }
-
-      // 讀取備忘錄
+      // 3. 處理備忘錄與排序
       const targetTeacher = allTeachers.find(t => t.id === tid);
       const memoInput = document.getElementById("teacher-memo");
-      if (memoInput) {
-        memoInput.value = (targetTeacher && targetTeacher.memo) ? targetTeacher.memo : "";
-      }
+      if (memoInput) memoInput.value = (targetTeacher && targetTeacher.memo) ? targetTeacher.memo : "";
 
-      // ★★★ 關鍵修改 1：從資料庫讀取這位老師專屬的卡片順序 ★★★
       if (targetTeacher && targetTeacher.card_order) {
         _userSortOrder = targetTeacher.card_order.split(',');
       } else {
         _userSortOrder = [];
       }
 
-      if (window.innerWidth < 768) {
-        toggleSidebar();
-      }
+      // 4. 手機版收合
+      if (window.innerWidth < 768) toggleSidebar();
 
+      // 5. ⚡ 只刷新課表內容（這是主要的延遲來源，所以放最後跑）
       await refreshData();
     }
 
@@ -1631,7 +1640,7 @@
       }
     }
 
-    // 3. 繪圖函式 (數學精準撐高版 + 支援備註手動換行)
+    // 3. 繪圖函式 (極致紮實版：大字體 + 零留白 + 格線絕對貼合)
     function renderSchedule(list, records = [], startDate) {
       const container = document.getElementById("schedule-container");
       if (!container) return;
@@ -1640,7 +1649,7 @@
       const slots = ["09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24"];
       const BASE_ROW_HEIGHT = 120;
       const START_HOUR = 9;
-      const CARD_WIDTH = 140;
+      const CARD_WIDTH = 135; // 稍微調低保底寬度
       const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
       const baseDate = startDate || currentBaseDate;
 
@@ -1652,10 +1661,7 @@
         return { h, m };
       }
 
-      let validItems = list.filter(item => {
-        if (!item.start_time || !item.end_time) return false;
-        return parseTime(item.start_time).h >= START_HOUR;
-      });
+      let validItems = list.filter(item => item.start_time && item.end_time);
 
       validItems.sort((a, b) => {
         const indexA = _userSortOrder.indexOf(String(a.id));
@@ -1663,13 +1669,14 @@
         let weightA = indexA === -1 ? 9999 : indexA;
         let weightB = indexB === -1 ? 9999 : indexB;
         if (weightA !== weightB) return weightA - weightB;
-
         const aTime = parseTime(a.start_time);
         const bTime = parseTime(b.start_time);
         return (aTime.h * 60 + aTime.m) - (bTime.h * 60 + bTime.m);
       });
 
+      // --- ★ 步驟一：極致精算的空間感測器 ---
       let hourHeights = new Array(slots.length).fill(BASE_ROW_HEIGHT);
+      let dayWidths = new Array(7).fill(CARD_WIDTH);
 
       for (let i = 0; i < 7; i++) {
         const thisDayDate = addDays(baseDate, i);
@@ -1677,53 +1684,46 @@
         const dbDay = thisDayDate.getDay() === 0 ? 7 : thisDayDate.getDay();
         const dayItems = validItems.filter(item => item.day_of_week === dbDay);
 
+        let maxDayW = CARD_WIDTH;
         dayItems.forEach(item => {
-          const sT = parseTime(item.start_time);
-          const eT = parseTime(item.end_time);
-          const durationMins = (eT.h * 60 + eT.m) - (sT.h * 60 + sT.m);
-          if (durationMins <= 0) return;
+          // 寬度感測：針對 20px 字體做精算，大幅縮減緩衝 (僅留 +35px 給圖示)
+          const nameLen = (item.course_name || "").length;
+          const subjectLen = (item.subject || "").length;
+          const estimatedW = (nameLen * 21) + (subjectLen * 14) + 35;
+          if (estimatedW > maxDayW) maxDayW = estimatedW;
 
-          let reqPx = 80;
+          // 高度感測：針對放大後的字體累加高度
+          const sT = parseTime(item.start_time); const eT = parseTime(item.end_time);
+          const durationMins = (eT.h * 60 + eT.m) - (sT.h * 60 + sT.m);
+
+          let contentReq = 75; // 基礎高度 (20px 姓名 + 16px 時間)
+          if (item.subject) contentReq += 24;
+          contentReq += 22; // 教室
+          contentReq += 22; // 金額
           const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
-          reqPx += phoneList.length * 16;
+          contentReq += (phoneList.length * 20);
 
           const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
-          const remarkText = record ? record.remark : "";
+          if (record && record.remark) contentReq += 52; // 備註高度同步增加
+          else contentReq += 10;
 
-          // ★★★ 數學引擎升級：精準計算「手動換行」需要的高度 ★★★
-          if (remarkText) {
-            const manualLines = remarkText.split('\n'); // 找出使用者按了幾次 Enter
-            let totalLines = 0;
-            manualLines.forEach(line => {
-              // 每行如果超過 8 個字，也會自動折行
-              totalLines += Math.max(1, Math.ceil(line.length / 8));
-            });
-            reqPx += 16 + (totalLines * 14);
-          }
-
-          const basePx = (durationMins / 60) * BASE_ROW_HEIGHT;
-
-          if (reqPx > basePx) {
-            const hIdx = sT.h - START_HOUR;
-            if (hIdx >= 0 && hIdx < slots.length) {
-              const extraNeeded = reqPx - basePx;
-              hourHeights[hIdx] = Math.max(hourHeights[hIdx], BASE_ROW_HEIGHT + extraNeeded + 15);
-            }
+          const neededPerHour = (contentReq / durationMins) * 60;
+          for (let h = sT.h - START_HOUR; h <= eT.h - START_HOUR && h < slots.length; h++) {
+            hourHeights[h] = Math.max(hourHeights[h], neededPerHour);
           }
         });
+        dayWidths[i] = Math.min(maxDayW, 300); // 允許稍微變更寬，但要貼齊字
       }
 
       function getDynamicTop(h, m) {
         let top = 0;
         const hIdx = h - START_HOUR;
-        for (let i = 0; i < hIdx && i < slots.length; i++) {
-          top += hourHeights[i];
-        }
-        if (hIdx >= 0 && hIdx < slots.length) {
-          top += (m / 60) * hourHeights[hIdx];
-        }
+        for (let i = 0; i < hIdx && i < slots.length; i++) top += hourHeights[i];
+        if (hIdx >= 0 && hIdx < slots.length) top += (m / 60) * hourHeights[hIdx];
         return top;
       }
+
+      // --- ★ 步驟二：同步繪製 (達成線條吸附效果) ---
 
       const timeCol = document.createElement("div");
       timeCol.className = "sticky left-0 z-[500] bg-white border-r border-[#e9e9e7] flex flex-col shrink-0 w-[60px] md:w-[90px]";
@@ -1734,7 +1734,7 @@
 
       slots.forEach((h, index) => {
         const cell = document.createElement("div");
-        cell.className = "flex items-center justify-center text-xs font-semibold text-gray-400 border-b border-[#e9e9e7] bg-gray-50/30 transition-all duration-300";
+        cell.className = "flex items-center justify-center text-xs font-semibold text-gray-400 border-b border-[#e9e9e7] bg-gray-50/30";
         cell.style.height = `${hourHeights[index]}px`;
         cell.textContent = `${h}:00`;
         timeCol.appendChild(cell);
@@ -1744,51 +1744,34 @@
       for (let i = 0; i < 7; i++) {
         const thisDayDate = addDays(baseDate, i);
         const thisDayDateStr = formatDate(thisDayDate);
-        const jsDay = thisDayDate.getDay();
-        const dbDay = jsDay === 0 ? 7 : jsDay;
+        const dbDay = thisDayDate.getDay() === 0 ? 7 : thisDayDate.getDay();
         const dayItems = validItems.filter(item => item.day_of_week === dbDay);
+        const currentDayUnitWidth = dayWidths[i];
 
-        const columns = [];
-        const cardColIndex = {};
+        const columns = []; const cardColIndex = {};
         dayItems.forEach(item => {
-          const sT = parseTime(item.start_time);
-          const eT = parseTime(item.end_time);
-          const startMin = sT.h * 60 + sT.m;
-          const endMin = eT.h * 60 + eT.m;
-
+          const sM = parseTime(item.start_time).h * 60 + parseTime(item.start_time).m;
+          const eM = parseTime(item.end_time).h * 60 + parseTime(item.end_time).m;
           let placed = false;
           for (let col = 0; col < columns.length; col++) {
-            const hasOverlap = columns[col].some(other => {
-              const osT = parseTime(other.start_time);
-              const oeT = parseTime(other.end_time);
-              const oStart = osT.h * 60 + osT.m;
-              const oEnd = oeT.h * 60 + oeT.m;
-              return (startMin < oEnd && endMin > oStart);
+            const overlap = columns[col].some(o => {
+              const osM = parseTime(o.start_time).h * 60 + parseTime(o.start_time).m;
+              const oeM = parseTime(o.end_time).h * 60 + parseTime(o.end_time).m;
+              return (sM < oeM && eM > osM);
             });
-            if (!hasOverlap) {
-              columns[col].push(item);
-              cardColIndex[item.id] = col;
-              placed = true;
-              break;
-            }
+            if (!overlap) { columns[col].push(item); cardColIndex[item.id] = col; placed = true; break; }
           }
-          if (!placed) {
-            columns.push([item]);
-            cardColIndex[item.id] = columns.length - 1;
-          }
+          if (!placed) { columns.push([item]); cardColIndex[item.id] = columns.length - 1; }
         });
 
-        const maxConcurrent = columns.length || 1;
-        const colWidth = maxConcurrent * CARD_WIDTH + 1;
-
         const dayCol = document.createElement("div");
-        dayCol.className = "flex flex-col border-r border-[#e9e9e7] shrink-0 relative bg-white transition-all duration-300";
-        dayCol.style.width = `${colWidth}px`;
+        dayCol.className = "flex flex-col border-r border-[#e9e9e7] shrink-0 relative bg-white transition-all";
+        dayCol.style.width = `${Math.max(1, columns.length) * currentDayUnitWidth + 1}px`;
 
         const header = document.createElement("div");
         header.className = "sticky top-0 z-[400] bg-gray-50 border-b border-[#e9e9e7] flex flex-col items-center justify-center h-[60px]";
         const isToday = formatDate(new Date()) === thisDayDateStr;
-        header.innerHTML = `<span class="${isToday ? 'text-blue-600 font-bold' : 'text-gray-800 font-bold'}">${dayNames[jsDay]}</span><span class="text-[10px] text-gray-400">${thisDayDate.getMonth() + 1}/${thisDayDate.getDate()}</span>`;
+        header.innerHTML = `<span class="${isToday ? 'text-blue-600 font-bold' : 'text-gray-800 font-bold'}">${dayNames[thisDayDate.getDay()]}</span><span class="text-[10px] text-gray-400">${thisDayDate.getMonth() + 1}/${thisDayDate.getDate()}</span>`;
         dayCol.appendChild(header);
 
         const contentLayer = document.createElement("div");
@@ -1797,93 +1780,73 @@
 
         slots.forEach((_, index) => {
           const line = document.createElement("div");
-          line.className = "border-b border-[#e9e9e7] w-full transition-all duration-300";
+          line.className = "border-b border-[#e9e9e7] w-full pointer-events-none";
           line.style.height = `${hourHeights[index]}px`;
           contentLayer.appendChild(line);
         });
 
         dayItems.forEach((item) => {
-          const sT = parseTime(item.start_time);
-          const eT = parseTime(item.end_time);
-
+          const sT = parseTime(item.start_time); const eT = parseTime(item.end_time);
           const topPx = getDynamicTop(sT.h, sT.m);
-          const bottomPx = getDynamicTop(eT.h, eT.m);
-          const heightPx = bottomPx - topPx;
-
+          const heightPx = getDynamicTop(eT.h, eT.m) - topPx;
           const myIndex = cardColIndex[item.id];
-          const leftPos = myIndex * CARD_WIDTH;
+
+          // --- ★ 智慧鎖定邏輯：前兩個月以前自動鎖定 ★ ---
+          const today = new Date();
+          const cardDate = new Date(thisDayDateStr);
+          const currentYearMonth = today.getFullYear() * 12 + today.getMonth();
+          const cardYearMonth = cardDate.getFullYear() * 12 + cardDate.getMonth();
+          const monthDiff = currentYearMonth - cardYearMonth;
+
+          // 差距 >= 2 個月，且不是管理員(Ccy)就鎖定
+          const isLocked = monthDiff >= 2 && !currentUserInfo?.is_admin;
+          // -------------------------------------------
 
           const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
           let displayStatus = record ? record.status : (item.color_class || 'status-pending');
           const remarkText = record ? record.remark : "";
+          const displayRemark = remarkText ? remarkText.replace(/\n/g, ' ') : "";
 
-          // ★★★ 翻譯蒟蒻：把 \n 轉成 <br> 讓畫面可以換行 ★★★
-          const displayRemark = remarkText ? remarkText.replace(/\n/g, '<br>') : "";
-
-          let statusBorder = 'border-l-4 border-gray-300';
-          let bgClass = 'bg-white';
+          let statusBorder = 'border-l-4 border-gray-300'; let bgClass = 'bg-white';
           if (displayStatus === 'attended' || displayStatus === 'status-present') { statusBorder = 'border-l-4 border-green-500'; bgClass = 'bg-green-50'; }
           else if (displayStatus === 'leave' || displayStatus === 'status-leave') { statusBorder = 'border-l-4 border-amber-400'; bgClass = 'bg-amber-50'; }
           else if (displayStatus === 'absent' || displayStatus === 'status-absent') { statusBorder = 'border-l-4 border-red-500'; bgClass = 'bg-red-50'; }
           else if (displayStatus === 'status-practice') { statusBorder = 'border-l-4 border-blue-400'; bgClass = 'bg-blue-50'; }
 
           const card = document.createElement("div");
-          card.className = `schedule-card absolute rounded-r-md rounded-l-sm p-2 pb-3 text-sm shadow-md flex flex-col transition-all duration-200 group box-border hover:shadow-xl ${statusBorder} ${bgClass}`;
+          // ★ 這裡加入了 ${isLocked ? 'card-locked' : '...'} 判定
+          card.className = `schedule-card absolute rounded-r-md rounded-l-sm p-2 pb-3 text-sm shadow-md flex flex-col transition-all duration-200 group box-border ${isLocked ? 'card-locked' : 'hover:shadow-xl hover:z-[70] cursor-pointer'} ${statusBorder} ${bgClass}`;
           card.dataset.id = item.id;
-          card.style.cssText = `top: ${topPx}px; min-height: ${heightPx}px; height: max-content; left: ${leftPos}px; width: ${CARD_WIDTH}px; z-index: 20;`;
 
-          card.draggable = true;
-          card.ondragstart = (e) => handleDragStart(e, item.id);
-          card.ondragend = (e) => handleDragEnd(e);
-          card.ondragover = (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-          };
-          card.ondragenter = (e) => {
-            e.preventDefault();
-            card.classList.add('ring-2', 'ring-blue-400', 'ring-offset-2', 'opacity-60', 'z-50');
-          };
-          card.ondragleave = (e) => {
-            card.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'opacity-60', 'z-50');
-          };
-          card.ondrop = (e) => {
-            card.classList.remove('ring-2', 'ring-blue-400', 'ring-offset-2', 'opacity-60', 'z-50');
-            handleDrop(e, item.id);
-          };
+          card.style.cssText = `top: ${topPx}px; min-height: ${heightPx}px; height: ${heightPx}px; left: ${myIndex * currentDayUnitWidth}px; width: ${currentDayUnitWidth}px; z-index: 20; overflow: hidden;`;
 
-          const phoneRaw = item.phone || "";
-          const phoneList = phoneRaw.split(/\s+/).filter(p => p.trim() !== "");
-          let phoneHtml = phoneList.map(p => `<div class="flex items-center gap-0.5 text-[10px] text-gray-500 leading-tight group-hover:text-neutral-800 transition-colors"><i data-lucide="phone" class="w-2.5 h-2.5 text-green-500 shrink-0"></i><span class="font-mono tracking-tight">${p}</span></div>`).join('');
-
-          const roomDisplay = item.room_no || "無教室";
-          const amountDisplay = item.amount ? `$${item.amount}` : "$0";
-          const subjectDisplay = item.subject || "";
+          const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
+          const phoneHtml = phoneList.map(p => `<div class="flex items-center gap-1.5 text-[16px] text-gray-500 w-full"><i data-lucide="phone" class="w-4 h-4 text-green-500 shrink-0"></i><span class="font-mono truncate flex-1 font-bold">${p}</span></div>`).join('');
 
           card.innerHTML = `
-            <div class="absolute top-1 right-1 flex flex-row items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-[60] bg-white/95 backdrop-blur-sm px-1.5 py-1 rounded-full shadow-md border border-gray-200" 
-                 style="pointer-events: auto;"
-                 onmousedown="event.stopPropagation();"
-                 ondragstart="return false;"
-                 onclick="event.stopPropagation();">
-                <button type="button" onclick="openRemarkModal('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-yellow-600 hover:scale-110 hover:bg-yellow-50 transition-all cursor-pointer" title="設定備註"><i data-lucide="sticky-note" class="w-3.5 h-3.5 pointer-events-none"></i></button>
-                <button type="button" onclick="openEditModal('${item.id}', '${displayStatus}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-blue-600 hover:scale-110 hover:bg-blue-50 transition-all cursor-pointer" title="修改固定課表"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>
-                <button type="button" onclick="copyCourse('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-gray-500 hover:text-amber-600 hover:scale-110 transition-all cursor-pointer" title="複製課程"><i data-lucide="copy" class="w-3.5 h-3.5 pointer-events-none"></i></button>
-                <button type="button" onmousedown="event.stopPropagation()" onclick="deleteCourse('${item.id}');" class="p-1 rounded-full text-red-500 hover:scale-110 hover:bg-red-50 transition-all cursor-pointer" title="刪除課程"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>
-            </div>
+            ${isLocked ? '<div class="absolute top-1 right-1 text-gray-400/40"><i data-lucide="lock" class="w-3.5 h-3.5"></i></div>' : `
+              <div class="absolute top-1 right-1 flex flex-row items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-[60] bg-white/95 backdrop-blur-sm px-1.5 py-1 rounded-full shadow-md border border-gray-200" 
+                   style="pointer-events: auto;" onmousedown="event.stopPropagation();" onclick="event.stopPropagation();">
+                  <button type="button" onclick="openRemarkModal('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-yellow-600 hover:scale-110 transition-all cursor-pointer"><i data-lucide="sticky-note" class="w-4 h-4"></i></button>
+                  <button type="button" onclick="openEditModal('${item.id}', '${displayStatus}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-blue-600 hover:scale-110 transition-all cursor-pointer"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                  <button type="button" onclick="copyCourse('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-gray-500 hover:text-amber-600 hover:scale-110 transition-all cursor-pointer"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                  <button type="button" onclick="deleteCourse('${item.id}');" class="p-1 rounded-full text-red-500 hover:scale-110 transition-all cursor-pointer"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              </div>
+            `}
             
-            <div class="flex flex-col h-full min-w-0 pr-1 cursor-pointer relative z-10" onclick="toggleRecordStatus('${item.id}', '${thisDayDateStr}', '${displayStatus}')">
-                <div class="flex items-baseline gap-1 min-w-0 pointer-events-none">
-                    <span class="font-bold text-neutral-900 text-[13px] truncate leading-tight">${item.course_name}</span>
-                    ${subjectDisplay ? `<span class="text-[10px] text-gray-500 truncate bg-gray-100 px-1 rounded">${subjectDisplay}</span>` : ''}
+            <div class="flex flex-col h-full min-w-0 pr-1 relative z-10" onclick="${isLocked ? '' : `toggleRecordStatus('${item.id}', '${thisDayDateStr}', '${displayStatus}')`}">
+                <div class="flex items-center gap-1.5 w-full">
+                    <span class="font-bold text-neutral-900 text-[20px] whitespace-nowrap">${item.course_name}</span>
+                    ${item.subject ? `<span class="text-[16px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded shrink-0 font-bold">${item.subject}</span>` : ''}
                 </div>
-                <div class="text-[10px] text-gray-400 font-mono mt-0.5 leading-none pointer-events-none">${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}</div>
-                <div class="mt-1.5 flex flex-col gap-0.5 pointer-events-none">
-                    <div class="flex items-center gap-0.5 text-[10px] text-gray-600 leading-tight"><i data-lucide="map-pin" class="w-2.5 h-2.5 text-blue-400"></i><span class="truncate">${roomDisplay}</span></div>
-                    <div class="flex items-center gap-0.5 text-[10px] text-gray-600 leading-tight"><i data-lucide="coins" class="w-2.5 h-2.5 text-amber-500"></i><span class="font-mono text-gray-700">${amountDisplay}</span></div>
+                <div class="text-[16px] text-gray-400 font-mono mt-0.5 whitespace-nowrap font-bold">${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}</div>
+                <div class="mt-1 flex flex-col gap-1 pointer-events-none w-full">
+                    <div class="flex items-center gap-1.5 text-[16px] text-gray-600 truncate font-bold"><i data-lucide="map-pin" class="w-4 h-4 text-blue-400 shrink-0"></i><span>${item.room_no || '無'}</span></div>
+                    <div class="flex items-center gap-1.5 text-[16px] text-gray-600 truncate font-bold"><i data-lucide="coins" class="w-4 h-4 text-amber-500 shrink-0"></i><span class="font-mono truncate flex-1">$${item.amount || 0}</span></div>
                     ${phoneHtml}
                 </div>
-                <div class="mt-auto pt-1 pointer-events-none">
-                    ${displayRemark ? `<div class="flex items-start gap-0.5 p-1 rounded bg-red-50 border border-red-100 text-red-700 text-[10px] font-bold leading-tight break-words"><i data-lucide="pin" class="w-2.5 h-2.5 shrink-0 mt-0.5"></i> <span class="w-full">${displayRemark}</span></div>` : ''}
+                <div class="mt-auto pt-2 pointer-events-none w-full">
+                    ${displayRemark ? `<div class="flex items-center gap-1.5 p-1.5 rounded bg-red-50 border border-red-100 text-red-700 text-[16px] font-bold leading-tight"><i data-lucide="pin" class="w-4 h-4 shrink-0"></i> <span class="truncate">${displayRemark}</span></div>` : ''}
                 </div>
             </div>
           `;
@@ -2428,98 +2391,7 @@
       }
     }
 
-    // 1. 打開選擇視窗 (預設顯示本月)
-    function freezeTeacherHistory() {
-      if (!currentTid) return alert("請先選擇一位老師");
-      // 預設先幫妳填好「本月」的範圍
-      quickSetFreezeDates('current');
-      document.getElementById("freeze-date-modal").classList.remove("hidden");
-    }
-
-    // 2. 快速設定日期的核心邏輯 (升級版：支援連續點擊跳轉)
-    function quickSetFreezeDates(type) {
-      // 取得目前輸入框中顯示的起始日期
-      const currentInputVal = document.getElementById("freeze-start-date").value;
-
-      // 如果輸入框有值就用它當基準，沒有就用今天
-      let baseDate = currentInputVal ? new Date(currentInputVal) : new Date();
-      let start, end;
-
-      if (type === 'current') {
-        // 【設定本月】：固定回到「今天」所屬的月份
-        const now = new Date();
-        start = new Date(now.getFullYear(), now.getMonth(), 1);
-        end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      } else {
-        // 【設定上月】：從目前顯示的日期再往回推一個月
-        // 抓取目前顯示月份的 1 號，並減去 1 個月
-        start = new Date(baseDate.getFullYear(), baseDate.getMonth() - 1, 1);
-        // 設定為該月最後一天
-        end = new Date(baseDate.getFullYear(), baseDate.getMonth(), 0);
-      }
-
-      // 更新輸入框
-      document.getElementById("freeze-start-date").value = formatDate(start);
-      document.getElementById("freeze-end-date").value = formatDate(end);
-    }
-
-    // 2.5. 關閉視窗
-    function closeFreezeModal() {
-      document.getElementById("freeze-date-modal").classList.add("hidden");
-    }
-
-    // 3. 執行凍結 (讀取輸入框的值)
-    async function executeFreeze() {
-      const startStr = document.getElementById("freeze-start-date").value;
-      const endStr = document.getElementById("freeze-end-date").value;
-      const teacherName = document.getElementById("main-title").textContent.split(' · ')[0];
-
-      if (!startStr || !endStr) return sysAlert("請完整選擇日期範圍！", "資料不齊全");
-
-      const startDate = new Date(startStr);
-      const endDate = new Date(endStr);
-      if (startDate > endDate) return sysAlert("起始日期不能晚於結束日期唷！", "日期錯誤");
-
-      if (!(await sysConfirm(`確定要保留「<b class="text-amber-600">${teacherName}</b>」老師<br>從 ${startStr} 到 ${endStr} 的紀錄嗎？`, "凍結確認", "warning"))) return;
-
-      closeFreezeModal();
-      setStatus(`正在保護 ${startStr} ~ ${endStr} 的歷史紀錄...`);
-
-      const recordsToInsert = [];
-      _cachedSchedule.forEach(course => {
-        let checkDate = new Date(startDate);
-        while (checkDate <= endDate) {
-          let dayOfWeek = checkDate.getDay();
-          if (dayOfWeek === 0) dayOfWeek = 7;
-          if (dayOfWeek === course.day_of_week) {
-            recordsToInsert.push({
-              schedule_id: course.id,
-              teacher_id: currentTid,
-              actual_date: formatDate(checkDate),
-              status: course.color_class || 'status-pending',
-              remark: course.remark || "系統自動補檔"
-            });
-          }
-          checkDate.setDate(checkDate.getDate() + 1);
-        }
-      });
-
-      if (recordsToInsert.length === 0) return setStatus("範圍內沒有需要補檔的課程", "success");
-
-      const { error } = await _client.from("lesson_records").upsert(recordsToInsert, {
-        onConflict: 'schedule_id,actual_date', ignoreDuplicates: true
-      });
-
-      if (error) {
-        setStatus("存檔失敗", "error");
-      } else {
-        setStatus(`成功！已補滿 ${recordsToInsert.length} 個歷史空缺。`, "success");
-        await refreshData();
-      }
-    }
-
     // --- 薪資計算與排序核心邏輯 ---
-
     // 全域變數：暫存計算後的薪資資料
     let _salaryData = [];
     // 全域變數：紀錄目前的排序狀態 (key: 欄位, dir: 1 為升冪, -1 為降冪)
@@ -2780,10 +2652,10 @@
 
     // --- 功能 B: 母版全能匯出/匯入 ---
 
-    // B1. 匯出所有欄位
+    // B1. 匯出所有欄位 (移除常駐備註版)
     async function exportMasterData() {
       if (!currentTid) return alert("請先選擇老師");
-      setStatus("正在下載完整課表...");
+      setStatus("正在下載精簡版課表...");
 
       const { data: courses } = await _client
         .from("schedules")
@@ -2792,7 +2664,6 @@
 
       if (!courses || courses.length === 0) return alert("該老師沒有課程資料");
 
-      // 定義狀態中文對照
       const reverseStatusMap = {
         'status-present': '上課',
         'status-leave': '請假',
@@ -2812,32 +2683,32 @@
         "結束時間": c.end_time.slice(0, 5),
         "教室": c.room_no || "",
         "預設狀態": reverseStatusMap[c.color_class] || "尚未點名",
-        "常駐備註": c.remark || "",
         "僅限本週(是/否)": c.is_temporary ? "是" : "否"
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
-      // 設定欄寬，讓 Excel 看起來舒服
+
+      // 調整欄寬 (移除了備註欄的寬度設定)
       ws['!cols'] = [
         { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 8 },
         { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 10 },
-        { wch: 10 }, { wch: 20 }, { wch: 10 }
+        { wch: 10 }, { wch: 10 }
       ];
 
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "完整課表母版");
+      XLSX.utils.book_append_sheet(wb, ws, "固定課表");
 
       const teacherName = document.getElementById("main-title").textContent.split(' · ')[0] || "老師";
-      XLSX.writeFile(wb, `${teacherName}_完整課表設定.xlsx`);
-      setStatus("下載完成，請用 Excel 開啟編輯。", "success");
+      XLSX.writeFile(wb, `${teacherName}_固定課表.xlsx`);
+      setStatus("固定課表下載完成！", "success");
     }
 
-    // B2. 匯入全能更新
+    // B2. 匯入全能更新 (移除常駐備註版)
     async function handleImportMaster(input) {
       const file = input.files[0];
       if (!file) return;
 
-      if (!(await sysConfirm("確定要匯入並覆蓋嗎？<br><span class='text-xs text-amber-600'>這會更新所有「固定課表」的設定 (包含電話、備註等)。</span>", "匯入確認", "warning"))) {
+      if (!(await sysConfirm("確定要匯入並覆蓋嗎？<br><span class='text-xs text-amber-600'>這會更新所有固定課表設定。</span>", "匯入確認", "warning"))) {
         input.value = ""; return;
       }
       setStatus("正在讀取 Excel...");
@@ -2854,21 +2725,36 @@
           for (const row of jsonRows) {
             const id = row["課程編號(請勿修改)"];
             if (!id) continue;
-            updates.push({ id: id, course_name: row["學生姓名"], phone: row["電話"] || "", subject: row["科目"] || "", amount: parseInt(row["金額"]) || 0, day_of_week: parseInt(row["星期(1-7)"]), start_time: row["開始時間"], end_time: row["結束時間"], room_no: row["教室"] || "", color_class: statusMap[row["預設狀態"]] || 'status-pending', remark: row["常駐備註"] || "", is_temporary: row["僅限本週(是/否)"] === "是" });
+
+            // 這裡移除了 remark: row["常駐備註"] 的對應
+            updates.push({
+              id: id,
+              course_name: row["學生姓名"],
+              phone: row["電話"] || "",
+              subject: row["科目"] || "",
+              amount: parseInt(row["金額"]) || 0,
+              day_of_week: parseInt(row["星期(1-7)"]),
+              start_time: row["開始時間"],
+              end_time: row["結束時間"],
+              room_no: row["教室"] || "",
+              color_class: statusMap[row["預設狀態"]] || 'status-pending',
+              is_temporary: row["僅限本週(是/否)"] === "是"
+            });
           }
 
-          if (updates.length === 0) return sysAlert("無有效資料，請確認 Excel 格式。", "匯入失敗");
-          setStatus(`正在更新 ${updates.length} 筆課程資料...`);
+          if (updates.length === 0) return sysAlert("無有效資料", "匯入失敗");
+          setStatus(`正在更新 ${updates.length} 筆課程...`);
           const { error } = await _client.from("schedules").upsert(updates, { onConflict: 'id' });
+
           if (error) throw error;
-          setStatus("母版資料全欄位更新成功！", "success");
+          setStatus("固定課表更新成功！", "success");
           input.value = "";
           closeBatchModal();
           await refreshData();
         } catch (err) {
           console.error(err);
           await sysAlert("匯入發生錯誤: " + err.message, "系統錯誤");
-          setStatus("匯入發生錯誤", "error");
+          setStatus("匯入錯誤", "error");
         }
       };
       reader.readAsArrayBuffer(file);
