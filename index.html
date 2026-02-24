@@ -529,7 +529,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.1 正式版)
+          📅 系統使用指南 (v1.11 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -1456,7 +1456,7 @@
             }, 550);
           };
 
-          // --- 終極手機版：完美鎖定時間軸 + 防暴衝縮放引擎 ---
+          // --- 終極手機版：完美鎖定 + 防擠壓 縮放引擎 ---
           let currentZoom = 1;
           let startZoom = 1;
           let startDist = 0;
@@ -1466,7 +1466,6 @@
           const wrapper = document.getElementById('schedule-wrapper');
           const container = document.getElementById('schedule-container');
 
-          // 讓外層底色變成純白，解決縮小後邊緣斷層的問題
           if (wrapper) {
             wrapper.style.backgroundColor = '#ffffff';
           }
@@ -1475,7 +1474,6 @@
             wrapper.addEventListener('touchstart', (e) => {
               if (e.touches.length === 2) {
                 isPinching = true;
-                // 使用 clientX/Y，忽略捲動條干擾，徹底解決「無限暴衝」死迴圈
                 startDist = Math.hypot(
                   e.touches[0].clientX - e.touches[1].clientX,
                   e.touches[0].clientY - e.touches[1].clientY
@@ -1496,10 +1494,8 @@
                     e.touches[0].clientY - e.touches[1].clientY
                   );
 
-                  // 防呆機制：手指移動超過 5px 才運算，避免手抖造成畫面閃爍
                   if (startDist > 5) {
                     let newZoom = startZoom * (currentDist / startDist);
-                    // 限制範圍：最小 0.3 倍，最大 2.0 倍
                     newZoom = Math.min(Math.max(newZoom, 0.3), 2.0);
 
                     if (newZoom !== currentZoom) {
@@ -1507,16 +1503,19 @@
                       const touchX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
                       const touchY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
 
-                      // 計算縮放前，手指按住的內容絕對座標
                       const contentX = (wrapper.scrollLeft + touchX) / currentZoom;
                       const contentY = (wrapper.scrollTop + touchY) / currentZoom;
 
                       currentZoom = newZoom;
 
-                      // ★ 執行縮放：使用 zoom，這能確保時間軸乖乖鎖死在邊緣
+                      // 1. 執行縮放 (確保時間軸鎖定)
                       container.style.zoom = currentZoom;
 
-                      // 同步補償捲動位置，讓卡片完美跟隨手指不滑走
+                      // ★ 2. 核心修復：反向放大虛擬空間，給予卡片足夠排版空間，絕對不擠壓！
+                      container.style.minWidth = `${100 / currentZoom}%`;
+                      container.style.minHeight = `${100 / currentZoom}%`;
+
+                      // 3. 同步捲動位置，保持操作手感
                       wrapper.scrollLeft = contentX * currentZoom - touchX;
                       wrapper.scrollTop = contentY * currentZoom - touchY;
                     }
