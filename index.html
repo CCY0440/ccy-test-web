@@ -143,8 +143,9 @@
       padding: 2px;
     }
 
-    /* 核心修正：強制讓隱形的日曆點擊感應區撐滿整個區域 */
-    #date-picker::-webkit-calendar-picker-indicator {
+    /* 找到這一段，把 #stu-date-picker 也補上去 */
+    #date-picker::-webkit-calendar-picker-indicator,
+    #stu-date-picker::-webkit-calendar-picker-indicator {
       position: absolute;
       left: 0;
       top: 0;
@@ -172,6 +173,110 @@
     body.is-pinching,
     body.is-pinching * {
       transition: none !important;
+    }
+
+    /* 讓控制台的分頁選單在手機上可以滑動 */
+    .admin-tab-container {
+      display: flex;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      /* 隱藏捲軸 */
+    }
+
+    .admin-tab-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* --- 控制台手機版：隱藏分頁圖示、防止文字斷行 --- */
+    .admin-tab {
+      white-space: nowrap !important;
+      /* 絕對不准斷行 */
+      flex-shrink: 0 !important;
+      /* 防止被擠壓 */
+    }
+
+    /* --- 強化電腦版的橫向捲軸體驗 --- */
+    .admin-tab-content .overflow-auto::-webkit-scrollbar {
+      height: 12px;
+      /* 捲軸高度加粗，讓滑鼠好抓 */
+      width: 12px;
+    }
+
+    .admin-tab-content .overflow-auto::-webkit-scrollbar-track {
+      background: #f8fafc;
+      /* 淡灰色軌道 */
+      border-radius: 8px;
+    }
+
+    .admin-tab-content .overflow-auto::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      /* 捲軸本體顏色 */
+      border-radius: 8px;
+      border: 2px solid #f8fafc;
+      /* 製造一點留白質感 */
+    }
+
+    .admin-tab-content .overflow-auto::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+      /* 滑鼠移上去變深 */
+    }
+
+    /* --- 強化電腦版的橫向捲軸體驗 (包含下方表格與頂部分頁) --- */
+
+    /* 1. 下方表格區塊的亮色捲軸 */
+    .admin-tab-content .overflow-auto::-webkit-scrollbar {
+      height: 10px;
+    }
+
+    .admin-tab-content .overflow-auto::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 8px;
+    }
+
+    .admin-tab-content .overflow-auto::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 8px;
+      border: 2px solid #f1f5f9;
+    }
+
+    .admin-tab-content .overflow-auto::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* 2. 頂部分頁列的深色捲軸 */
+    .admin-tabs-scroll::-webkit-scrollbar {
+      height: 8px;
+      /* 稍微細一點，比較精緻 */
+    }
+
+    .admin-tabs-scroll::-webkit-scrollbar-track {
+      background: #262626;
+      border-radius: 8px;
+    }
+
+    .admin-tabs-scroll::-webkit-scrollbar-thumb {
+      background: #525252;
+      border-radius: 8px;
+    }
+
+    .admin-tabs-scroll::-webkit-scrollbar-thumb:hover {
+      background: #737373;
+    }
+
+    @media (max-width: 640px) {
+      .admin-tab i {
+        display: none !important;
+        /* 手機版隱藏圖示 */
+      }
+
+      .admin-tab {
+        padding: 14px 16px !important;
+        /* 手機版縮小按鈕高度 */
+        font-size: 14px !important;
+        /* 字體微調 */
+      }
     }
   </style>
 </head>
@@ -247,7 +352,7 @@
       <div class="w-full border-t border-[#e9e9e7] my-4"></div>
 
       <div class="flex flex-col items-center justify-center text-gray-400 gap-1.5">
-        <div class="text-[10px] font-medium">網頁版本 v1.12 正式版</div>
+        <div class="text-[10px] font-medium">網頁版本 v1.13 正式版</div>
         <div class="text-[10px] font-mono opacity-60">Designed by @CCY</div>
       </div>
 
@@ -363,7 +468,7 @@
                   class="w-full border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner" />
               </div>
               <div>
-                <label class="block text-[11px] font-bold text-gray-500 mb-1">學生電話 (多台請用空格)</label>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">學生電話 (若為多台 請用空格隔開)</label>
                 <input type="tel" name="phone" placeholder="聯絡電話"
                   class="w-full border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner" />
               </div>
@@ -523,7 +628,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.12 正式版)
+          📅 系統使用指南 (v1.13 正式版)
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -761,8 +866,8 @@
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto border border-gray-200 rounded-lg relative bg-white">
-          <table class="w-full text-sm text-left">
+        <div class="flex-1 overflow-auto border border-gray-200 rounded-lg relative bg-white">
+          <table class="w-full text-sm text-left min-w-max">
             <thead class="bg-gray-50 text-gray-500 font-medium sticky top-0 z-10 shadow-sm select-none">
               <tr>
                 <th onclick="sortSalary('date')"
@@ -902,7 +1007,7 @@
         <div class="px-6 py-4 font-bold text-lg flex items-center gap-2 border-r border-neutral-700 min-w-[200px]">
           <i data-lucide="shield-alert" class="w-5 h-5"></i> 管理控制台
         </div>
-        <div class="flex flex-1 overflow-x-auto">
+        <div class="flex flex-1 overflow-x-auto admin-tabs-scroll">
           <button onclick="switchAdminTab('directory')"
             class="admin-tab px-5 py-4 text-sm font-bold text-gray-300 hover:text-white hover:bg-neutral-700 border-b-4 border-transparent transition-all flex items-center gap-2"
             id="tab-btn-directory">
@@ -938,13 +1043,16 @@
       <div class="flex-1 bg-gray-50 overflow-hidden relative">
 
         <div id="tab-content-directory" class="admin-tab-content w-full h-full flex flex-col p-6 hidden">
-          <div class="flex justify-between items-center mb-4 shrink-0">
-            <div class="relative w-72">
+          <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-3 mb-4 shrink-0">
+            <div class="relative w-full sm:w-72">
               <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
               <input type="text" id="dir-search" oninput="renderDirectory()" placeholder="搜尋姓名、電話..."
-                class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-neutral-800">
+                class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-neutral-800 shadow-sm">
             </div>
-            <div class="text-xs text-gray-500">提示：點擊任何欄位即可複製</div>
+            <div
+              class="text-[11px] sm:text-xs text-gray-500 bg-gray-50/80 px-2.5 py-1.5 rounded-md border border-gray-200 shadow-sm w-full sm:w-auto text-center sm:text-left">
+              💡 提示：點擊任何欄位即可複製
+            </div>
           </div>
           <div class="flex-1 overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-sm">
             <table class="w-full text-sm text-left">
@@ -970,6 +1078,7 @@
                     <div class="flex items-center gap-1">負責老師 <i data-lucide="arrow-up-down"
                         class="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500"></i></div>
                   </th>
+                  <th class="p-4 w-16 text-center whitespace-nowrap">操作</th>
                 </tr>
               </thead>
               <tbody id="directory-list" class="divide-y divide-gray-100 text-neutral-700"></tbody>
@@ -1054,18 +1163,61 @@
           </div>
         </div>
 
-        <div id="tab-content-teachers" class="admin-tab-content w-full h-full flex flex-col p-6 hidden">
-          <div class="flex gap-2 mb-4 shrink-0 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-            <input type="text" id="new-teacher-name" placeholder="輸入新老師姓名..."
-              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-100" />
-            <button onclick="addTeacher()"
-              class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 shadow-md transition-all flex items-center gap-1">
-              <i data-lucide="plus" class="w-4 h-4"></i> 新增老師
-            </button>
+        <div id="tab-content-teachers"
+          class="admin-tab-content w-full h-full flex flex-col md:flex-row gap-4 md:gap-6 p-4 md:p-6 hidden overflow-y-auto md:overflow-hidden bg-gray-50/50">
+          <div
+            class="w-full md:w-80 shrink-0 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm p-5 h-fit">
+            <div class="flex items-center gap-2 mb-5">
+              <div class="w-1.5 h-4 bg-blue-600 rounded-full shrink-0"></div>
+              <h4 class="font-bold text-gray-800 text-base m-0 leading-none">新增老師與帳號</h4>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1.5">老師姓名</label>
+                <input type="text" id="new-teacher-name" placeholder="例：章魚老師"
+                  class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none transition-all bg-gray-50 focus:bg-white shadow-inner">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1.5">登入帳號 <span
+                    class="text-blue-500 font-normal">(英文或數字)</span></label>
+                <input type="text" id="new-teacher-username" placeholder="例：octopus"
+                  class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none transition-all bg-gray-50 focus:bg-white shadow-inner">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1.5">預設密碼 <span
+                    class="text-blue-500 font-normal">(至少 6 碼)</span></label>
+                <input type="text" id="new-teacher-password" placeholder="請設定給這位老師初始密碼"
+                  class="w-full border border-gray-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-400 outline-none transition-all bg-gray-50 focus:bg-white shadow-inner">
+              </div>
+
+              <div class="pt-2">
+                <button onclick="addTeacher()"
+                  class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm">
+                  <i data-lucide="check-circle" class="w-4 h-4"></i> 建立帳號並新增
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="flex-1 overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-            <div id="teacher-manage-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+
+          <div
+            class="flex-1 flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px] md:min-h-0 md:h-full">
+
+            <div class="p-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <h4 class="font-bold text-gray-700 flex items-center gap-2">
+                <i data-lucide="users" class="w-4 h-4 text-gray-400"></i> 現有老師名單
+              </h4>
+              <span
+                class="text-[10px] text-gray-400 bg-white px-2 py-1 rounded border border-gray-200 shadow-sm">點擊卡片右側可修改或刪除</span>
+            </div>
+
+            <div class="p-4 flex-1 overflow-y-auto bg-[#fbfbfa]">
+              <div id="teacher-manage-list" class="flex flex-col gap-2.5"></div>
+            </div>
           </div>
+
         </div>
 
         <div id="tab-content-logs" class="admin-tab-content w-full h-full flex flex-col p-6 hidden">
@@ -1088,8 +1240,8 @@
               <i data-lucide="refresh-cw" class="w-4 h-4"></i> 重新整理
             </button>
           </div>
-          <div class="flex-1 overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-sm">
-            <table class="w-full text-sm text-left">
+          <div class="flex-1 overflow-auto bg-white rounded-xl border border-gray-200 shadow-sm">
+            <table class="w-full text-sm text-left min-w-max">
               <thead class="bg-gray-50 text-gray-500 font-bold sticky top-0 z-10 shadow-sm select-none">
                 <tr>
                   <th class="p-4 whitespace-nowrap">時間</th>
@@ -1256,6 +1408,95 @@
           </div>
         </div>
 
+        <div id="student-edit-modal"
+          class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[1600] backdrop-blur-sm">
+          <div class="bg-white rounded-2xl w-[90%] max-w-sm p-6 shadow-2xl border border-neutral-200">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2 text-blue-800">
+              <i data-lucide="user-cog" class="w-5 h-5"></i> 修改基本資料
+            </h3>
+            <div
+              class="mb-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-800 leading-relaxed border border-blue-100 shadow-inner">
+              💡 這裡的修改會<b>一次性同步更新</b>該學生名下所有科目的姓名與電話。
+            </div>
+            <div class="space-y-4">
+              <input type="hidden" id="edit-student-ids">
+              <input type="hidden" id="edit-student-old-name">
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">學生姓名</label>
+                <input type="text" id="edit-student-name"
+                  class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-inner bg-gray-50 focus:bg-white transition-all">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">聯絡電話</label>
+                <input type="text" id="edit-student-phone"
+                  class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-inner bg-gray-50 focus:bg-white transition-all">
+              </div>
+              <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeStudentEditModal()"
+                  class="px-4 py-2 text-sm text-gray-500 hover:bg-gray-100 rounded-lg font-bold transition-colors">取消</button>
+                <button onclick="saveStudentProfile()"
+                  class="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-bold shadow-md transition-all active:scale-95 flex items-center gap-1">
+                  <i data-lucide="save" class="w-4 h-4"></i> 儲存變更
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="student-schedule-modal"
+          class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[1700] backdrop-blur-sm">
+          <div
+            class="bg-white rounded-2xl w-[95%] max-w-4xl h-[85vh] shadow-2xl flex flex-col overflow-hidden border border-gray-200">
+
+            <div class="p-4 border-b border-gray-100 bg-emerald-50 flex flex-wrap justify-between items-center gap-3">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-lg shadow-sm"
+                  id="stu-modal-initial"></div>
+                <div>
+                  <h3 class="font-bold text-emerald-900 m-0" id="stu-modal-name">學生課表</h3>
+                  <p class="text-[10px] text-emerald-600 font-medium" id="stu-modal-phone"></p>
+                </div>
+              </div>
+
+              <div
+                class="flex items-center gap-2 bg-white rounded-xl border border-emerald-200 p-1 shadow-sm relative group">
+                <button onclick="changeStudentWeek(-1)"
+                  class="p-1.5 hover:bg-gray-100 rounded-lg text-emerald-600 transition-colors z-20 relative">
+                  <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                </button>
+
+                <div
+                  class="relative flex justify-center items-center px-2 min-w-[160px] cursor-pointer group-hover:bg-emerald-50 transition-colors rounded-lg">
+                  <span id="stu-modal-date-range" class="text-xs font-bold text-gray-700 font-mono select-none"></span>
+                  <input type="date" id="stu-date-picker"
+                    class="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full appearance-none"
+                    onchange="handleStudentDatePick(this.value)">
+                </div>
+
+                <button onclick="changeStudentWeek(1)"
+                  class="p-1.5 hover:bg-gray-100 rounded-lg text-emerald-600 transition-colors z-20 relative">
+                  <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <button onclick="closeStudentScheduleModal()"
+                class="text-gray-400 hover:text-red-500 bg-white p-1.5 rounded-full transition-colors border border-gray-100 shadow-sm">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+
+            <div class="flex-1 overflow-auto bg-[#fbfbfa]" id="stu-schedule-wrapper">
+              <div id="stu-schedule-container" class="flex min-w-max p-4">
+              </div>
+            </div>
+
+            <div class="p-3 bg-gray-50 border-t border-gray-100 text-center">
+              <span class="text-[10px] text-gray-400 font-bold">💡 點擊卡片可直接點名，系統會同步更新至該老師的課表中</span>
+            </div>
+          </div>
+        </div>
+
         <script>
           const SUPABASE_URL = "https://szudiyorlqmxyibxwaqp.supabase.co";
           const SUPABASE_KEY = "sb_publishable_0Dqlqe0ZXLRhjaevc7VB2g_39W_8eXP";
@@ -1272,6 +1513,9 @@
           let _cachedSchedule = []; // 暫存課表資料
           let _cachedRecords = [];  // 暫存紀錄資料
           let _userSortOrder = [];  // 記住使用者排好的卡片順序 (存 ID)
+          // ★ 核心補丁：初始化通訊錄的資料與排序狀態
+          let _allSchedulesForAdmin = [];
+          let _dirSortState = { key: 'name', dir: 1 }; // 預設依姓名順向排序
 
           // --- 使用說明彈窗控制 ---
           function openInstructionsModal() {
@@ -2250,13 +2494,59 @@
           }
 
           // 5. 老師管理功能
+          // 新增老師與建立登入帳號
           async function addTeacher() {
-            const name = document.getElementById("new-teacher-name").value.trim();
-            if (!name) return;
-            const { error } = await _client.from("teachers").insert([{ name }]);
-            if (error) alert("新增失敗");
-            document.getElementById("new-teacher-name").value = "";
+            const nameInput = document.getElementById("new-teacher-name");
+            const usernameInput = document.getElementById("new-teacher-username");
+            const pwdInput = document.getElementById("new-teacher-password");
+
+            const name = nameInput.value.trim();
+            // 如果您的 HTML 還沒補上這兩個框，先給個空字串防呆
+            const username = usernameInput ? usernameInput.value.trim() : "";
+            const password = pwdInput ? pwdInput.value : "";
+
+            if (!name) return sysAlert("請輸入老師姓名", "資料不齊全");
+            if (!username || !password) return sysAlert("請設定登入帳號與密碼", "資料不齊全");
+            if (password.length < 6) return sysAlert("為了安全，密碼至少需要 6 碼喔！", "密碼太短");
+
+            // 配合登入頁面的邏輯，自動補上信箱後綴 (請確保 FAKE_DOMAIN 變數與 login.html 一致)
+            const FAKE_DOMAIN = "@munique.com"; // 如果您有自己設定的後綴，請改這裡
+            const finalEmail = username.includes('@') ? username : (username + FAKE_DOMAIN);
+
+            setStatus("正在建立帳號與資料...");
+
+            // 步驟一：在 Supabase Auth 建立登入帳號
+            const { data: authData, error: authError } = await _client.auth.signUp({
+              email: finalEmail,
+              password: password,
+            });
+
+            if (authError) {
+              setStatus("帳號建立失敗", "error");
+              return sysAlert("建立帳號失敗: " + authError.message, "系統錯誤");
+            }
+
+            // 步驟二：帳號建立成功後，將老師名單寫入資料庫
+            const { data, error } = await _client.from("teachers").insert([{ name: name }]).select();
+
+            if (error) {
+              setStatus("老師名單新增失敗", "error");
+              return sysAlert("新增失敗: " + error.message, "系統錯誤");
+            }
+
+            // 寫入日誌 (將發配的帳號也記錄下來)
+            await recordLog('新增老師', `建立新老師 [${name}] 並配發登入帳號 [${username}]`, 'teachers', null, data[0]);
+
+            // 清空輸入框
+            nameInput.value = "";
+            if (usernameInput) usernameInput.value = "";
+            if (pwdInput) pwdInput.value = "";
+
+            setStatus("老師與帳號新增成功！", "success");
+            await sysAlert(`已經成功為 ${name} 建立帳號！<br>登入帳號：${username}<br>登入密碼：${password}`, "建立成功");
+
             await fetchTeachers();
+            await renderTeacherManageList();
           }
 
           // 6. 輔助函數 (加大版：px-2.5, py-1, -ml-2)
@@ -2698,7 +2988,7 @@
 
           // --- 薪資計算與排序核心邏輯 ---
           // 全域變數：暫存計算後的薪資資料
-          let _salaryData = [];
+          var _salaryData = [];
           // 全域變數：紀錄目前的排序狀態 (key: 欄位, dir: 1 為升冪, -1 為降冪)
           let _salarySortState = { key: 'date', dir: 1 };
 
@@ -2739,31 +3029,92 @@
             document.getElementById("salary-modal").classList.add("hidden");
           }
 
-          // 2. 執行計算 (修正版：支援當天金額覆寫)
+          // ==========================================
+          // 💰 薪資計算與渲染核心模組 (完整修復版)
+          // ==========================================
+
+          // 1. 薪資試算引擎 (背景保留尚未點名版：為 Excel 報表做準備)
           async function calculateSalary() {
             const startStr = document.getElementById("salary-start-date").value;
             const endStr = document.getElementById("salary-end-date").value;
 
             if (!startStr || !endStr) return sysAlert("請選擇日期範圍", "資料不齊全");
+            if (startStr > endStr) return sysAlert("開始日期不能晚於結束日期", "日期錯誤");
             setStatus("正在計算薪資...");
 
             try {
-              const { data: records, error: rErr } = await _client.from("lesson_records")
-                .select("*, schedules(course_name, amount, subject)").eq("teacher_id", currentTid).gte("actual_date", startStr).lte("actual_date", endStr);
-              if (rErr) throw rErr;
+              const { data: sData, error: sErr } = await _client.from("schedules").select("*").eq("teacher_id", currentTid);
+              const { data: rData, error: rErr } = await _client.from("lesson_records").select("*").eq("teacher_id", currentTid).gte("actual_date", startStr).lte("actual_date", endStr);
 
-              let totalSalary = 0; let totalCount = 0;
-              _salaryData = records.map(r => {
-                const isPayable = ['attended', 'status-present', 'absent', 'status-absent'].includes(r.status);
-                const courseInfo = r.schedules || { course_name: '(未知課程)', amount: 0, subject: '' };
-                let finalAmount = (r.actual_amount !== null && r.actual_amount !== undefined) ? r.actual_amount : (courseInfo.amount || 0);
-                if (!isPayable) finalAmount = 0;
-                if (isPayable) { totalSalary += finalAmount; totalCount++; }
-                return { id: r.id, schedule_id: r.schedule_id, date: r.actual_date, course_name: courseInfo.course_name, subject: courseInfo.subject, status: r.status, amount: finalAmount, isPayable: isPayable };
+              if (sErr || rErr) throw new Error("資料讀取失敗");
+
+              let totalSalary = 0;
+              let totalCount = 0;
+              _salaryData = [];
+
+              const recordMap = new Map();
+              (rData || []).forEach(r => recordMap.set(`${r.schedule_id}_${r.actual_date}`, r));
+
+              const schedulesByDay = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] };
+              const tempSchedulesByDate = new Map();
+
+              (sData || []).forEach(s => {
+                if (s.is_temporary && s.target_date) {
+                  if (!tempSchedulesByDate.has(s.target_date)) tempSchedulesByDate.set(s.target_date, []);
+                  tempSchedulesByDate.get(s.target_date).push(s);
+                } else if (s.day_of_week) {
+                  schedulesByDay[s.day_of_week].push(s);
+                }
               });
+
+              let loopDate = new Date(startStr);
+              const endDateObj = new Date(endStr);
+
+              while (loopDate <= endDateObj) {
+                const dStr = formatDate(loopDate);
+                let dayOfWeek = loopDate.getDay();
+                if (dayOfWeek === 0) dayOfWeek = 7;
+
+                const regularSchedules = schedulesByDay[dayOfWeek] || [];
+                const tempSchedules = tempSchedulesByDate.get(dStr) || [];
+                const daySchedules = [...regularSchedules, ...tempSchedules];
+
+                daySchedules.forEach(s => {
+                  const record = recordMap.get(`${s.id}_${dStr}`);
+                  const status = record ? record.status : (s.color_class || 'status-pending');
+
+                  // ★ 這次我們不把尚未點名踢掉了，但我們確保它不會被算進薪水裡！
+                  const isPayable = ['attended', 'status-present', 'absent', 'status-absent'].includes(status);
+                  let finalAmount = (record && record.actual_amount !== null && record.actual_amount !== undefined)
+                    ? record.actual_amount
+                    : (s.amount || 0);
+
+                  if (!isPayable) finalAmount = 0; // 只要不發薪，金額就是 0
+
+                  if (isPayable) {
+                    totalSalary += finalAmount;
+                    totalCount++;
+                  }
+
+                  // 全部塞進 _salaryData 陣列裡備用
+                  _salaryData.push({
+                    id: record ? record.id : `mock-${s.id}-${dStr}`,
+                    schedule_id: s.id,
+                    date: dStr,
+                    course_name: s.course_name,
+                    subject: s.subject,
+                    status: status,
+                    amount: finalAmount,
+                    isPayable: isPayable
+                  });
+                });
+
+                loopDate.setDate(loopDate.getDate() + 1);
+              }
 
               document.getElementById("total-salary").textContent = `$${totalSalary.toLocaleString()}`;
               document.getElementById("total-count").textContent = `${totalCount} 堂`;
+
               sortSalary('date');
               document.getElementById("salary-result").classList.remove("hidden");
               setStatus("薪資計算完成", "success");
@@ -2772,6 +3123,88 @@
               setStatus("計算失敗", "error");
               await sysAlert("計算失敗：" + err.message, "系統錯誤");
             }
+          }
+
+          // 2. 排序觸發器 (點標題時呼叫)
+          function sortSalary(key) {
+            if (_salarySortState.key === key) {
+              _salarySortState.dir *= -1;
+            } else {
+              _salarySortState.key = key;
+              _salarySortState.dir = 1;
+              if (key === 'amount') _salarySortState.dir = -1;
+            }
+
+            _salaryData.sort((a, b) => {
+              let valA, valB;
+              if (key === 'date') { valA = a.date; valB = b.date; }
+              else if (key === 'name') { valA = a.course_name; valB = b.course_name; }
+              else if (key === 'amount') { valA = a.amount; valB = b.amount; }
+              else if (key === 'status') {
+                const statusRank = { 'attended': 1, 'status-present': 1, 'leave': 2, 'status-leave': 2, 'absent': 3, 'status-absent': 3 };
+                valA = statusRank[a.status] || 99;
+                valB = statusRank[b.status] || 99;
+              }
+              if (valA < valB) return -1 * _salarySortState.dir;
+              if (valA > valB) return 1 * _salarySortState.dir;
+              return 0;
+            });
+
+            renderSalaryTable();
+          }
+
+          // 3. 渲染表格 HTML (UI 過濾版：畫面隱藏尚未點名，防止卡頓)
+          function renderSalaryTable() {
+            const listBody = document.getElementById("salary-list");
+            listBody.innerHTML = "";
+
+            // ★ 視覺過濾魔法：只挑出有確實點名狀態的資料來畫畫面
+            const displayData = _salaryData.filter(item => item.status !== 'status-pending');
+            const pendingCount = _salaryData.length - displayData.length;
+
+            displayData.forEach(item => {
+              let statusText = '', statusColor = '';
+              const s = item.status;
+
+              if (['attended', 'status-present'].includes(s)) { statusText = '✅ 上課'; statusColor = 'text-green-600 bg-green-50'; }
+              else if (['leave', 'status-leave'].includes(s)) { statusText = '☕ 請假'; statusColor = 'text-amber-600 bg-amber-50'; }
+              else if (['absent', 'status-absent'].includes(s)) { statusText = '❌ 曠課'; statusColor = 'text-red-600 bg-red-50'; }
+              else if (['status-practice'].includes(s)) { statusText = '🎹 練習'; statusColor = 'text-blue-600 bg-blue-50'; }
+              else { statusText = '狀態異常'; statusColor = 'text-gray-400'; }
+
+              const row = `
+                <tr class="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                  <td class="p-3 font-mono text-xs">${item.date.slice(5)}</td>
+                  <td class="p-3">
+                    <div class="font-bold text-gray-800">${item.course_name}</div>
+                    <div class="text-[10px] text-gray-400">${item.subject || ''}</div>
+                  </td>
+                  <td class="p-3">
+                    <span class="px-2 py-1 rounded text-xs font-bold ${statusColor}">${statusText}</span>
+                  </td>
+                  <td class="p-3 text-right font-mono font-medium ${item.isPayable ? 'text-gray-800' : 'text-gray-300 line-through'}">
+                    $${item.amount}
+                  </td>
+                </tr>
+              `;
+              listBody.innerHTML += row;
+            });
+
+            // 在表格最下方顯示溫馨提示，讓您知道系統有幫您保存這些資料
+            if (pendingCount > 0) {
+              listBody.innerHTML += `
+                <tr>
+                  <td colspan="4" class="p-4 text-center bg-gray-50/50 border-t border-gray-100">
+                     <span class="text-xs font-bold text-gray-400 flex items-center justify-center gap-1">
+                       <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+                       畫面已隱藏 ${pendingCount} 堂「尚未點名」課程 (匯出 Excel 時將完整包含)
+                     </span>
+                  </td>
+                </tr>
+              `;
+            }
+
+            if (window.lucide) lucide.createIcons();
           }
 
           // 3. 排序觸發器 (點標題時呼叫)
@@ -2815,43 +3248,11 @@
             renderSalaryTable();
           }
 
-          // 4. 渲染表格 HTML (純粹負責畫畫面)
-          function renderSalaryTable() {
-            const listBody = document.getElementById("salary-list");
-            listBody.innerHTML = "";
-
-            _salaryData.forEach(item => {
-              // 狀態顯示文字與顏色
-              let statusText = '', statusColor = '';
-              const s = item.status;
-
-              if (['attended', 'status-present'].includes(s)) { statusText = '✅ 上課'; statusColor = 'text-green-600 bg-green-50'; }
-              else if (['leave', 'status-leave'].includes(s)) { statusText = '☕ 請假'; statusColor = 'text-amber-600 bg-amber-50'; }
-              else if (['absent', 'status-absent'].includes(s)) { statusText = '❌ 曠課'; statusColor = 'text-red-600 bg-red-50'; }
-              else { statusText = '尚未點名'; statusColor = 'text-gray-400'; }
-
-              const row = `
-          <tr class="hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-            <td class="p-3 font-mono text-xs">${item.date.slice(5)}</td>
-            <td class="p-3">
-              <div class="font-bold text-gray-800">${item.course_name}</div>
-              <div class="text-[10px] text-gray-400">${item.subject || ''}</div>
-            </td>
-            <td class="p-3">
-              <span class="px-2 py-1 rounded text-xs font-bold ${statusColor}">${statusText}</span>
-            </td>
-            <td class="p-3 text-right font-mono font-medium ${item.isPayable ? 'text-gray-800' : 'text-gray-300 line-through'}">
-              $${item.amount}
-            </td>
-          </tr>
-        `;
-              listBody.innerHTML += row;
-            });
-          }
+          renderSalaryTable
 
           // --- 功能 A：薪資結算匯出/匯入 (只改狀態) ---
 
-          // A1. 匯出薪資報表 (修正版：標示姓名不可修改)
+          // A1. 匯出薪資報表 (完整匯出，包含尚未點名)
           async function exportDailyReport() {
             if (_salaryData.length === 0) return sysAlert("請先按「開始計算」產生資料！", "尚未計算");
 
@@ -2860,7 +3261,8 @@
               if (['attended', 'status-present'].includes(item.status)) statusText = '上課';
               else if (['leave', 'status-leave'].includes(item.status)) statusText = '請假';
               else if (['absent', 'status-absent'].includes(item.status)) statusText = '曠課';
-              else statusText = '尚未點名';
+              else if (['status-practice'].includes(item.status)) statusText = '學生練習';
+              else statusText = '尚未點名'; // ★ Excel 會忠實印出尚未點名
 
               return {
                 "系統編號(請勿修改)": item.schedule_id,
@@ -2878,7 +3280,7 @@
             const wscols = [
               { wch: 15 }, // ID
               { wch: 12 }, // 日期
-              { wch: 20 }, // 學生姓名 (稍微加寬一點，因為標題變長了)
+              { wch: 20 }, // 學生姓名
               { wch: 10 }, // 狀態
               { wch: 20 }, // 備註
               { wch: 12 }  // 金額
@@ -2887,7 +3289,8 @@
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "薪資結算");
-            // ★ 寫入日誌
+
+            // 寫入日誌
             const teacherName = document.getElementById("main-title").textContent.split(' · ')[0] || "老師";
             await recordLog('匯出報表', `下載了 [${teacherName}] 的薪資結算 Excel`, 'system', null, null);
 
@@ -3257,9 +3660,6 @@
             }
           }
 
-          // --- 超級管理員控制台邏輯 ---
-          let _allSchedulesForAdmin = [];
-
           function openAdminModal() {
             document.getElementById("admin-modal").classList.remove("hidden");
 
@@ -3305,36 +3705,12 @@
             if (tabName === 'logs') loadLogs();
           }
 
-          // --- Tab 1: 通訊錄 ---
-          async function loadDirectoryData() {
-            setStatus("建立通訊錄...");
-            const { data, error } = await _client.from("schedules").select("*, teachers(name)");
-            if (error) return;
-            _allSchedulesForAdmin = data;
-            renderDirectory();
-            setStatus("就緒", "success");
-          }
-
-          // --- 通訊錄排序狀態 ---
-          let _dirSortState = { key: 'name', dir: 1 }; // 預設依姓名升冪
-
-          function sortDirectory(key) {
-            if (_dirSortState.key === key) {
-              _dirSortState.dir *= -1; // 同欄位點兩次 -> 反轉順序
-            } else {
-              _dirSortState.key = key;
-              _dirSortState.dir = 1;   // 新欄位 -> 預設升冪
-            }
-            renderDirectory(); // 重新整理畫面
-          }
-
-          // --- Tab 1: 通訊錄 (終極版：支援多電話獨立點擊複製) ---
+          // --- Tab 1: 通訊錄 (終極清晰版：加大字體與感應區，完美平衡閱讀與操作) ---
           function renderDirectory() {
             const keyword = document.getElementById("dir-search").value.toLowerCase();
             const listBody = document.getElementById("directory-list");
             listBody.innerHTML = "";
 
-            // 1. 過濾與去重
             const uniqueMap = new Map();
             _allSchedulesForAdmin.forEach(s => {
               const key = `${s.course_name}-${s.phone}`;
@@ -3342,63 +3718,293 @@
                 (s.phone || "").includes(keyword) ||
                 (s.subject || "").toLowerCase().includes(keyword);
 
-              if (match && !uniqueMap.has(key)) uniqueMap.set(key, s);
+              if (match) {
+                if (!uniqueMap.has(key)) {
+                  uniqueMap.set(key, {
+                    course_name: s.course_name || "",
+                    phone: s.phone || "",
+                    subjects: new Set(),
+                    teachers: new Set(),
+                    schedule_ids: []
+                  });
+                }
+                const studentData = uniqueMap.get(key);
+                if (s.subject) studentData.subjects.add(s.subject);
+                if (s.teachers && s.teachers.name) studentData.teachers.add(s.teachers.name);
+                studentData.schedule_ids.push(s.id);
+              }
             });
 
-            // 2. 排序
             let list = Array.from(uniqueMap.values());
             list.sort((a, b) => {
-              let valA = "", valB = "";
               const k = _dirSortState.key;
-              if (k === 'name') { valA = a.course_name || ""; valB = b.course_name || ""; }
-              else if (k === 'phone') { valA = a.phone || ""; valB = b.phone || ""; }
-              else if (k === 'subject') { valA = a.subject || ""; valB = b.subject || ""; }
-              else if (k === 'teacher') { valA = a.teachers?.name || ""; valB = b.teachers?.name || ""; }
+              let valA = (k === 'name' ? a.course_name : (k === 'phone' ? a.phone : ""));
+              let valB = (k === 'name' ? b.course_name : (k === 'phone' ? b.phone : ""));
               return valA.localeCompare(valB, "zh-Hant") * _dirSortState.dir;
             });
 
-            // 3. 渲染
-            list.forEach(s => {
-              const teacherName = s.teachers ? s.teachers.name : "未知";
-              const name = s.course_name || "";
-              const subject = s.subject || "-";
-              const tName = teacherName || "";
+            list.forEach(student => {
+              const name = student.course_name || "未知";
+              const phoneRaw = student.phone || "";
+              const idsStr = student.schedule_ids.join(',');
 
-              // ★★★ 關鍵修改：將每一支電話包裝成獨立、可點擊的區塊 ★★★
-              const phoneRaw = s.phone || "";
+              // ★ 核心優化：加大基礎高度與字體大小
+              const baseClass = "flex items-center w-full min-h-[64px] px-5 cursor-pointer transition-all active:bg-opacity-80";
+
+              // 1. 姓名：使用 text-base (16px) 並加深顏色
+              const nameHtml = `
+                <div class="${baseClass} hover:bg-blue-50 text-blue-900 font-extrabold text-base" 
+                     onclick="copyToClipboard('${name}', this)">
+                    ${name}
+                </div>`;
+
+              // 2. 電話：使用 text-sm (14px) 強化數字易讀性
               const phoneList = phoneRaw.split(/\s+/).filter(p => p.trim() !== "");
-
-              let phoneHtml = "-";
-              if (phoneList.length > 0) {
-                // 為每個電話號碼加上獨立的 onclick 事件與 hover 效果
-                phoneHtml = phoneList.map(p => `
-                <div class="cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors py-1 px-2 -mx-2 rounded"
-                     onclick="copyToClipboard('${p}', this)" title="複製此電話">
+              const phoneHtml = phoneList.length > 0 ? phoneList.map(p => `
+                <div class="${baseClass} hover:bg-gray-100 text-gray-700 font-mono text-sm border-b border-gray-50 last:border-0"
+                     onclick="copyToClipboard('${p}', this)">
                     ${p}
-                </div>
-            `).join('');
-              }
+                </div>`).join('') : `<div class="${baseClass} text-gray-300">-</div>`;
 
+              // 3. 科目：使用 text-sm (14px) 並稍微加深字體顏色
+              const subjectsArr = Array.from(student.subjects);
+              const subjectHtml = subjectsArr.length > 0 ? subjectsArr.map(s => `
+                <div class="${baseClass} hover:bg-indigo-50 text-gray-800 text-sm font-medium border-b border-gray-50 last:border-0"
+                     onclick="copyToClipboard('${s}', this)">
+                    ${s}
+                </div>`).join('') : `<div class="${baseClass} text-gray-300">-</div>`;
+
+              // 4. 負責老師：使用 text-sm (14px) 並強化標籤存在感
+              const teachersArr = Array.from(student.teachers);
+              const teacherHtml = teachersArr.length > 0 ? teachersArr.map(t => `
+                <div class="${baseClass} hover:bg-emerald-50 text-emerald-800 text-sm font-bold border-b border-gray-50 last:border-0"
+                     onclick="copyToClipboard('${t}', this)">
+                    ${t}
+                </div>`).join('') : `<div class="${baseClass} text-gray-300">-</div>`;
+
+              // ★ 修正：給每個 <td> 加上 min-width 保護，防止手機擠壓
               const row = `
-                <tr class="border-b border-gray-100 transition-colors">
-                    <td class="p-4 font-bold text-neutral-800 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 align-top" 
-                        onclick="copyToClipboard('${name}', this)" title="複製姓名">${name}</td>
-                    
-                    <td class="p-4 font-mono text-gray-600 align-top">
-                        ${phoneHtml}
-                    </td>
-                    
-                    <td class="p-4 text-gray-600 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 align-top" 
-                        onclick="copyToClipboard('${subject}', this)" title="複製科目">${subject}</td>
-                    
-                    <td class="p-4 text-xs text-gray-500 cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 align-top"
-                        onclick="copyToClipboard('${tName}', this)" title="複製老師">
-                        <span class="bg-gray-100 px-2 py-1 rounded-full pointer-events-none">${tName}</span>
-                    </td>
-                </tr>`;
+            <tr class="border-b border-gray-100 group hover:bg-gray-50/20 transition-colors">
+                <td class="p-0 align-stretch min-w-[120px]">${nameHtml}</td>
+                <td class="p-0 align-stretch min-w-[160px]">${phoneHtml}</td>
+                <td class="p-0 align-stretch min-w-[140px]">${subjectHtml}</td>
+                <td class="p-0 align-stretch min-w-[140px]">${teacherHtml}</td>
+                <td class="p-0 align-middle text-center min-w-[100px] shrink-0 group-hover:bg-gray-50/20 transition-colors">
+                    <div class="flex items-center justify-center gap-3 px-4">
+                        <button onclick="openStudentScheduleModal('${name}', '${phoneRaw}')" class="p-2.5 text-gray-400 hover:text-emerald-600 active:scale-90"><i data-lucide="calendar-range" class="w-5.5 h-5.5"></i></button>
+                        <button onclick="openStudentEditModal('${name}', '${phoneRaw}', '${idsStr}')" class="p-2.5 text-gray-400 hover:text-blue-600 active:scale-90"><i data-lucide="pencil" class="w-5.5 h-5.5"></i></button>
+                    </div>
+                </td>
+            </tr>`;
               listBody.innerHTML += row;
             });
             lucide.createIcons();
+          }
+
+          // ★ 核心補丁：從資料庫抓取通訊錄所需的原始資料
+          async function loadDirectoryData() {
+            // 檢查是否已登入
+            if (!_client) return;
+
+            console.log("正在快取學生名單..."); //
+            setStatus("正在更新通訊錄...");
+
+            // 從 schedules 表格抓取所有學生、電話、科目與老師資料
+            const { data, error } = await _client
+              .from("schedules")
+              .select("*, teachers(name)");
+
+            if (error) {
+              console.error("讀取通訊錄失敗:", error);
+              setStatus("通訊錄載入失敗", "error");
+              return;
+            }
+
+            // 將抓到的資料存入全域變數，供 renderDirectory 使用
+            _allSchedulesForAdmin = data || [];
+
+            // 資料抓完後，立即執行渲染功能
+            renderDirectory();
+
+            setStatus("通訊錄已就緒", "success");
+            console.log(`成功載入 ${_allSchedulesForAdmin.length} 筆課程資料。`); //
+          }
+
+          // ★ 核心補丁：處理點擊表頭後的排序邏輯
+          function sortDirectory(key) {
+            // 如果點的是同一欄，就反轉方向；如果點不同欄，就切換過去並設為順向
+            if (_dirSortState.key === key) {
+              _dirSortState.dir *= -1;
+            } else {
+              _dirSortState.key = key;
+              _dirSortState.dir = 1;
+            }
+
+            // 狀態更新後，重新畫一次畫面
+            renderDirectory();
+          }
+
+          let stuCurrentBaseDate = new Date(); // 學生彈窗專用的基準日期
+          let stuCurrentName = "";
+          let stuCurrentPhone = "";
+
+          // 1. 打開彈窗
+          function openStudentScheduleModal(name, phone) {
+            stuCurrentName = name;
+            stuCurrentPhone = phone;
+            stuCurrentBaseDate = getMonday(new Date()); // 預設回到本週一
+
+            document.getElementById("stu-modal-name").textContent = `${name} · 個人全週課表`;
+            document.getElementById("stu-modal-phone").textContent = phone || "無電話資訊";
+            document.getElementById("stu-modal-initial").textContent = name.charAt(0);
+            document.getElementById("student-schedule-modal").classList.remove("hidden");
+
+            renderStudentMiniSchedule();
+            lucide.createIcons();
+          }
+
+          function closeStudentScheduleModal() {
+            document.getElementById("student-schedule-modal").classList.add("hidden");
+          }
+
+          // 2. 切換週次
+          function changeStudentWeek(direction) {
+            stuCurrentBaseDate = addDays(stuCurrentBaseDate, direction * 7);
+            renderStudentMiniSchedule();
+          }
+
+          // ★ 學生彈窗專用的日期跳轉處理
+          function handleStudentDatePick(val) {
+            if (!val) return;
+
+            // 點選日期後，直接把該學生的個人課表基準日設為選定的那一天
+            stuCurrentBaseDate = new Date(val);
+
+            // 重新渲染畫面
+            renderStudentMiniSchedule();
+          }
+
+          // 3. 核心渲染 (小型課表引擎)
+          // ★ 修正版：小型課表渲染引擎 (完美同步主介面顏色)
+          async function renderStudentMiniSchedule() {
+            const container = document.getElementById("stu-schedule-container");
+            const rangeLabel = document.getElementById("stu-modal-date-range");
+            const picker = document.getElementById("stu-date-picker");
+            if (!container) return;
+
+            const startStr = formatDate(stuCurrentBaseDate);
+            const endStr = formatDate(addDays(stuCurrentBaseDate, 6));
+            rangeLabel.textContent = `${startStr} ~ ${endStr}`;
+            if (picker) picker.value = startStr; // 同步日曆選擇器的預設值
+
+            container.innerHTML = `<div class="p-20 text-gray-400 font-bold w-full text-center">正在檢索課程紀錄...</div>`;
+
+            // 抓取資料
+            const { data: sData } = await _client.from("schedules").select("*, teachers(name)")
+              .eq("course_name", stuCurrentName).eq("phone", stuCurrentPhone);
+            const { data: rData } = await _client.from("lesson_records").select("*")
+              .gte("actual_date", startStr).lte("actual_date", endStr);
+
+            container.innerHTML = "";
+            const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
+
+            for (let i = 0; i < 7; i++) {
+              const thisDate = addDays(stuCurrentBaseDate, i);
+              const thisDateStr = formatDate(thisDate);
+              const dayNum = thisDate.getDay() === 0 ? 7 : thisDate.getDay();
+
+              const dayCol = document.createElement("div");
+              dayCol.className = "flex flex-col w-[130px] border-r border-gray-100 shrink-0";
+
+              const isToday = formatDate(new Date()) === thisDateStr;
+              dayCol.innerHTML = `
+                    <div class="p-2 text-center border-b border-gray-100 bg-gray-50/50 ${isToday ? 'bg-emerald-50 text-emerald-600' : ''}">
+                        <div class="text-[10px] font-bold">${dayNames[thisDate.getDay()]}</div>
+                        <div class="text-[10px] font-mono">${thisDate.getMonth() + 1}/${thisDate.getDate()}</div>
+                    </div>
+                    <div class="flex-1 p-1 space-y-2 min-h-[300px]" id="stu-day-${i}"></div>
+                `;
+              container.appendChild(dayCol);
+
+              const dayItems = (sData || []).filter(item => item.day_of_week === dayNum);
+              const dayList = dayCol.querySelector(`#stu-day-${i}`);
+
+              dayItems.forEach(item => {
+                const record = (rData || []).find(r => r.schedule_id === item.id && r.actual_date === thisDateStr);
+                const status = record ? record.status : (item.color_class || 'status-pending');
+
+                // ★ 核心修復：直接套用外部 CSS class 名稱，確保顏色 100% 一致
+                // 我們把 'attended' 轉換為 'status-present' 以對應 CSS
+                let cssStatus = status;
+                if (status === 'attended') cssStatus = 'status-present';
+                else if (status === 'leave') cssStatus = 'status-leave';
+                else if (status === 'absent') cssStatus = 'status-absent';
+
+                const card = document.createElement("div");
+                // 這裡加入了 ${cssStatus} 來抓取您的 .status-present 等樣式
+                card.className = `p-2 rounded-lg border-l-4 shadow-sm text-[11px] cursor-pointer transition-all active:scale-95 ${cssStatus} bg-white`;
+                card.innerHTML = `
+                        <div class="font-bold truncate">${item.subject || '無科目'}</div>
+                        <div class="font-mono text-[9px] mt-0.5">${item.start_time.slice(0, 5)}-${item.end_time.slice(0, 5)}</div>
+                        <div class="text-[9px] mt-1 text-gray-500 flex items-center gap-1">
+                            <i data-lucide="user" class="w-2.5 h-2.5"></i> ${item.teachers?.name || '未知'}
+                        </div>
+                    `;
+                card.onclick = async () => {
+                  await toggleRecordStatus(item.id, thisDateStr, status);
+                  renderStudentMiniSchedule();
+                };
+                dayList.appendChild(card);
+              });
+            }
+            lucide.createIcons();
+          }
+
+          // --- 學生資料編輯邏輯 ---
+          function openStudentEditModal(name, phone, idsStr) {
+            document.getElementById("edit-student-old-name").value = name;
+            document.getElementById("edit-student-name").value = name;
+            document.getElementById("edit-student-phone").value = phone;
+            document.getElementById("edit-student-ids").value = idsStr; // 偷偷藏住關聯的 ID
+            document.getElementById("student-edit-modal").classList.remove("hidden");
+          }
+
+          function closeStudentEditModal() {
+            document.getElementById("student-edit-modal").classList.add("hidden");
+          }
+
+          async function saveStudentProfile() {
+            const idsStr = document.getElementById("edit-student-ids").value;
+            const oldName = document.getElementById("edit-student-old-name").value;
+            const newName = document.getElementById("edit-student-name").value.trim();
+            const newPhone = document.getElementById("edit-student-phone").value.trim();
+
+            if (!newName) return sysAlert("姓名不能為空！", "格式錯誤");
+
+            // 拆解 ID 陣列
+            const ids = idsStr.split(',');
+
+            setStatus("正在同步更新所有關聯課程...");
+
+            // ★ 精準射擊：只更新剛剛收集到的那些關聯 ID
+            const { error } = await _client.from("schedules").update({ course_name: newName, phone: newPhone }).in("id", ids);
+
+            if (error) {
+              setStatus("更新失敗", "error");
+              return sysAlert("更新失敗：" + error.message, "系統錯誤");
+            }
+
+            // 天眼日誌追蹤
+            await recordLog('修改學生', `在通訊錄批次更新了 [${oldName}] 的基本資料 (連動修改了 ${ids.length} 堂課)`, 'schedules', null, null);
+
+            setStatus("資料已同步更新！", "success");
+            closeStudentEditModal();
+
+            // 重新讀取通訊錄資料並重新渲染畫面
+            await loadDirectoryData();
+
+            // 如果剛好改到當前正在看的老師的課表，也順便背景刷新一下以免資料不同步
+            if (currentTid) refreshData();
           }
 
           // --- 複製功能 (升級版：直接在格子內顯示提示) ---
@@ -3427,7 +4033,7 @@
           }
 
           // 全域變數：暫存所有學生資料 (如果前面已經宣告過，這行可以省略，但多寫無妨)
-          let _allStudentsCache = [];
+          var _allStudentsCache = [];
 
           // --- 載入老師名單到統計選單 (修正版：同時預載學生資料) ---
           async function populateStatTeacherFilter() {
@@ -3467,7 +4073,7 @@
             }
           }
 
-          // --- 2. 統計計算 (維持不變，只要確認邏輯還在即可) ---
+          // --- 統計計算 (終極瘦身版：直接排除尚未點名，圖表100%準確) ---
           async function calculateStats() {
             const start = document.getElementById("stat-start").value;
             const end = document.getElementById("stat-end").value;
@@ -3475,45 +4081,103 @@
             const studentName = document.getElementById("stat-student").value.trim();
 
             if (!start || !end) return sysAlert("請選擇日期範圍", "資料不齊全");
+            if (start > end) return sysAlert("開始日期不能晚於結束日期", "日期錯誤");
             setStatus("正在分析數據...");
 
-            let query = _client.from("lesson_records").select("status, teacher_id, schedules(course_name)").gte("actual_date", start).lte("actual_date", end);
-            if (teacherId !== 'all') query = query.eq("teacher_id", teacherId);
+            let schedQuery = _client.from("schedules").select("*");
+            if (teacherId !== 'all') schedQuery = schedQuery.eq("teacher_id", teacherId);
+            if (studentName) schedQuery = schedQuery.eq("course_name", studentName);
+            const { data: sData, error: sErr } = await schedQuery;
 
-            const { data, error } = await query;
-            if (error) return sysAlert("分析失敗", "系統錯誤");
+            let recQuery = _client.from("lesson_records").select("*").gte("actual_date", start).lte("actual_date", end);
+            if (teacherId !== 'all') recQuery = recQuery.eq("teacher_id", teacherId);
+            const { data: rData, error: rErr } = await recQuery;
 
-            let filteredData = data;
-            if (studentName) filteredData = data.filter(r => (r.schedules ? r.schedules.course_name : "") === studentName);
+            if (sErr || rErr) return sysAlert("分析失敗", "系統錯誤");
 
-            const total = filteredData.length;
+            const recordMap = new Map();
+            (rData || []).forEach(r => recordMap.set(`${r.schedule_id}_${r.actual_date}`, r));
+
+            const schedulesByDay = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] };
+            const tempSchedulesByDate = new Map();
+
+            (sData || []).forEach(s => {
+              if (s.is_temporary && s.target_date) {
+                if (!tempSchedulesByDate.has(s.target_date)) tempSchedulesByDate.set(s.target_date, []);
+                tempSchedulesByDate.get(s.target_date).push(s);
+              } else if (s.day_of_week) {
+                schedulesByDay[s.day_of_week].push(s);
+              }
+            });
+
+            let c = { 'present': 0, 'leave': 0, 'absent': 0 };
+            let total = 0;
+
+            let loopDate = new Date(start);
+            const endDateObj = new Date(end);
+
+            while (loopDate <= endDateObj) {
+              const dStr = formatDate(loopDate);
+              let dayOfWeek = loopDate.getDay();
+              if (dayOfWeek === 0) dayOfWeek = 7;
+
+              const regularSchedules = schedulesByDay[dayOfWeek] || [];
+              const tempSchedules = tempSchedulesByDate.get(dStr) || [];
+              const daySchedules = [...regularSchedules, ...tempSchedules];
+
+              daySchedules.forEach(s => {
+                const record = recordMap.get(`${s.id}_${dStr}`);
+                const status = record ? record.status : (s.color_class || 'status-pending');
+
+                // 🔪 終極瘦身：尚未點名直接拋棄，不計入總堂數！
+                if (status === 'status-pending') return;
+
+                total++; // 現在的總堂數 = 真實有上課/請假/曠課的堂數
+                if (['attended', 'status-present'].includes(status)) c.present++;
+                else if (['leave', 'status-leave'].includes(status)) c.leave++;
+                else if (['absent', 'status-absent'].includes(status)) c.absent++;
+              });
+
+              loopDate.setDate(loopDate.getDate() + 1);
+            }
+
             if (total === 0) {
-              document.getElementById("stat-details").innerHTML = `<p class="text-center text-gray-400 text-sm py-10">此範圍內沒有任何紀錄</p>`;
+              document.getElementById("stat-details").innerHTML = `<p class="text-center text-gray-400 text-sm py-10">區間內沒有已點名的紀錄</p>`;
+              document.getElementById("stat-total-lessons").textContent = 0;
+              document.getElementById("stat-pie-chart").style.background = `conic-gradient(#f3f4f6 0% 100%)`;
+              document.getElementById("label-present").textContent = "0%";
+              document.getElementById("label-leave").textContent = "0%";
+              document.getElementById("label-absent").textContent = "0%";
+
+              // 隱藏尚未點名標籤
+              const pendingLabelEl = document.getElementById("label-pending");
+              if (pendingLabelEl) pendingLabelEl.parentElement.classList.add("hidden");
+
+              setStatus("無有效紀錄", "warn");
               return;
             }
 
-            let c = { 'present': 0, 'leave': 0, 'absent': 0, 'pending': 0 };
-            filteredData.forEach(r => {
-              if (['attended', 'status-present'].includes(r.status)) c.present++;
-              else if (['leave', 'status-leave'].includes(r.status)) c.leave++;
-              else if (['absent', 'status-absent'].includes(r.status)) c.absent++;
-              else c.pending++;
-            });
+            let p1 = (c.present / total) * 100;
+            let p2 = p1 + (c.leave / total) * 100;
+            let p3 = p2 + (c.absent / total) * 100;
 
-            const p1 = (c.present / total) * 100, p2 = p1 + (c.leave / total) * 100, p3 = p2 + (c.absent / total) * 100;
-            document.getElementById("stat-pie-chart").style.background = `conic-gradient(#22c55e 0% ${p1}%, #fbbf24 ${p1}% ${p2}%, #ef4444 ${p2}% ${p3}%, #d1d5db ${p3}% 100%)`;
+            document.getElementById("stat-pie-chart").style.background = `conic-gradient(#22c55e 0% ${p1}%, #fbbf24 ${p1}% ${p2}%, #ef4444 ${p2}% 100%)`;
             document.getElementById("stat-total-lessons").textContent = total;
+
             document.getElementById("label-present").textContent = Math.round((c.present / total) * 100) + "%";
             document.getElementById("label-leave").textContent = Math.round((c.leave / total) * 100) + "%";
             document.getElementById("label-absent").textContent = Math.round((c.absent / total) * 100) + "%";
 
+            // 隱藏尚未點名的標籤
+            const pendingLabelEl = document.getElementById("label-pending");
+            if (pendingLabelEl) pendingLabelEl.parentElement.classList.add("hidden");
+
             document.getElementById("stat-details").innerHTML = `
-        <div class="flex justify-between p-2 bg-green-50 rounded border border-green-100"><span class="text-green-800 font-bold">✅ 正常上課</span><span class="font-mono font-bold">${c.present}</span></div>
-        <div class="flex justify-between p-2 bg-amber-50 rounded border border-amber-100"><span class="text-amber-800 font-bold">☕ 請假</span><span class="font-mono font-bold">${c.leave}</span></div>
-        <div class="flex justify-between p-2 bg-red-50 rounded border border-red-100"><span class="text-red-800 font-bold">❌ 曠課</span><span class="font-mono font-bold">${c.absent}</span></div>
-        <div class="flex justify-between p-2 bg-gray-50 rounded border border-gray-200"><span class="text-gray-600 font-bold">⬜ 尚未點名</span><span class="font-mono font-bold">${c.pending}</span></div>
-      `;
-            setStatus(`分析完成：共 ${total} 筆`, "success");
+              <div class="flex justify-between p-2 bg-green-50 rounded border border-green-100"><span class="text-green-800 font-bold">✅ 正常上課</span><span class="font-mono font-bold">${c.present}</span></div>
+              <div class="flex justify-between p-2 bg-amber-50 rounded border border-amber-100"><span class="text-amber-800 font-bold">☕ 請假</span><span class="font-mono font-bold">${c.leave}</span></div>
+              <div class="flex justify-between p-2 bg-red-50 rounded border border-red-100"><span class="text-red-800 font-bold">❌ 曠課</span><span class="font-mono font-bold">${c.absent}</span></div>
+            `;
+            setStatus(`分析完成：共 ${total} 堂有效紀錄`, "success");
           }
 
           // 全域變數：暫存目前「符合老師條件」的所有學生
@@ -3712,7 +4376,7 @@
           // 2. 讀取並畫出日誌畫面 (隱藏開發者歷史紀錄)
           async function loadLogs() {
             const list = document.getElementById("logs-list");
-            list.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i> 讀取天眼中...</td></tr>`;
+            list.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i> 讀取中...</td></tr>`;
             lucide.createIcons();
 
             // ★ 加上 .neq('actor_name', 'Ccy')，把 ccy 的紀錄直接排除在畫面外！
@@ -3920,7 +4584,7 @@
           // ==========================================
           // 🌟 全域極簡對話框控制引擎
           // ==========================================
-          let _sysDialogResolve = null;
+          var _sysDialogResolve = null;
 
           // 取代原本的 confirm()
           function sysConfirm(message, title = "系統確認", type = "danger") {
@@ -4018,6 +4682,7 @@
             }, 200);
           }
 
+          // B2. 匯入功能 (升級版：強制清空防呆鎖，杜絕重複疊加)
           async function executeMasterCopyImport(input) {
             const file = input.files[0];
             if (!file) return;
@@ -4049,7 +4714,7 @@
                   const sName = findVal(row, "學生姓名");
                   if (!sName) continue;
 
-                  // ★ 核心邏輯：讀取 Excel 中的「是/否」並轉回資料庫用的 true/false
+                  // 讀取 Excel 中的「是/否」並轉回資料庫用的 true/false
                   const isTemp = String(findVal(row, "僅限單周") || "否").trim() === "是";
 
                   newSchedules.push({
@@ -4067,14 +4732,17 @@
                   });
                 }
 
-                // 1. 執行清空該老師的所有資料
-                await _client.from("schedules").delete().eq("teacher_id", currentTid);
+                // ★ 終極防呆：嚴格檢查「刪除舊資料」是否真的成功
+                const { error: delErr } = await _client.from("schedules").delete().eq("teacher_id", currentTid);
+                if (delErr) {
+                  throw new Error("清空舊資料失敗，請聯繫管理員檢查權限：" + delErr.message);
+                }
 
-                // 2. 寫入 Excel 的內容
-                const { error } = await _client.from("schedules").insert(newSchedules);
-                if (error) throw error;
+                // 寫入 Excel 的內容
+                const { error: insErr } = await _client.from("schedules").insert(newSchedules);
+                if (insErr) throw insErr;
 
-                // ★ 寫入日誌
+                // 寫入日誌
                 await recordLog('匯入資料', `透過 Excel 覆蓋了 [${targetTeacherName}] 的完整課表 (共 ${newSchedules.length} 筆)`, 'schedules', null, null);
 
                 setStatus("同步成功", "success");
@@ -4083,7 +4751,7 @@
                 await refreshData();
                 await sysAlert(`🎉 同步完成！目前共計 ${newSchedules.length} 堂課程。`);
               } catch (err) {
-                sysAlert("錯誤：" + err.message);
+                await sysAlert("錯誤：" + err.message);
                 setStatus("失敗", "error");
               }
             };
