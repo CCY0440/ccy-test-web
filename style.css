@@ -1,0 +1,216 @@
+* {
+    font-family: "Noto Sans TC", sans-serif !important;
+}
+
+.schedule-card * {
+    line-height: 1.15 !important;
+}
+
+html,
+body,
+* {
+    -webkit-text-size-adjust: none !important;
+    -moz-text-size-adjust: none !important;
+    text-size-adjust: none !important;
+}
+
+/* 讓網頁載入前先隱形，並增加一點平滑過度的效果 */
+body {
+    opacity: 0;
+    font-family: "Noto Sans TC", sans-serif;
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* 當裝修好了，加上這個 class 就會顯示出來 */
+body.page-ready {
+    opacity: 1;
+}
+
+/* ★ 解決拖曳感應不良：拖曳時，讓卡片內所有子元素滑鼠穿透 ★ */
+body.is-dragging .schedule-card * {
+    pointer-events: none !important;
+}
+
+/* --- 新版卡片樣式：白底 + 左側色條 --- */
+
+/* 上課：綠色邊框 + 極淡綠底 */
+.status-present {
+    background-color: #f0fdf4 !important;
+    border-left: 4px solid #22c55e !important;
+    border-top: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    color: #14532d !important;
+}
+
+/* 請假：琥珀色邊框 */
+.status-leave {
+    background-color: #fffbeb !important;
+    border-left: 4px solid #f59e0b !important;
+    border-top: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    color: #78350f !important;
+}
+
+/* 曠課：紅色邊框 */
+.status-absent {
+    background-color: #fef2f2 !important;
+    border-left: 4px solid #ef4444 !important;
+    border-top: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    color: #7f1d1d !important;
+}
+
+/* 學生練習：藍色邊框 */
+.status-practice {
+    background-color: #eff6ff !important;
+    border-left: 4px solid #3b82f6 !important;
+    border-top: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    color: #1e3a8a !important;
+}
+
+/* 尚未點名：灰色邊框 */
+.status-pending {
+    background-color: #ffffff !important;
+    border-left: 4px solid #d1d5db !important;
+    border-top: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    color: #374151 !important;
+}
+
+/* 側邊欄選中狀態：統一色調版 */
+.teacher-item.active {
+    background-color: #eff6ff !important;
+    color: #1d4ed8 !important;
+    font-weight: 700 !important;
+    border-right: 4px solid #2563eb !important;
+}
+
+/* 展開狀態的卡片樣式 */
+.card-expanded {
+    height: auto !important;
+    min-height: min-content;
+    z-index: 100 !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    padding-bottom: 12px !important;
+}
+
+/* 鎖定卡片的外觀：微透明 + 禁用點擊 */
+.card-locked {
+    opacity: 0.6 !important;
+    pointer-events: none !important;
+    filter: grayscale(20%);
+}
+
+/* 鎖定標籤：在卡片右上角秀一個小鎖頭 */
+.lock-icon-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 2px;
+}
+
+/* 日曆選擇器透明化 */
+#date-picker::-webkit-calendar-picker-indicator,
+#stu-date-picker::-webkit-calendar-picker-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0;
+    z-index: 25;
+}
+
+#schedule-container {
+    transform-origin: 0 0;
+    transition: none !important;
+}
+
+#schedule-wrapper {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ★ 縮放時強制關閉所有轉場動畫 */
+body.is-pinching,
+body.is-pinching * {
+    transition: none !important;
+}
+
+/* 管理控制台分頁 */
+.admin-tab-container {
+    display: flex;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.admin-tab-container::-webkit-scrollbar {
+    display: none;
+}
+
+.admin-tab {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+}
+
+/* --- 捲軸美化 --- */
+.admin-tab-content .overflow-auto::-webkit-scrollbar {
+    height: 10px;
+    width: 12px;
+}
+
+.admin-tab-content .overflow-auto::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 8px;
+}
+
+.admin-tab-content .overflow-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+    border: 2px solid #f1f5f9;
+}
+
+.admin-tab-content .overflow-auto::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.admin-tabs-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.admin-tabs-scroll::-webkit-scrollbar-track {
+    background: #262626;
+    border-radius: 8px;
+}
+
+.admin-tabs-scroll::-webkit-scrollbar-thumb {
+    background: #525252;
+    border-radius: 8px;
+}
+
+.admin-tabs-scroll::-webkit-scrollbar-thumb:hover {
+    background: #737373;
+}
+
+@media (max-width: 640px) {
+    .admin-tab i {
+        display: none !important;
+    }
+
+    .admin-tab {
+        padding: 14px 16px !important;
+        font-size: 14px !important;
+    }
+}
