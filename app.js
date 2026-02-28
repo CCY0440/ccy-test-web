@@ -35,6 +35,7 @@ let _cachedSchedule = [];
 let _cachedRecords = [];
 let _userSortOrder = [];
 let _allSchedulesForAdmin = [];
+let _allStudentsForAdmin = [];
 let _dirSortState = { key: 'name', dir: 1 };
 let allTeachers = [];
 let memoTimeout = null;
@@ -157,6 +158,94 @@ function sysAlert(message, title = "系統提示") {
             modal.classList.remove('opacity-0');
             document.getElementById('sys-dialog-box').classList.remove('scale-95');
         });
+    });
+}
+
+function sysConfirm(contentHtml, title = "請確認") {
+    return new Promise((resolve) => {
+        // 先移除可能殘留的舊彈窗
+        const oldModal = document.getElementById("sys-confirm-modal");
+        if (oldModal) oldModal.remove();
+
+        // 打造絕美的 HTML 結構 (支援 HTML 內容輸入)
+        const modalHtml = `
+            <div id="sys-confirm-modal" style="z-index: 99999;" class="fixed inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm transition-opacity">
+                <div class="bg-white rounded-2xl w-[90%] max-w-sm p-6 shadow-2xl flex flex-col transform transition-transform scale-100 border border-blue-100">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="bg-blue-100 p-2 rounded-full text-blue-600">
+                            <i data-lucide="help-circle" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-bold text-xl text-gray-800">${title}</h3>
+                    </div>
+                    
+                    <div class="text-gray-600 text-[15px] mb-6 leading-relaxed">
+                        ${contentHtml}
+                    </div>
+                    
+                    <div class="flex gap-3 mt-auto pt-2">
+                        <button id="sys-confirm-cancel" class="flex-1 bg-white border border-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-50 hover:text-red-500 transition-colors">取消</button>
+                        <button id="sys-confirm-ok" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-1.5 active:scale-95">
+                            <i data-lucide="check" class="w-4 h-4"></i> 確認執行
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        if (window.lucide) lucide.createIcons();
+
+        // 綁定點擊事件，並回傳 true 或 false
+        document.getElementById("sys-confirm-cancel").onclick = () => {
+            document.getElementById("sys-confirm-modal").remove();
+            resolve(false);
+        };
+        document.getElementById("sys-confirm-ok").onclick = () => {
+            document.getElementById("sys-confirm-modal").remove();
+            resolve(true);
+        };
+    });
+}
+
+window.sysAlert = function (message, title = "系統提示") {
+    return new Promise((resolve) => {
+        // 先移除舊的
+        const oldModal = document.getElementById("sys-alert-modal");
+        if (oldModal) oldModal.remove();
+
+        // 判斷是成功還是錯誤，給予不同的顏色與圖示
+        const isError = title.includes("錯誤") || title.includes("失敗") || title.includes("不齊全");
+        const iconColor = isError ? "text-red-500" : "text-blue-500";
+        const iconBg = isError ? "bg-red-50" : "bg-blue-50";
+        const iconName = isError ? "alert-circle" : "info";
+        const btnColor = isError ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700";
+
+        const modalHtml = `
+            <div id="sys-alert-modal" style="z-index: 999999;" class="fixed inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm transition-opacity">
+                <div class="bg-white rounded-2xl w-[90%] max-w-sm p-6 shadow-2xl flex flex-col transform transition-transform scale-100 border border-gray-100">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="${iconBg} p-2.5 rounded-full ${iconColor}">
+                            <i data-lucide="${iconName}" class="w-6 h-6"></i>
+                        </div>
+                        <h3 class="font-bold text-xl text-gray-800">${title}</h3>
+                    </div>
+                    
+                    <div class="text-gray-600 text-[15px] mb-6 leading-relaxed whitespace-pre-wrap">${message}</div>
+                    
+                    <button id="sys-alert-ok" class="w-full ${btnColor} text-white py-2.5 rounded-xl text-sm font-bold shadow-md transition-colors active:scale-95">
+                        我知道了
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        if (window.lucide) lucide.createIcons();
+
+        document.getElementById("sys-alert-ok").onclick = () => {
+            document.getElementById("sys-alert-modal").remove();
+            resolve();
+        };
     });
 }
 
@@ -398,6 +487,224 @@ function toggleSidebar() {
     }
 }
 
+// ==========================================================================
+// ★ 資料調度中心 (匯出與匯入邏輯)
+// ==========================================================================
+
+function openBatchModal() {
+    // 自動預設歷史紀錄區間為當月
+    const now = new Date();
+    document.getElementById("batch-history-start").value = formatDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    document.getElementById("batch-history-end").value = formatDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    document.getElementById("batch-modal").classList.remove("hidden");
+}
+
+function closeBatchModal() {
+    document.getElementById("batch-modal").classList.add("hidden");
+}
+
+// B0. 匯出固定課表母版 (純淨版：自動過濾掉單週課程)
+async function exportMasterData() {
+    if (!currentTid) return sysAlert("請先選擇老師", "操作提示");
+
+    setStatus("正在準備母版資料...");
+    try {
+        const { data, error } = await _client.from("schedules").select("*").eq("teacher_id", currentTid);
+        if (error) throw error;
+
+        // ★ 核心濾網：只保留「非單週」的固定課表 (is_temporary 不為 true 的資料)
+        const fixedSchedules = (data || []).filter(s => !s.is_temporary);
+
+        if (fixedSchedules.length === 0) {
+            return sysAlert("該老師目前沒有任何「固定」的母版課表可以匯出", "無資料");
+        }
+
+        const reverseStatusMap = {
+            'status-present': '上課',
+            'status-leave': '請假',
+            'status-absent': '曠課',
+            'status-pending': '尚未點名',
+            'status-practice': '學生練習'
+        };
+
+        const exportList = fixedSchedules.map(s => ({
+            "系統編號": s.id,
+            "學生姓名": s.course_name || "",
+            "電話": s.phone || "",
+            "科目": s.subject || "",
+            "金額": s.amount || 0,
+            "星期": s.day_of_week || 1,
+            "開始時間": s.start_time ? s.start_time.substring(0, 5) : "09:00",
+            "結束時間": s.end_time ? s.end_time.substring(0, 5) : "10:00",
+            "教室": s.room_no || "",
+            "預設狀態": reverseStatusMap[s.color_class] || '尚未點名',
+            // 因為已經過濾掉單週課，所以這裡固定顯示為"否"，維持格式一致性
+            "僅限單周": "否"
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportList);
+        ws['!cols'] = [{ wch: 36 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "固定課表母版");
+
+        const teacherName = document.getElementById("main-title").textContent.split(' · ')[0] || "老師";
+
+        await recordLog('匯出報表', `下載了 [${teacherName}] 的純淨固定課程母版 Excel`, 'schedules', null, null);
+
+        XLSX.writeFile(wb, `${teacherName}_固定課程母版.xlsx`);
+        setStatus("匯出成功", "success");
+
+    } catch (err) {
+        sysAlert("匯出失敗：" + err.message, "系統錯誤");
+        setStatus("匯出失敗", "error");
+    }
+}
+
+// B1. 匯出歷史點名紀錄 (獨立計算版 + 新增星期欄位)
+async function exportHistoryData() {
+    if (!currentTid) return sysAlert("請先選擇老師", "操作提示");
+
+    const startStr = document.getElementById("batch-history-start").value;
+    const endStr = document.getElementById("batch-history-end").value;
+    if (!startStr || !endStr) return sysAlert("請選擇日期範圍", "資料不齊全");
+    if (startStr > endStr) return sysAlert("開始日期不能晚於結束日期", "日期錯誤");
+
+    setStatus("正在產生點名紀錄...");
+
+    try {
+        const { data: sData, error: sErr } = await _client.from("schedules").select("*").eq("teacher_id", currentTid);
+        const { data: rData, error: rErr } = await _client.from("lesson_records").select("*").eq("teacher_id", currentTid).gte("actual_date", startStr).lte("actual_date", endStr);
+        if (sErr || rErr) throw new Error("資料讀取失敗");
+
+        const recordMap = new Map();
+        (rData || []).forEach(r => recordMap.set(`${r.schedule_id}_${r.actual_date}`, r));
+
+        const schedulesByDay = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] };
+        const tempSchedulesByDate = new Map();
+
+        (sData || []).forEach(s => {
+            if (s.is_temporary && s.target_date) {
+                if (!tempSchedulesByDate.has(s.target_date)) tempSchedulesByDate.set(s.target_date, []);
+                tempSchedulesByDate.get(s.target_date).push(s);
+            } else if (s.day_of_week) {
+                schedulesByDay[s.day_of_week].push(s);
+            }
+        });
+
+        const exportData = [];
+        let loopDate = new Date(startStr);
+        const endDateObj = new Date(endStr);
+
+        // ★ 準備一個星期對照表，讓數字轉成中文更親切
+        const weekMap = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '日' };
+
+        while (loopDate <= endDateObj) {
+            const dStr = formatDate(loopDate);
+            let dayOfWeek = loopDate.getDay() === 0 ? 7 : loopDate.getDay();
+            const weekStr = weekMap[dayOfWeek]; // 取得中文星期
+
+            const daySchedules = [...(schedulesByDay[dayOfWeek] || []), ...(tempSchedulesByDate.get(dStr) || [])];
+
+            daySchedules.forEach(s => {
+                const record = recordMap.get(`${s.id}_${dStr}`);
+                const status = record ? record.status : (s.color_class || 'status-pending');
+                const isPayable = ['attended', 'status-present', 'absent', 'status-absent'].includes(status);
+                let finalAmount = (record && record.actual_amount != null) ? record.actual_amount : (s.amount || 0);
+                if (!isPayable) finalAmount = 0;
+
+                let sText = '尚未點名';
+                if (['attended', 'status-present'].includes(status)) sText = '上課';
+                else if (['leave', 'status-leave'].includes(status)) sText = '請假';
+                else if (['absent', 'status-absent'].includes(status)) sText = '曠課';
+                else if (['status-practice'].includes(status)) sText = '學生練習';
+
+                // ★ 在匯出的資料中插入「星期」欄位
+                exportData.push({
+                    "系統編號(請勿修改)": s.id,
+                    "日期(請勿修改)": dStr,
+                    "星期(僅供參考)": weekStr,
+                    "學生姓名(請勿修改)": s.course_name,
+                    "狀態": sText,
+                    "備註": record ? record.remark || "" : "",
+                    "當日金額": isPayable ? finalAmount : 0
+                });
+            });
+            loopDate.setDate(loopDate.getDate() + 1);
+        }
+
+        if (exportData.length === 0) {
+            return sysAlert("該區間內沒有任何排課紀錄可以匯出", "無資料");
+        }
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        // ★ 稍微調整欄寬，給「星期」欄位一點空間 (新增了 {wch:6})
+        ws['!cols'] = [{ wch: 36 }, { wch: 12 }, { wch: 6 }, { wch: 20 }, { wch: 10 }, { wch: 20 }, { wch: 12 }];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "歷史點名紀錄");
+
+        const teacherName = document.getElementById("main-title").textContent.split(' · ')[0] || "老師";
+        await recordLog('匯出報表', `下載了 [${teacherName}] 從 ${startStr} 到 ${endStr} 的點名歷史 Excel`, 'system', null, null);
+
+        XLSX.writeFile(wb, `${teacherName}_點名紀錄_${startStr}至${endStr}.xlsx`);
+        setStatus("匯出成功", "success");
+    } catch (err) {
+        setStatus("匯出失敗", "error");
+        sysAlert("匯出失敗：" + err.message, "系統錯誤");
+    }
+}
+
+// B2. 匯入歷史點名修正
+async function handleImportDaily(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+            const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { raw: false });
+            const statusMap = { '上課': 'status-present', '請假': 'status-leave', '曠課': 'status-absent', '尚未點名': 'status-pending', '學生練習': 'status-practice' };
+            const updates = [];
+
+            for (const row of jsonRows) {
+                let date = row["日期(請勿修改)"];
+                if (date && date.includes('/')) date = date.replace(/\//g, '-');
+                if (!row["系統編號(請勿修改)"] || !date) continue;
+
+                updates.push({
+                    schedule_id: row["系統編號(請勿修改)"],
+                    teacher_id: currentTid,
+                    actual_date: date,
+                    status: statusMap[row["狀態"]] || 'status-pending',
+                    remark: row["備註"] || "",
+                    actual_amount: parseInt(row["當日金額"]) || 0
+                });
+            }
+
+            if (updates.length === 0) return sysAlert("Excel 內無有效資料", "匯入失敗");
+
+            setStatus(`正在更新 ${updates.length} 筆紀錄...`);
+            const { error } = await _client.from("lesson_records").upsert(updates, { onConflict: 'schedule_id,actual_date' });
+            if (error) throw error;
+
+            await recordLog('匯入資料', `透過 Excel 批次修正了 [${document.getElementById("main-title").textContent.split(' · ')[0] || "該老師"}] 的點名歷史紀錄 (共 ${updates.length} 筆)`, 'lesson_records', null, null);
+
+            setStatus("點名歷史更新成功！", "success");
+            input.value = "";
+
+            // 更新完畢後重整主畫面與關閉視窗
+            closeBatchModal();
+            await refreshData();
+            await sysAlert(`成功更新 ${updates.length} 筆點名紀錄！`, "匯入成功");
+        } catch (err) {
+            sysAlert("匯入失敗: " + err.message, "系統錯誤");
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+// B3. 匯入固定課表 (請保留上一則訊息給您的 "executeMasterCopyImport" 終極安全版)
+// (如果已經貼上了，就不需要動它！)
 
 /* ==========================================================================
  * 5. 課表核心渲染引擎 (Schedule Engine)
@@ -469,13 +776,17 @@ async function refreshData() {
 }
 
 /** 核心繪製演算法：計算佈局並生成 HTML */
+/** 核心繪製演算法：計算佈局並生成 HTML (極致貼合版) */
+/** 核心繪製演算法：計算佈局並生成 HTML (清晰貼合版) */
+/** 核心繪製演算法：計算佈局並生成 HTML (資訊完整顯示版) */
+/** 核心繪製演算法：計算佈局並生成 HTML (資訊完整顯示 + 支援手動換行) */
 function renderSchedule(list, records = [], startDate) {
     const container = document.getElementById("schedule-container");
     if (!container) return;
     container.innerHTML = "";
 
     const slots = ["09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24"];
-    const BASE_ROW_HEIGHT = 120;
+    const BASE_ROW_HEIGHT = 80;
     const START_HOUR = 9;
     const CARD_WIDTH = 135;
     const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
@@ -501,7 +812,6 @@ function renderSchedule(list, records = [], startDate) {
         return (aTime.h * 60 + aTime.m) - (bTime.h * 60 + bTime.m);
     });
 
-    // 1. 動態計算每一小時所需的高度與每一天的寬度
     let hourHeights = new Array(slots.length).fill(BASE_ROW_HEIGHT);
     let dayWidths = new Array(7).fill(CARD_WIDTH);
 
@@ -519,14 +829,32 @@ function renderSchedule(list, records = [], startDate) {
             const sT = parseTime(item.start_time); const eT = parseTime(item.end_time);
             const durationMins = (eT.h * 60 + eT.m) - (sT.h * 60 + sT.m);
 
-            let contentReq = 75;
-            if (item.subject) contentReq += 24;
-            contentReq += 44;
-            const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
-            contentReq += (phoneList.length * 20);
+            let contentReq = 18; // 卡片上下 Padding
+            contentReq += 28; // 姓名列
+            contentReq += 24; // 時間列
+            contentReq += 4;  // 區塊間距
+            contentReq += 24; // 教室列
+            contentReq += 24; // 金額列
 
+            const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
+            phoneList.forEach(p => {
+                const pLines = Math.ceil(p.length / 11);
+                contentReq += (pLines * 22);
+            });
+
+            // ★ 1. 新的高度計算：教系統看懂您按下的 Enter 鍵 (支援手動換行與自動折行)
             const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
-            if (record && record.remark) contentReq += 52; else contentReq += 10;
+            const remarkText = record ? record.remark : "";
+            if (remarkText) {
+                let totalLines = 0;
+                remarkText.split('\n').forEach(line => {
+                    // 如果這行空空的(純換行)，或是字太多，系統都會精準計算行數
+                    totalLines += Math.max(1, Math.ceil(line.length / 8));
+                });
+                contentReq += (totalLines * 20) + 24;
+            }
+
+            contentReq += 10;
 
             const neededPerHour = (contentReq / durationMins) * 60;
             for (let h = sT.h - START_HOUR; h <= eT.h - START_HOUR && h < slots.length; h++) {
@@ -544,7 +872,6 @@ function renderSchedule(list, records = [], startDate) {
         return top;
     }
 
-    // 2. 繪製時間軸
     const timeCol = document.createElement("div");
     timeCol.className = "sticky left-0 z-[500] bg-white border-r border-[#e9e9e7] flex flex-col shrink-0";
     timeCol.style.width = `calc(60px * var(--z, 1))`;
@@ -563,7 +890,6 @@ function renderSchedule(list, records = [], startDate) {
     });
     container.appendChild(timeCol);
 
-    // 3. 繪製每日課表區塊
     for (let i = 0; i < 7; i++) {
         const thisDayDate = addDays(baseDate, i);
         const thisDayDateStr = formatDate(thisDayDate);
@@ -571,7 +897,6 @@ function renderSchedule(list, records = [], startDate) {
         const dayItems = validItems.filter(item => item.day_of_week === dbDay);
         const currentDayUnitWidth = dayWidths[i];
 
-        // 處理重疊邏輯
         const columns = []; const cardColIndex = {};
         dayItems.forEach(item => {
             const sM = parseTime(item.start_time).h * 60 + parseTime(item.start_time).m;
@@ -627,8 +952,9 @@ function renderSchedule(list, records = [], startDate) {
 
             const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
             let displayStatus = record ? record.status : (item.color_class || 'status-pending');
-            const remarkText = record ? record.remark : "";
-            const displayRemark = remarkText ? remarkText.replace(/\n/g, ' ') : "";
+
+            // ★ 2. 解除封印：拔掉 replace(/\n/g, ' ')，原汁原味呈現您的換行
+            const displayRemark = record && record.remark ? record.remark : "";
 
             let statusBorder = 'border-l-4 border-gray-300'; let bgClass = 'bg-white';
             if (displayStatus === 'attended' || displayStatus === 'status-present') { statusBorder = 'border-l-4 border-green-500'; bgClass = 'bg-green-50'; }
@@ -637,7 +963,7 @@ function renderSchedule(list, records = [], startDate) {
             else if (displayStatus === 'status-practice') { statusBorder = 'border-l-4 border-blue-400'; bgClass = 'bg-blue-50'; }
 
             const card = document.createElement("div");
-            card.className = `schedule-card absolute rounded-r-md rounded-l-sm p-2 pb-3 text-sm shadow-md flex flex-col transition-all duration-200 group box-border ${isLocked ? 'card-locked' : 'hover:shadow-xl hover:z-[70] cursor-pointer'} ${statusBorder} ${bgClass}`;
+            card.className = `schedule-card absolute rounded-r-md rounded-l-sm p-2 pb-2.5 text-sm shadow-md flex flex-col transition-all duration-200 group box-border ${isLocked ? 'card-locked' : 'hover:shadow-xl hover:z-[70] cursor-pointer'} ${statusBorder} ${bgClass}`;
             card.dataset.id = item.id;
 
             if (!isLocked) {
@@ -663,30 +989,32 @@ function renderSchedule(list, records = [], startDate) {
       `;
 
             const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
-            const phoneHtml = phoneList.map(p => `<div class="flex items-center gap-1.5 text-[16px] text-gray-500 w-full"><i data-lucide="phone" class="w-4 h-4 text-green-500 shrink-0"></i><span class="font-mono truncate flex-1 font-bold">${p}</span></div>`).join('');
+            const phoneHtml = phoneList.map(p => `<div class="flex items-start gap-1.5 text-[16px] text-gray-500 w-full mt-1"><i data-lucide="phone" class="w-4 h-4 text-green-500 shrink-0 mt-0.5"></i><span class="font-mono break-all flex-1 font-bold leading-tight">${p}</span></div>`).join('');
 
             card.innerHTML = `
         ${isLocked ? '<div class="absolute top-1 right-1 text-gray-400/40"><i data-lucide="lock" class="w-3.5 h-3.5"></i></div>' : `
           <div class="absolute top-1 right-1 flex flex-row items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-[60] bg-white/95 backdrop-blur-sm px-1.5 py-1 rounded-full shadow-md border border-gray-200" style="pointer-events: auto;" onmousedown="event.stopPropagation();" onclick="event.stopPropagation();">
               <button type="button" onclick="openRemarkModal('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-yellow-600 hover:scale-110 transition-all cursor-pointer"><i data-lucide="sticky-note" class="w-4 h-4"></i></button>
               <button type="button" onclick="openEditModal('${item.id}', '${displayStatus}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-blue-600 hover:scale-110 transition-all cursor-pointer"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-              <button type="button" onclick="copyCourse('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-gray-500 hover:text-amber-600 hover:scale-110 transition-all cursor-pointer"><i data-lucide="copy" class="w-4 h-4"></i></button>
+              <button type="button" onclick="openRescheduleModal('${item.id}', '${thisDayDateStr}', '${item.start_time}', '${item.end_time}'); return false;" class="p-1 rounded-full text-blue-500 hover:text-blue-700 hover:scale-110 transition-all cursor-pointer" title="一鍵調課"><i data-lucide="repeat" class="w-4 h-4"></i></button>
               <button type="button" onclick="deleteCourse('${item.id}');" class="p-1 rounded-full text-red-500 hover:scale-110 transition-all cursor-pointer"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
           </div>
         `}
         <div class="flex flex-col h-full min-w-0 pr-1 relative z-10" onclick="${isLocked ? '' : `toggleRecordStatus('${item.id}', '${thisDayDateStr}', '${displayStatus}')`}">
             <div class="flex items-center gap-1.5 w-full">
                 <span class="font-bold text-neutral-900 text-[20px] whitespace-nowrap">${item.course_name}</span>
-                ${item.subject ? `<span class="text-[16px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded shrink-0 font-bold">${item.subject}</span>` : ''}
+                ${item.subject ? `<span class="text-[14px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded shrink-0 font-bold">${item.subject}</span>` : ''}
             </div>
             <div class="text-[16px] text-gray-400 font-mono mt-0.5 whitespace-nowrap font-bold">${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}</div>
-            <div class="mt-1 flex flex-col gap-1 pointer-events-none w-full">
+            
+            <div class="mt-1 flex flex-col gap-1 w-full">
                 <div class="flex items-center gap-1.5 text-[16px] text-gray-600 truncate font-bold"><i data-lucide="map-pin" class="w-4 h-4 text-blue-400 shrink-0"></i><span>${item.room_no || '無'}</span></div>
                 <div class="flex items-center gap-1.5 text-[16px] text-gray-600 truncate font-bold"><i data-lucide="coins" class="w-4 h-4 text-amber-500 shrink-0"></i><span class="font-mono truncate flex-1">$${item.amount || 0}</span></div>
                 ${phoneHtml}
             </div>
+            
             <div class="mt-auto pt-2 pointer-events-none w-full">
-                ${displayRemark ? `<div class="flex items-center gap-1.5 p-1.5 rounded bg-red-50 border border-red-100 text-red-700 text-[16px] font-bold leading-tight"><i data-lucide="pin" class="w-4 h-4 shrink-0"></i> <span class="truncate">${displayRemark}</span></div>` : ''}
+                ${displayRemark ? `<div class="flex items-start gap-1.5 p-1.5 rounded bg-red-50 border border-red-100 text-red-700 text-[14px] font-bold leading-tight"><i data-lucide="pin" class="w-4 h-4 shrink-0 mt-0.5"></i> <span class="break-words whitespace-pre-wrap flex-1">${displayRemark}</span></div>` : ''}
             </div>
         </div>`;
             contentLayer.appendChild(card);
@@ -872,6 +1200,177 @@ function copyCourse(itemId, dateStr) {
     if (tempCheckbox) tempCheckbox.checked = true;
     if (dateWrapper) dateWrapper.classList.remove('hidden');
     if (dateInput) dateInput.value = dateStr;
+}
+
+// ==========================================================================
+// ★ 一鍵調課系統 (核彈強制顯示版)
+// ==========================================================================
+let rescheduleState = { scheduleId: null, oldDate: null };
+
+function openRescheduleModal(scheduleId, actualDate, startTime, endTime) {
+    const parsedStart = startTime ? startTime.substring(0, 5) : "18:00";
+    const parsedEnd = endTime ? endTime.substring(0, 5) : "19:00";
+
+    // ★ 升級：把原本的時間也存起來，方便後面做「秒速比對」
+    rescheduleState = {
+        scheduleId,
+        oldDate: actualDate,
+        oldStartTime: parsedStart,
+        oldEndTime: parsedEnd
+    };
+
+    // 1. 暴力清除：把畫面上躲在暗處的舊視窗全部消滅，斬斷一切牽絆！
+    document.querySelectorAll("#reschedule-modal").forEach(el => el.remove());
+
+    // 2. 重新打造：直接建立一個 100% 乾淨的視窗，加上強制顯示的 z-index
+    const modalHtml = `
+    <div id="reschedule-modal" style="display: flex !important; z-index: 9999;" class="fixed inset-0 bg-black/60 items-center justify-center backdrop-blur-sm">
+      <div class="bg-white rounded-2xl w-[95%] max-w-sm p-6 shadow-2xl border border-blue-100 flex flex-col">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="font-bold text-lg text-blue-800 flex items-center gap-2">
+            <i data-lucide="repeat" class="w-5 h-5"></i> 課程調課
+          </h3>
+          <button onclick="closeRescheduleModal()" class="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 p-1.5 rounded-full transition-colors">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <p class="text-xs text-gray-500 mb-5 leading-relaxed bg-blue-50 p-2 rounded-lg border border-blue-100">
+          💡 系統將自動把原課程設為「請假」並備註，同時於您指定的新日期建立一堂「單週臨時課」。
+        </p>
+
+        <div class="space-y-4 mb-6">
+          <div>
+            <label class="block text-xs font-bold text-gray-500 mb-1">調課至哪一天？</label>
+            <input type="date" id="reschedule-target-date" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1">開始時間</label>
+              <input type="time" id="reschedule-start-time" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1">結束時間</label>
+              <input type="time" id="reschedule-end-time" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mt-auto pt-4 border-t border-gray-100">
+          <button onclick="closeRescheduleModal()" class="flex-1 bg-white border border-gray-200 text-gray-600 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors">取消</button>
+          <button onclick="executeReschedule()" class="flex-1 bg-blue-600 text-white py-2 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition-colors active:scale-95 flex items-center justify-center gap-1.5">
+            <i data-lucide="check-circle" class="w-4 h-4"></i> 確認調課
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+    // 3. 把新視窗塞入畫面最頂端
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    if (window.lucide) lucide.createIcons();
+
+    // 4. 填入預設資料
+    document.getElementById("reschedule-target-date").value = actualDate;
+    document.getElementById("reschedule-start-time").value = startTime ? startTime.substring(0, 5) : "18:00";
+    document.getElementById("reschedule-end-time").value = endTime ? endTime.substring(0, 5) : "19:00";
+    document.getElementById("reschedule-modal").classList.remove("hidden");
+}
+
+function closeRescheduleModal() {
+    const modal = document.getElementById("reschedule-modal");
+    if (modal) modal.remove(); // 關閉時直接把它砍掉，不留後患！
+}
+
+async function executeReschedule() {
+    const targetDate = document.getElementById("reschedule-target-date").value;
+    const targetStartTime = document.getElementById("reschedule-start-time").value;
+    const targetEndTime = document.getElementById("reschedule-end-time").value;
+
+    if (!targetDate || !targetStartTime || !targetEndTime) return sysAlert("請完整填寫新日期的日期與時間", "資料不齊全");
+
+    // ★ 第一關攔截：按下去的瞬間直接比對！沒有改就不准進入確認畫面！
+    const isSameDate = (targetDate === rescheduleState.oldDate);
+    const isSameTime = (targetStartTime === rescheduleState.oldStartTime && targetEndTime === rescheduleState.oldEndTime);
+
+    if (isSameDate && isSameTime) {
+        return sysAlert("日期與時間完全沒有改變喔！請選擇新的時間。", "操作提示");
+    }
+
+    // ★ 第二關：通過第一關後，才跳出絕美的二次確認彈窗
+    const confirmHtml = `
+      <p class="mb-3 font-bold text-gray-700">確定要執行調課嗎？請確認以下資訊：</p>
+      <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-3 shadow-inner">
+          <div class="flex items-center gap-2.5">
+              <i data-lucide="calendar-clock" class="w-5 h-5 text-blue-500 shrink-0"></i> 
+              <span class="font-bold text-blue-900 text-[16px]">新日期：${targetDate}</span>
+          </div>
+          <div class="flex items-center gap-2.5">
+              <i data-lucide="clock" class="w-5 h-5 text-amber-500 shrink-0"></i> 
+              <span class="font-bold text-blue-900 text-[16px]">新時間：${targetStartTime} - ${targetEndTime}</span>
+          </div>
+      </div>
+  `;
+
+    const isConfirmed = await sysConfirm(confirmHtml, "確認調課資訊");
+    if (!isConfirmed) return;
+
+    setStatus("正在比對調課資料...");
+
+    try {
+        const { data: sData, error: sErr } = await _client.from("schedules").select("*").eq("id", rescheduleState.scheduleId).single();
+        if (sErr) throw new Error("找不到原課程資料");
+
+        let remarkText = `調課至\n${targetDate}\n${targetStartTime} - ${targetEndTime}`;
+        if (isSameDate) {
+            remarkText = `調課更改時間至\n${targetStartTime} - ${targetEndTime}`;
+        }
+
+        const newSchedule = {
+            teacher_id: sData.teacher_id,
+            course_name: sData.course_name,
+            phone: sData.phone,
+            subject: sData.subject,
+            amount: sData.amount,
+            room_no: sData.room_no,
+            color_class: 'status-pending',
+            day_of_week: new Date(targetDate).getDay() === 0 ? 7 : new Date(targetDate).getDay(),
+            is_temporary: true,
+            target_date: targetDate,
+            start_time: targetStartTime + ":00",
+            end_time: targetEndTime + ":00"
+        };
+
+        const { error: insErr } = await _client.from("schedules").insert([newSchedule]);
+        if (insErr) throw new Error("建立新時段課程失敗");
+
+        const updateRecord = {
+            schedule_id: rescheduleState.scheduleId,
+            actual_date: rescheduleState.oldDate,
+            teacher_id: sData.teacher_id,
+            status: 'status-leave',
+            remark: remarkText,
+            actual_amount: 0
+        };
+
+        const { error: updErr } = await _client.from("lesson_records").upsert([updateRecord], { onConflict: 'schedule_id,actual_date' });
+        if (updErr) throw new Error("更新原課程狀態失敗");
+
+        await recordLog('系統調課', `將 [${sData.course_name}] 的課程調整至 ${targetDate} ${targetStartTime}`, 'system', null, null);
+
+        setStatus("調度成功！", "success");
+        closeRescheduleModal();
+        await refreshData();
+
+        if (isSameDate) {
+            await sysAlert(`🎉 時間更改成功！\n\n原時段已標記請假，並於同日 ${targetStartTime} 建立新時段。`);
+        } else {
+            await sysAlert(`🎉 調課大成功！\n\n1. 原課程 (${rescheduleState.oldDate}) 已自動設為「請假」。\n2. 已於 ${targetDate} 建立了一堂單週課程。`);
+        }
+
+    } catch (err) {
+        setStatus("調度失敗", "error");
+        sysAlert("調度作業失敗：" + err.message, "系統錯誤");
+    }
 }
 
 /** 新增與編輯課程提交 */
@@ -1176,52 +1675,6 @@ function renderSalaryTable() {
     if (window.lucide) lucide.createIcons();
 }
 
-async function exportDailyReport() {
-    if (_salaryData.length === 0) return sysAlert("請先按「開始計算」產生資料！", "尚未計算");
-    const exportData = _salaryData.map(item => {
-        let s = '尚未點名';
-        if (['attended', 'status-present'].includes(item.status)) s = '上課';
-        else if (['leave', 'status-leave'].includes(item.status)) s = '請假';
-        else if (['absent', 'status-absent'].includes(item.status)) s = '曠課';
-        else if (['status-practice'].includes(item.status)) s = '學生練習';
-        return { "系統編號(請勿修改)": item.schedule_id, "日期(請勿修改)": item.date, "學生姓名(請勿修改)": item.course_name, "狀態": s, "備註": "", "當日金額": item.isPayable ? item.amount : 0 };
-    });
-
-    const ws = XLSX.utils.json_to_sheet(exportData); ws['!cols'] = [{ wch: 15 }, { wch: 12 }, { wch: 20 }, { wch: 10 }, { wch: 20 }, { wch: 12 }];
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "薪資結算");
-    const teacherName = document.getElementById("main-title").textContent.split(' · ')[0] || "老師";
-    await recordLog('匯出報表', `下載了 [${teacherName}] 的薪資結算 Excel`, 'system', null, null);
-    XLSX.writeFile(wb, `${teacherName}_薪資結算表.xlsx`);
-}
-
-async function handleImportDaily(input) {
-    const file = input.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const jsonRows = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).Sheets[XLSX.read(new Uint8Array(e.target.result), { type: 'array' }).SheetNames[0]], { raw: false });
-            const statusMap = { '上課': 'status-present', '請假': 'status-leave', '曠課': 'status-absent', '尚未點名': 'status-pending' };
-            const updates = [];
-
-            for (const row of jsonRows) {
-                let date = row["日期(請勿修改)"]; if (date && date.includes('/')) date = date.replace(/\//g, '-');
-                if (!row["系統編號(請勿修改)"] || !date) continue;
-                updates.push({ schedule_id: row["系統編號(請勿修改)"], teacher_id: currentTid, actual_date: date, status: statusMap[row["狀態"]] || 'status-pending', remark: row["備註"] || "", actual_amount: parseInt(row["當日金額"]) || 0 });
-            }
-
-            if (updates.length === 0) return alert("無有效資料");
-            setStatus(`正在更新 ${updates.length} 筆紀錄...`);
-            const { error } = await _client.from("lesson_records").upsert(updates, { onConflict: 'schedule_id,actual_date' });
-            if (error) throw error;
-
-            await recordLog('匯入資料', `透過 Excel 批次修正了 [${document.getElementById("main-title").textContent.split(' · ')[0] || "該老師"}] 的薪資與點名紀錄 (共 ${updates.length} 筆)`, 'lesson_records', null, null);
-            setStatus("薪資與金額更新成功！", "success"); input.value = ""; await calculateSalary(); await refreshData();
-        } catch (err) { alert("匯入失敗: " + err.message); }
-    };
-    reader.readAsArrayBuffer(file);
-}
-
-
 /* ==========================================================================
  * 10. 管理控制台與統計 (Admin Console)
  * ========================================================================== */
@@ -1251,10 +1704,26 @@ function switchAdminTab(tabName) {
 
 // --- 通訊錄 (Directory) ---
 async function loadDirectoryData() {
-    if (!_client) return; setStatus("正在更新通訊錄...");
-    const { data, error } = await _client.from("schedules").select("*, teachers(name)");
-    if (error) return setStatus("通訊錄載入失敗", "error");
-    _allSchedulesForAdmin = data || []; renderDirectory(); setStatus("通訊錄已就緒", "success");
+    if (!_client) return;
+    setStatus("正在更新通訊錄...");
+
+    try {
+        const { data: studentsData, error: stuErr } = await _client.from("students").select("*");
+        if (stuErr) throw new Error("讀取學生資料庫失敗");
+
+        // ★ 修改這裡：在 teachers 的括號裡，多抓一個 is_public 出來
+        const { data: schedulesData, error: schErr } = await _client.from("schedules").select("id, course_name, phone, subject, teachers(name, is_public)");
+        if (schErr) throw new Error("讀取排課資料失敗");
+
+        _allStudentsForAdmin = studentsData || [];
+        _allSchedulesForAdmin = schedulesData || [];
+
+        renderDirectory();
+        setStatus("通訊錄已就緒", "success");
+    } catch (err) {
+        setStatus("通訊錄載入失敗", "error");
+        console.error(err);
+    }
 }
 
 function sortDirectory(key) {
@@ -1264,35 +1733,123 @@ function sortDirectory(key) {
 
 function renderDirectory() {
     const keyword = document.getElementById("dir-search").value.toLowerCase();
-    const listBody = document.getElementById("directory-list"); listBody.innerHTML = "";
+    const listBody = document.getElementById("directory-list");
+    listBody.innerHTML = "";
 
-    const uniqueMap = new Map();
-    _allSchedulesForAdmin.forEach(s => {
-        if ((s.course_name || "").toLowerCase().includes(keyword) || (s.phone || "").includes(keyword) || (s.subject || "").toLowerCase().includes(keyword)) {
-            const key = `${s.course_name}-${s.phone}`;
-            if (!uniqueMap.has(key)) uniqueMap.set(key, { course_name: s.course_name || "", phone: s.phone || "", subjects: new Set(), teachers: new Set(), schedule_ids: [] });
-            if (s.subject) uniqueMap.get(key).subjects.add(s.subject);
-            if (s.teachers && s.teachers.name) uniqueMap.get(key).teachers.add(s.teachers.name);
-            uniqueMap.get(key).schedule_ids.push(s.id);
+    // ★ 1. 以 students 表為基礎，建立通訊錄陣列
+    let directoryList = _allStudentsForAdmin.map(student => {
+
+        // 找出這個學生所有的排課紀錄 (使用洗淨後的姓名來精準配對)
+        const mySchedules = _allSchedulesForAdmin.filter(s => {
+            // ★ 終極隱形濾網：如果這堂課的老師是「特殊教室 (is_public 為 true)」，直接跳過不顯示！
+            if (s.teachers && s.teachers.is_public === true) {
+                return false;
+            }
+
+            const cleanSchName = (s.course_name || "").replace(/\(.*?\)|（.*?）/g, '').trim();
+            return cleanSchName === student.name;
+        });
+
+        const subjects = new Set();
+        const teachers = new Set();
+        const scheduleIds = [];
+
+        mySchedules.forEach(s => {
+            if (s.subject) subjects.add(s.subject);
+            if (s.teachers && s.teachers.name) teachers.add(s.teachers.name);
+            scheduleIds.push(s.id);
+        });
+
+        return {
+            ...student,
+            subjects: Array.from(subjects).sort((a, b) => a.localeCompare(b, "zh-Hant")),
+            teachers: Array.from(teachers).sort((a, b) => a.localeCompare(b, "zh-Hant")),
+            schedule_ids: scheduleIds
+        };
+    });
+
+    // ★ 2. 搜尋過濾功能
+    if (keyword) {
+        directoryList = directoryList.filter(student =>
+            (student.name || "").toLowerCase().includes(keyword) ||
+            (student.phone || "").includes(keyword) ||
+            student.subjects.some(sub => (sub || "").toLowerCase().includes(keyword))
+        );
+    }
+
+    // ★ 3. 排序功能 (中英雙全：支援英文 A-Z 與中文 ㄅㄆㄇ)
+    directoryList.sort((a, b) => {
+        let valA = "";
+        let valB = "";
+
+        if (_dirSortState.key === 'name') {
+            valA = a.name || "";
+            valB = b.name || "";
+        } else if (_dirSortState.key === 'subject' || _dirSortState.key === 'subjects') {
+            valA = a.subjects.join(",") || "";
+            valB = b.subjects.join(",") || "";
+        } else if (_dirSortState.key === 'teacher' || _dirSortState.key === 'teachers') {
+            valA = a.teachers.join(",") || "";
+            valB = b.teachers.join(",") || "";
+        } else {
+            valA = a.phone || "";
+            valB = b.phone || "";
         }
+
+        // 洗掉特殊符號，避免干擾排隊
+        const cleanA = valA.replace(/[()（）【】\-]/g, '').trim();
+        const cleanB = valB.replace(/[()（）【】\-]/g, '').trim();
+
+        // ★ 核心魔法：使用 'zh-TW-u-co-zhuyin'
+        // 這會讓英文照 A-Z，中文照 ㄅㄆㄇㄈ 排列！
+        return cleanA.localeCompare(cleanB, 'zh-TW-u-co-zhuyin') * _dirSortState.dir;
     });
 
-    let list = Array.from(uniqueMap.values()).sort((a, b) => {
-        const valA = _dirSortState.key === 'name' ? a.course_name : (a.phone || "");
-        const valB = _dirSortState.key === 'name' ? b.course_name : (b.phone || "");
-        return valA.localeCompare(valB, "zh-Hant") * _dirSortState.dir;
-    });
+    // ★ 新增：動態更新畫面上的學生人數與搜尋框提示
+    const countDisplay = document.getElementById("student-count-display");
+    if (countDisplay) {
+        if (keyword) {
+            countDisplay.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="filter" class="w-4 h-4"></i> 符合：${directoryList.length} 人</div>`;
+            countDisplay.className = "shrink-0 text-sm font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200 transition-colors shadow-sm";
+        } else {
+            countDisplay.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="users" class="w-4 h-4"></i> 總共：${directoryList.length} 人</div>`;
+            countDisplay.className = "shrink-0 text-sm font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-xl border border-blue-200 transition-colors shadow-sm";
+        }
+    }
 
-    list.forEach(student => {
+    const searchInput = document.getElementById("dir-search");
+    if (searchInput && !keyword) {
+        searchInput.placeholder = `🔍 搜尋 ${_allStudentsForAdmin.length} 位學生...`;
+    }
+
+    // ★ 4. 繪製到畫面上
+    directoryList.forEach(student => {
         const baseClass = "flex items-center w-full min-h-[64px] px-5 cursor-pointer transition-all active:bg-opacity-80";
-        const nameHtml = `<div class="${baseClass} hover:bg-blue-50 text-blue-900 font-extrabold text-base" onclick="copyToClipboard('${student.course_name}', this)">${student.course_name}</div>`;
-        const phoneHtml = (student.phone || "").split(/\s+/).filter(p => p.trim() !== "").map(p => `<div class="${baseClass} hover:bg-gray-100 text-gray-700 font-mono text-sm border-b border-gray-50 last:border-0" onclick="copyToClipboard('${p}', this)">${p}</div>`).join('') || `<div class="${baseClass} text-gray-300">-</div>`;
-        const subjectHtml = Array.from(student.subjects).map(s => `<div class="${baseClass} hover:bg-indigo-50 text-gray-800 text-sm font-medium border-b border-gray-50 last:border-0" onclick="copyToClipboard('${s}', this)">${s}</div>`).join('') || `<div class="${baseClass} text-gray-300">-</div>`;
-        const teacherHtml = Array.from(student.teachers).map(t => `<div class="${baseClass} hover:bg-emerald-50 text-emerald-800 text-sm font-bold border-b border-gray-50 last:border-0" onclick="copyToClipboard('${t}', this)">${t}</div>`).join('') || `<div class="${baseClass} text-gray-300">-</div>`;
 
-        listBody.innerHTML += `<tr class="border-b border-gray-100 group hover:bg-gray-50/20 transition-colors"><td class="p-0 align-stretch min-w-[120px]">${nameHtml}</td><td class="p-0 align-stretch min-w-[160px]">${phoneHtml}</td><td class="p-0 align-stretch min-w-[140px]">${subjectHtml}</td><td class="p-0 align-stretch min-w-[140px]">${teacherHtml}</td><td class="p-0 align-middle text-center min-w-[100px] shrink-0 group-hover:bg-gray-50/20 transition-colors"><div class="flex items-center justify-center gap-3 px-4"><button onclick="openStudentScheduleModal('${student.course_name}', '${student.phone}')" class="p-2.5 text-gray-400 hover:text-emerald-600 active:scale-90"><i data-lucide="calendar-range" class="w-5.5 h-5.5"></i></button><button onclick="openStudentEditModal('${student.course_name}', '${student.phone}', '${student.schedule_ids.join(',')}')" class="p-2.5 text-gray-400 hover:text-blue-600 active:scale-90"><i data-lucide="pencil" class="w-5.5 h-5.5"></i></button></div></td></tr>`;
+        const nameHtml = `<div class="${baseClass} hover:bg-blue-50 text-blue-900 font-extrabold text-base" onclick="copyToClipboard('${student.name}', this)">${student.name}</div>`;
+
+        const phoneHtml = (student.phone || "").split(/\s+/).filter(p => p.trim() !== "").map(p => `<div class="${baseClass} hover:bg-gray-100 text-gray-700 font-mono text-sm border-b border-gray-50 last:border-0" onclick="copyToClipboard('${p}', this)">${p}</div>`).join('') || `<div class="${baseClass} text-gray-300">-</div>`;
+
+        const subjectHtml = student.subjects.length > 0 ? student.subjects.map(s => `<div class="${baseClass} hover:bg-indigo-50 text-gray-800 text-sm font-medium border-b border-gray-50 last:border-0" onclick="copyToClipboard('${s}', this)">${s}</div>`).join('') : `<div class="${baseClass} text-gray-300">-</div>`;
+
+        const teacherHtml = student.teachers.length > 0 ? student.teachers.map(t => `<div class="${baseClass} hover:bg-emerald-50 text-emerald-800 text-sm font-bold border-b border-gray-50 last:border-0" onclick="copyToClipboard('${t}', this)">${t}</div>`).join('') : `<div class="${baseClass} text-gray-300">-</div>`;
+
+        listBody.innerHTML += `
+        <tr class="border-b border-gray-100 group hover:bg-gray-50/20 transition-colors">
+            <td class="p-0 align-stretch min-w-[120px]">${nameHtml}</td>
+            <td class="p-0 align-stretch min-w-[160px]">${phoneHtml}</td>
+            <td class="p-0 align-stretch min-w-[140px]">${subjectHtml}</td>
+            <td class="p-0 align-stretch min-w-[140px]">${teacherHtml}</td>
+            <td class="p-0 align-middle text-center min-w-[100px] shrink-0 group-hover:bg-gray-50/20 transition-colors">
+                <div class="flex items-center justify-center gap-3 px-4">
+                    <button onclick="openStudentScheduleModal('${student.name}', '${student.phone || ''}')" class="p-2.5 text-gray-400 hover:text-emerald-600 active:scale-90" title="查看所有課表"><i data-lucide="calendar-range" class="w-5.5 h-5.5"></i></button>
+                    <button onclick="openStudentEditModal('${student.name}', '${student.phone || ''}', '${student.schedule_ids.join(',')}')" class="p-2.5 text-gray-400 hover:text-blue-600 active:scale-90" title="編輯學生資料"><i data-lucide="pencil" class="w-5.5 h-5.5"></i></button>
+                </div>
+            </td>
+        </tr>`;
     });
-    lucide.createIcons();
+
+    if (window.lucide) lucide.createIcons();
 }
 
 // --- 統計報表 (Stats) ---
@@ -1596,21 +2153,6 @@ async function confirmExecuteUndo() {
         await recordLog('復原操作', `撤銷了先前的動作 (${log.actor_name || '未知'} 執行的)：[${log.action_type}]`, 'system', null, null);
         setStatus("時光倒流成功！", "success"); await refreshData(); loadLogs();
     } catch (err) { await sysAlert("復原失敗: " + err.message, "系統錯誤"); }
-}
-
-// 批次匯出/匯入 (Admin)
-function openBatchModal() { document.getElementById("batch-modal").classList.remove("hidden"); }
-function closeBatchModal() { document.getElementById("batch-modal").classList.add("hidden"); }
-
-async function exportMasterData() {
-    if (!currentTid) return alert("請先選擇老師"); setStatus("正在產生完整課表檔...");
-    const { data: courses } = await _client.from("schedules").select("*").eq("teacher_id", currentTid);
-    if (!courses || courses.length === 0) return alert("該老師沒有課程資料");
-
-    const exportData = courses.map(c => ({ "學生姓名": c.course_name, "電話": c.phone || "", "科目": c.subject || "", "金額": c.amount || 0, "星期(1-7)": c.day_of_week, "開始時間": c.start_time?.slice(0, 5) || "09:00", "結束時間": c.end_time?.slice(0, 5) || "10:00", "教室": c.room_no || "", "預設狀態": { 'status-present': '上課', 'status-leave': '請假', 'status-absent': '曠課', 'status-practice': '學生練習', 'status-pending': '尚未點名' }[c.color_class] || "尚未點名", "僅限單周(是/否)": c.is_temporary ? "是" : "否" }));
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportData), "課表管理");
-    await recordLog('匯出資料', `下載了完整課表 Excel`, 'system', null, null);
-    XLSX.writeFile(wb, `${document.getElementById("main-title").textContent.split(' · ')[0]}_完整課表管理.xlsx`);
 }
 
 // ==========================================================================
