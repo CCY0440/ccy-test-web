@@ -504,46 +504,70 @@
     class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1300] backdrop-blur-sm">
     <div class="bg-white rounded-xl w-[95%] max-w-md p-6 shadow-2xl border border-indigo-100">
 
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="font-bold text-lg flex items-center gap-2 text-indigo-800">
-          <i data-lucide="sheet" class="w-5 h-5"></i> 固定課表批次管理
+      <div class="flex justify-between items-center mb-5">
+        <h3 class="font-bold text-lg flex items-center gap-2 text-indigo-900">
+          <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i> 資料調度中心
         </h3>
-        <button onclick="closeBatchModal()" class="text-gray-400 hover:text-gray-600">
-          <i data-lucide="x"></i>
+        <button onclick="closeBatchModal()"
+          class="text-gray-400 hover:text-red-500 transition-colors bg-gray-50 hover:bg-red-50 p-1.5 rounded-full">
+          <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
-      <div class="space-y-4">
-        <div class="p-3 bg-indigo-50 rounded-lg text-xs text-indigo-900 leading-relaxed border border-indigo-100">
-          <p class="font-bold mb-1">功能說明：</p>
-          <ul class="list-disc pl-4 space-y-1">
-            <li>此功能用於修改<b>「固定課表」</b>(如：漲學費、換教室、改電話)。</li>
-            <li>Excel 包含所有欄位：姓名、電話、金額、科目、備註等。</li>
-            <li>上傳修改後的Excel後會直接覆蓋現有的固定課表設定。</li>
-          </ul>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
+      <div class="mb-6 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+        <h4 class="font-bold text-sm text-indigo-800 mb-1 flex items-center gap-1.5">
+          <i data-lucide="layout-template" class="w-4 h-4"></i> 1. 課程母版
+        </h4>
+        <p class="text-[11px] text-indigo-600/80 mb-3 leading-relaxed">
+          適用於每學期大換血、調漲學費或更換教室。系統將會對照「系統編號」安全更新，絕不影響過去的歷史點名紀錄。
+        </p>
+        <div class="grid grid-cols-2 gap-2">
           <button onclick="exportMasterData()"
-            class="flex flex-col items-center justify-center gap-2 py-4 bg-white border-2 border-indigo-100 rounded-xl hover:border-indigo-500 hover:text-indigo-600 transition-all group">
-            <div class="p-2 bg-indigo-50 rounded-full group-hover:bg-indigo-100 text-indigo-600">
-              <i data-lucide="download" class="w-5 h-5"></i>
-            </div>
-            <span class="text-sm font-bold text-gray-600 group-hover:text-indigo-700">下載課表 Excel</span>
+            class="flex items-center justify-center gap-1.5 py-2 bg-white border border-indigo-200 rounded-lg hover:border-indigo-400 hover:text-indigo-700 transition-all text-xs font-bold text-indigo-600 shadow-sm">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> 匯出母版
           </button>
-
-          <button
-            onclick="const fileInput = document.getElementById('import-master-input'); fileInput.value = ''; fileInput.click();"
-            class="flex flex-col items-center justify-center gap-2 py-4 bg-white border-2 border-indigo-100 rounded-xl hover:border-indigo-500 hover:text-indigo-600 transition-all group">
-            <div class="p-2 bg-indigo-50 rounded-full group-hover:bg-indigo-100 text-indigo-600">
-              <i data-lucide="upload" class="w-5 h-5"></i>
-            </div>
-            <span class="text-sm font-bold text-gray-600 group-hover:text-indigo-700">上傳修改後的 Excel</span>
+          <button onclick="document.getElementById('import-master-input').click()"
+            class="flex items-center justify-center gap-1.5 py-2 bg-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-700 transition-all text-xs font-bold text-white shadow-sm">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i> 上傳更新
           </button>
         </div>
-
         <input type="file" id="import-master-input" accept=".xlsx, .xls" class="hidden"
           onchange="executeMasterCopyImport(this)" />
+      </div>
+
+      <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+        <h4 class="font-bold text-sm text-emerald-800 mb-1 flex items-center gap-1.5">
+          <i data-lucide="history" class="w-4 h-4"></i> 2. 歷史點名紀錄
+        </h4>
+        <p class="text-[11px] text-emerald-600/80 mb-3 leading-relaxed">
+          專用於補登舊資料或微調當日結算金額。僅會修改下方指定日期範圍內的狀態，完全不動到課程母版。
+        </p>
+
+        <div class="flex gap-2 mb-3">
+          <div class="flex-1">
+            <label class="block text-[10px] font-bold text-emerald-700 mb-1">開始日期</label>
+            <input type="date" id="batch-history-start"
+              class="w-full border border-emerald-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-emerald-400 bg-white">
+          </div>
+          <div class="flex-1">
+            <label class="block text-[10px] font-bold text-emerald-700 mb-1">結束日期</label>
+            <input type="date" id="batch-history-end"
+              class="w-full border border-emerald-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-emerald-400 bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="exportHistoryData()"
+            class="flex items-center justify-center gap-1.5 py-2 bg-white border border-emerald-200 rounded-lg hover:border-emerald-400 hover:text-emerald-700 transition-all text-xs font-bold text-emerald-600 shadow-sm">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> 匯出紀錄
+          </button>
+          <button onclick="document.getElementById('import-history-input').click()"
+            class="flex items-center justify-center gap-1.5 py-2 bg-emerald-600 border border-emerald-600 rounded-lg hover:bg-emerald-700 transition-all text-xs font-bold text-white shadow-sm">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i> 上傳修正
+          </button>
+        </div>
+        <input type="file" id="import-history-input" accept=".xlsx, .xls" class="hidden"
+          onchange="handleImportDaily(this)" />
       </div>
 
     </div>
@@ -552,10 +576,9 @@
   <div id="salary-modal"
     class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[1300] backdrop-blur-sm">
     <div class="bg-white rounded-xl w-[95%] max-w-2xl h-[85vh] p-6 shadow-2xl border border-emerald-100 flex flex-col">
-
       <div class="flex justify-between items-center mb-4 shrink-0">
         <h3 class="font-bold text-lg flex items-center gap-2 text-emerald-800">
-          <i data-lucide="calculator" class="w-5 h-5"></i> 薪資結算報告
+          <i data-lucide="calculator" class="w-5 h-5"></i> 薪資試算報告
         </h3>
         <button onclick="closeSalaryModal()" class="text-gray-400 hover:text-gray-600">
           <i data-lucide="x"></i>
@@ -583,12 +606,11 @@
       </div>
 
       <div id="salary-result" class="hidden flex flex-col flex-1 min-h-0 overflow-hidden">
-
         <div class="flex gap-4 mb-4 shrink-0">
           <div
             class="flex-1 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 text-white shadow-lg relative overflow-hidden">
             <div class="absolute -right-4 -bottom-4 opacity-20"><i data-lucide="coins" class="w-24 h-24"></i></div>
-            <p class="text-emerald-100 text-xs font-bold mb-1">預估總薪資</p>
+            <p class="text-emerald-100 text-xs font-bold mb-1">總薪資 (上課+曠課)</p>
             <p class="text-3xl font-bold tracking-tight" id="total-salary">$0</p>
           </div>
           <div class="flex-1 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
@@ -599,9 +621,6 @@
             <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
               <div class="bg-emerald-500 h-full w-full"></div>
             </div>
-            <div class="mt-2 text-[10px] text-gray-400">
-              *僅計算「上課」與「曠課」
-            </div>
           </div>
         </div>
 
@@ -610,52 +629,29 @@
             <thead class="bg-gray-50 text-gray-500 font-medium sticky top-0 z-10 shadow-sm select-none">
               <tr>
                 <th onclick="sortSalary('date')"
-                  class="p-3 bg-gray-50 whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors group">
+                  class="p-3 whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors">
                   <div class="flex items-center gap-1">日期 <i data-lucide="arrow-up-down"
-                      class="w-3 h-3 text-gray-300 group-hover:text-gray-500"></i></div>
+                      class="w-3 h-3 text-gray-300"></i></div>
                 </th>
                 <th onclick="sortSalary('name')"
-                  class="p-3 bg-gray-50 whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors group">
+                  class="p-3 whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors">
                   <div class="flex items-center gap-1">學生/課程 <i data-lucide="arrow-up-down"
-                      class="w-3 h-3 text-gray-300 group-hover:text-gray-500"></i></div>
+                      class="w-3 h-3 text-gray-300"></i></div>
                 </th>
                 <th onclick="sortSalary('status')"
-                  class="p-3 bg-gray-50 whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors group">
+                  class="p-3 whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors">
                   <div class="flex items-center gap-1">狀態 <i data-lucide="arrow-up-down"
-                      class="w-3 h-3 text-gray-300 group-hover:text-gray-500"></i></div>
+                      class="w-3 h-3 text-gray-300"></i></div>
                 </th>
                 <th onclick="sortSalary('amount')"
-                  class="p-3 text-right bg-gray-50 whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors group">
+                  class="p-3 text-right whitespace-nowrap cursor-pointer hover:bg-gray-100 transition-colors">
                   <div class="flex items-center justify-end gap-1">金額 <i data-lucide="arrow-up-down"
-                      class="w-3 h-3 text-gray-300 group-hover:text-gray-500"></i></div>
+                      class="w-3 h-3 text-gray-300"></i></div>
                 </th>
               </tr>
             </thead>
-            <tbody id="salary-list" class="divide-y divide-gray-100 text-gray-700">
-            </tbody>
+            <tbody id="salary-list" class="divide-y divide-gray-100 text-gray-700"></tbody>
           </table>
-        </div>
-
-        <div class="mt-4 pt-3 border-t border-gray-100 flex flex-col gap-3 shrink-0">
-
-          <div class="flex items-center justify-between bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-            <div class="flex flex-col">
-              <span class="text-xs font-bold text-emerald-800">薪資結算修正</span>
-              <span class="text-[10px] text-emerald-600">僅修改對應時間的「狀態、備註與當日薪資」，並不會修改到其他時間的課表。</span>
-            </div>
-            <div class="flex gap-2">
-              <input type="file" id="import-daily-input" accept=".xlsx, .xls" class="hidden"
-                onchange="handleImportDaily(this)" />
-              <button onclick="exportDailyReport()"
-                class="bg-white text-emerald-700 border border-emerald-200 text-xs font-bold px-3 py-2 rounded hover:bg-emerald-100 transition-all flex items-center gap-1">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i> 匯出報表
-              </button>
-              <button onclick="document.getElementById('import-daily-input').click()"
-                class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded shadow hover:bg-emerald-700 transition-all flex items-center gap-1">
-                <i data-lucide="upload" class="w-3.5 h-3.5"></i> 匯入修正
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -782,15 +778,24 @@
       <div class="flex-1 bg-gray-50 overflow-hidden relative">
 
         <div id="tab-content-directory" class="admin-tab-content w-full h-full flex flex-col p-6 hidden">
-          <div class="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-3 mb-4 shrink-0">
-            <div class="relative w-full sm:w-72">
-              <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
-              <input type="text" id="dir-search" oninput="renderDirectory()" placeholder="搜尋姓名、電話..."
-                class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-neutral-800 shadow-sm">
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4">
+            <div class="flex items-center gap-3 w-full max-w-lg">
+              <div class="relative flex-1">
+                <input type="text" id="dir-search" oninput="renderDirectory()"
+                  class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner"
+                  placeholder="🔍 搜尋...">
+              </div>
+
+              <span id="student-count-display"
+                class="shrink-0 text-sm font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-xl border border-blue-100 transition-all shadow-sm">
+                載入中...
+              </span>
             </div>
+
             <div
-              class="text-[11px] sm:text-xs text-gray-500 bg-gray-50/80 px-2.5 py-1.5 rounded-md border border-gray-200 shadow-sm w-full sm:w-auto text-center sm:text-left">
-              💡 提示：點擊任何欄位即可複製
+              class="text-[13px] text-amber-600 bg-amber-50 px-3 py-2 rounded-xl border border-amber-100 flex items-center gap-1.5 shadow-sm font-bold">
+              <i data-lucide="lightbulb" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">點擊任何欄位即可複製</span>
             </div>
           </div>
           <div class="flex-1 overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-sm">
@@ -1236,7 +1241,54 @@
           </div>
         </div>
 
-        <script src="app.js"></script>
+        <div id="reschedule-modal"
+          class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[1800] backdrop-blur-sm transition-opacity">
+          <div class="bg-white rounded-2xl w-[95%] max-w-sm p-6 shadow-2xl border border-blue-100 flex flex-col">
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="font-bold text-lg text-blue-800 flex items-center gap-2">
+                <i data-lucide="repeat" class="w-5 h-5"></i> 課程調課
+              </h3>
+              <button onclick="closeRescheduleModal()"
+                class="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 p-1.5 rounded-full transition-colors">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <p class="text-xs text-gray-500 mb-5 leading-relaxed bg-blue-50 p-2 rounded-lg border border-blue-100">
+              💡 系統將自動把原課程設為「請假」並備註，同時於您指定的新日期建立一堂「單週臨時課」。
+            </p>
+
+            <div class="space-y-4 mb-6">
+              <div>
+                <label class="block text-xs font-bold text-gray-500 mb-1">調課至哪一天？</label>
+                <input type="date" id="reschedule-target-date"
+                  class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner">
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">開始時間</label>
+                  <input type="time" id="reschedule-start-time"
+                    class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-gray-500 mb-1">結束時間</label>
+                  <input type="time" id="reschedule-end-time"
+                    class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-2 mt-auto pt-4 border-t border-gray-100">
+              <button onclick="closeRescheduleModal()"
+                class="flex-1 bg-white border border-gray-200 text-gray-600 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors">取消</button>
+              <button onclick="executeReschedule()"
+                class="flex-1 bg-blue-600 text-white py-2 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 transition-colors active:scale-95 flex items-center justify-center gap-1.5">
+                <i data-lucide="check-circle" class="w-4 h-4"></i> 確認調課
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <script src="./app.js"></script>
 </body>
 
 </html>
