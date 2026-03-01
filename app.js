@@ -422,6 +422,9 @@ window.onload = async () => {
 async function fetchUserProfile(email) {
     const { data, error } = await _client.from("teachers").select("*").eq("email", email).maybeSingle();
     if (error || !data) {
+        // ★ 關鍵修復：強制讓畫面亮起來，否則老師會看不到底下的警告視窗！
+        document.body.classList.add("page-ready");
+
         await sysAlert("錯誤：您的帳號未綁定教師資料，請聯繫管理員！", "登入失敗");
         await _client.auth.signOut();
         window.location.href = "login.html";
@@ -949,7 +952,13 @@ function renderSchedule(list, records = [], startDate) {
         const thisDayDate = addDays(baseDate, i);
         const thisDayDateStr = formatDate(thisDayDate);
         const dbDay = thisDayDate.getDay() === 0 ? 7 : thisDayDate.getDay();
-        const dayItems = validItems.filter(item => item.day_of_week === dbDay);
+
+        // ★ 替換成這段：在計算空間前，直接把 status-hidden 的幽靈徹底踢出陣列！
+        const dayItems = validItems.filter(item => item.day_of_week === dbDay).filter(item => {
+            const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
+            const displayStatus = record ? record.status : (item.color_class || 'status-pending');
+            return displayStatus !== 'status-hidden';
+        });
 
         let maxDayW = CARD_WIDTH;
         dayItems.forEach(item => {
@@ -1024,7 +1033,14 @@ function renderSchedule(list, records = [], startDate) {
         const thisDayDate = addDays(baseDate, i);
         const thisDayDateStr = formatDate(thisDayDate);
         const dbDay = thisDayDate.getDay() === 0 ? 7 : thisDayDate.getDay();
-        const dayItems = validItems.filter(item => item.day_of_week === dbDay);
+
+        // ★ 替換成這段：產生畫面時，也只讓實體的卡片來排隊
+        const dayItems = validItems.filter(item => item.day_of_week === dbDay).filter(item => {
+            const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
+            const displayStatus = record ? record.status : (item.color_class || 'status-pending');
+            return displayStatus !== 'status-hidden';
+        });
+
         const currentDayUnitWidth = dayWidths[i];
 
         const columns = []; const cardColIndex = {};
@@ -1127,9 +1143,10 @@ function renderSchedule(list, records = [], startDate) {
             let cardActionsHtml = '';
 
             if (item.is_temporary) {
-                // 單次臨時課：允許直接修改與刪除，因為它不影響其他天
+                // 單次臨時課：允許直接修改與刪除，並加上【調課按鈕】！
                 cardActionsHtml = `
                     <button type="button" onclick="openRemarkModal('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-yellow-600 hover:scale-110 transition-all cursor-pointer" title="設定備註"><i data-lucide="sticky-note" class="w-4 h-4"></i></button>
+                    <button type="button" onclick="openRescheduleModal('${item.id}', '${thisDayDateStr}', '${item.start_time}', '${item.end_time}'); return false;" class="p-1 rounded-full text-blue-500 hover:text-blue-700 hover:scale-110 transition-all cursor-pointer" title="一鍵調課"><i data-lucide="repeat" class="w-4 h-4"></i></button>
                     <button type="button" onclick="openEditModal('${item.id}', '${displayStatus}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-gray-600 hover:text-gray-800 hover:scale-110 transition-all cursor-pointer" title="修改此單次課"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                     <button type="button" onclick="deleteCourse('${item.id}');" class="p-1 rounded-full text-red-500 hover:scale-110 transition-all cursor-pointer" title="刪除此單次課"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 `;
@@ -1538,16 +1555,31 @@ async function executeReschedule() {
             end_time: targetEndTime + ":00"
         };
 
-        const { error: insErr } = await _client.from("schedules").insert([newSchedule]);
-        if (insErr) throw new Error("建立新時段課程失敗");
+        // ★ 升級 1：在 insert 後面加上 .select()，這樣我們才能立刻拿到「剛生出來的新卡片 ID」
+        const { data: insData, error: insErr } = await _client.from("schedules").insert([newSchedule]).select();
+        if (insErr || !insData) throw new Error("建立新時段課程失敗");
 
+        const newCourseId = insData[0].id;
+
+        // ★ 升級 2：幫新誕生的卡片，自動貼上一張「原課程時間」的備註！
+        const newRemarkText = `原課程時間：\n${rescheduleState.oldDate}\n${rescheduleState.oldStartTime} - ${rescheduleState.oldEndTime}`;
+        const { error: newRemarkErr } = await _client.from("lesson_records").upsert([{
+            schedule_id: newCourseId,
+            actual_date: targetDate,
+            teacher_id: sData.teacher_id,
+            status: 'status-pending',
+            remark: newRemarkText
+        }], { onConflict: 'schedule_id,actual_date' });
+
+        if (newRemarkErr) throw new Error("寫入新課程備註失敗");
+
+        // --- 下面是原本隱藏舊卡片的邏輯 ---
         const updateRecord = {
             schedule_id: rescheduleState.scheduleId,
             actual_date: rescheduleState.oldDate,
             teacher_id: sData.teacher_id,
-            // ★ 核心魔法：把原本的 'status-leave' 改成 'status-hidden'！
             status: 'status-hidden',
-            remark: remarkText, // 備註字眼保留，這樣後台資料庫還是查得到調課軌跡
+            remark: remarkText, // 舊卡片依然保留它原本的調課去向紀錄
             actual_amount: 0
         };
 
@@ -2500,10 +2532,15 @@ async function addTeacher() {
     if (password.length < 6) return sysAlert("為了安全，密碼至少需要 6 碼喔！", "密碼太短");
 
     setStatus("正在建立帳號與資料...");
-    const { data: authData, error: authError } = await _client.auth.signUp({ email: username.includes('@') ? username : (username + "@munique.com"), password: password });
+
+    // ★ 關鍵修復 1：統一假網域為 @moonick.music (與登入頁面一致)
+    const finalEmail = username.includes('@') ? username : (username + "@moonick.music");
+
+    const { data: authData, error: authError } = await _client.auth.signUp({ email: finalEmail, password: password });
     if (authError) return sysAlert("建立帳號失敗: " + authError.message, "系統錯誤");
 
-    const { data, error } = await _client.from("teachers").insert([{ name: name }]).select();
+    // ★ 關鍵修復 2：將 email 一併寫入 teachers 資料表，完成身分綁定！
+    const { data, error } = await _client.from("teachers").insert([{ name: name, email: finalEmail }]).select();
     if (error) return sysAlert("新增失敗: " + error.message, "系統錯誤");
 
     await recordLog('新增老師', `建立新老師 [${name}] 並配發登入帳號 [${username}]`, 'teachers', null, data[0]);
