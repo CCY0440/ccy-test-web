@@ -109,11 +109,11 @@
         </button>
 
         <div class="flex flex-col min-w-0">
-          <h2 id="main-title" class="text-lg md:text-xl font-bold text-neutral-800 truncate leading-tight">
+          <h2 id="main-title" class="text-lg md:text-xl font-bold truncate leading-tight text-blue-600">
             載入中...
           </h2>
           <div id="status-tag"
-            class="text-[10px] md:text-xs px-2.5 py-1 rounded-md bg-yellow-100 text-yellow-800 font-medium mt-0.5 -ml-2">
+            class="text-[10px] md:text-xs px-2.5 py-1 rounded-md bg-yellow-100 text-yellow-800 font-medium mt-0.5 -ml-2 w-fit">
             嘗試連線...
           </div>
         </div>
@@ -123,13 +123,13 @@
         <button onclick="openSalaryModal()"
           class="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-emerald-100 transition-all shrink-0 shadow-sm">
           <i data-lucide="calculator" class="w-4 h-4"></i>
-          <span>薪資試算</span>
+          <span class="hidden md:inline">薪資試算</span>
         </button>
 
         <button onclick="openBatchModal()"
           class="flex items-center gap-2 bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-indigo-100 transition-all shrink-0 shadow-sm">
           <i data-lucide="sheet" class="w-4 h-4"></i>
-          <span>批次管理</span>
+          <span class="hidden md:inline">Excel 小工具</span>
         </button>
 
         <button onclick="openFixedScheduleModal()"
@@ -139,34 +139,32 @@
         </button>
 
         <button onclick="openModal()"
-          class="flex items-center gap-2 bg-neutral-800 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-neutral-700 transition-all shrink-0">
+          class="flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold hover:bg-blue-100 transition-all shrink-0 shadow-sm">
           <i data-lucide="plus" class="w-4 h-4"></i>
-          <span class="hidden md:inline">新增課程</span><span class="md:hidden">新增</span>
+          <span class="hidden md:inline">新增單次課</span><span class="md:hidden">新增</span>
         </button>
       </div>
 
-      <div
-        class="flex items-center justify-between gap-3 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm order-3 w-full lg:w-auto lg:mx-4 lg:order-2 relative overflow-hidden">
+      <div id="date-picker-container"
+        class="flex items-center justify-between gap-3 bg-blue-50/50 border border-blue-200 rounded-lg px-4 py-2 shadow-sm order-3 w-full lg:w-auto lg:mx-4 lg:order-2 relative overflow-hidden transition-all">
 
         <button onclick="changeWeek(-1)"
-          class="p-1 hover:bg-gray-100 rounded-md text-gray-600 transition-colors shrink-0 z-20 relative">
+          class="p-1 hover:bg-blue-100 rounded-md text-blue-600 transition-colors shrink-0 z-20 relative">
           <i data-lucide="chevron-left" class="w-5 h-5"></i>
         </button>
 
         <div class="relative flex-1 flex justify-center items-center group px-2 min-w-[220px]">
-
           <span id="current-date-range"
-            class="text-sm md:text-base font-bold text-neutral-800 font-mono tracking-wide text-center cursor-pointer group-hover:text-blue-600 transition-colors select-none pointer-events-none whitespace-nowrap">
+            class="text-sm md:text-base font-bold text-blue-800 font-mono tracking-wide text-center cursor-pointer group-hover:text-blue-600 transition-colors select-none pointer-events-none whitespace-nowrap">
             計算中...
           </span>
-
           <input type="date" id="date-picker"
             class="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full appearance-none"
             onchange="handleDatePick(this.value)">
         </div>
 
         <button onclick="changeWeek(1)"
-          class="p-1 hover:bg-gray-100 rounded-md text-gray-600 transition-colors shrink-0 z-20 relative">
+          class="p-1 hover:bg-blue-100 rounded-md text-blue-600 transition-colors shrink-0 z-20 relative">
           <i data-lucide="chevron-right" class="w-5 h-5"></i>
         </button>
       </div>
@@ -221,14 +219,14 @@
           </div>
 
           <div class="space-y-3 pb-4 border-b border-gray-100">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
+            <div class="grid grid-cols-2 gap-4 transition-all">
+              <div id="teacher-select-wrapper" class="col-span-1 transition-all">
                 <label class="block text-[11px] font-bold text-gray-500 mb-1">負責老師</label>
                 <select name="teacher_id" required
                   class="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 focus:bg-white shadow-inner"></select>
               </div>
-              <div>
-                <label class="block text-[11px] font-bold text-gray-500 mb-1">上課星期</label>
+              <div id="day-of-week-wrapper" class="transition-all">
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">預定上課星期</label>
                 <select name="day_of_week" required
                   class="w-full border border-gray-200 rounded-xl p-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50 focus:bg-white shadow-inner">
                   <option value="1">週一</option>
@@ -279,21 +277,22 @@
             </div>
           </div>
 
-          <div class="mt-4 pt-4">
+          <div class="mt-4 pt-4" id="temp-section-container">
             <div
               class="bg-blue-50/50 border border-blue-100 rounded-xl p-4 relative overflow-hidden transition-all shadow-sm">
-              <div class="flex items-center gap-2 relative z-10">
+              <div class="flex items-center gap-2 relative z-10 mb-2" id="temp-checkbox-wrapper">
                 <input type="checkbox" name="is_temporary" id="is_temporary"
-                  class="w-4 h-4 cursor-pointer accent-blue-600 rounded"
-                  onchange="document.getElementById('temp-date-wrapper').classList.toggle('hidden', !this.checked)">
+                  class="w-4 h-4 cursor-pointer accent-blue-600 rounded">
                 <label for="is_temporary" class="text-sm font-bold text-blue-800 cursor-pointer select-none">📌
                   設為「單次/臨時課程」</label>
               </div>
-              <div id="temp-date-wrapper" class="hidden mt-3 relative z-10 pl-6 border-l-2 border-blue-300 ml-2">
-                <label class="block text-[10px] font-bold text-blue-700 mb-1">上課日期 <span
-                    class="font-normal text-blue-500">(將自動推算星期)</span></label>
+              <div id="temp-date-wrapper" class="relative z-10">
+                <label class="block text-[11px] font-bold text-blue-800 mb-1">
+                  <i data-lucide="calendar-clock" class="w-3.5 h-3.5 inline align-text-bottom mr-0.5"></i>
+                  選擇單次上課日期 <span class="font-normal text-blue-600">(系統將自動推算星期)</span>
+                </label>
                 <input type="date" name="target_date" id="target_date_input"
-                  class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-inner bg-white">
+                  class="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-inner bg-white font-mono">
               </div>
             </div>
           </div>
@@ -373,7 +372,7 @@
 
       <div class="bg-neutral-50 px-6 py-4 border-b border-neutral-200 flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold flex items-center gap-2 text-neutral-800">
-          📅 系統使用指南 (v1.13 正式版)
+          🍄 幕尼克音樂(金山校區) 系統使用說明
         </h3>
         <button onclick="closeInstructionsModal()"
           class="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-200 rounded-full transition-all">
@@ -387,27 +386,29 @@
           <h4 class="font-bold text-neutral-900 text-base mb-2 flex items-center gap-2">
             <span
               class="bg-neutral-800 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">1</span>
-            頂部工具列 (日期與管理)
+            最重要的概念：雙課表模式
           </h4>
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
-            <ul class="space-y-2 text-xs text-gray-700">
-              <li class="flex items-start gap-2">
-                <i data-lucide="calendar" class="w-3.5 h-3.5 mt-0.5 text-blue-500"></i>
-                <span><b>日期切換：</b>點擊左右箭頭中間的日期可選起始日，左右箭頭切換週次。</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <i data-lucide="calculator" class="w-3.5 h-3.5 mt-0.5 text-emerald-600"></i>
-                <span><b>薪資試算：</b>計算指定日期範圍內的總薪資與堂數，支援匯出 Excel。</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <i data-lucide="sheet" class="w-3.5 h-3.5 mt-0.5 text-indigo-600"></i>
-                <span><b>批次管理：</b>下載或匯入 Excel，可快速大量修改「固定課表」設定。</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <i data-lucide="plus" class="w-3.5 h-3.5 mt-0.5 text-neutral-800"></i>
-                <span><b>新增課程：</b>建立一堂新的固定課程或單次/臨時課程。</span>
-              </li>
-            </ul>
+          <p class="text-xs text-gray-500 mb-2">系統右上角的 固定課表/返回本週課表 按鈕可切換兩種檢視模式，</p>
+          <p class="text-xs text-gray-500 mb-2">這決定了您正在修改什麼資料：</p>
+          <div class="grid gap-3">
+            <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm">
+              <h5 class="font-bold text-blue-800 flex items-center gap-1 text-sm mb-1">
+                <i data-lucide="calendar" class="w-4 h-4"></i> 本週課表 (藍色模式)
+              </h5>
+              <p class="text-xs text-blue-900/80">
+                <b>日常打卡與微調。</b>在這裡點擊卡片可進行點名，新增或修改的課程都屬於「單次課」，<span
+                  class="text-red-500 font-bold">只會影響您選定的那一天</span>，不會改到未來的課表。
+              </p>
+            </div>
+            <div class="bg-orange-50 border border-orange-200 p-3 rounded-lg shadow-sm">
+              <h5 class="font-bold text-orange-800 flex items-center gap-1 text-sm mb-1">
+                <i data-lucide="calendar-days" class="w-4 h-4"></i> 固定課表 (橘色模式)
+              </h5>
+              <p class="text-xs text-orange-900/80">
+                <b>每週固定排程設定。</b>此模式會隱藏所有單次課與所有點名紀錄。在這裡新增或修改的時間，<span
+                  class="text-red-500 font-bold">將會套用到未來的每一個禮拜</span>。
+              </p>
+            </div>
           </div>
         </section>
 
@@ -415,44 +416,15 @@
           <h4 class="font-bold text-neutral-900 text-base mb-2 flex items-center gap-2">
             <span
               class="bg-neutral-800 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">2</span>
-            日常操作 (點名與鎖定)
+            日常點名操作
           </h4>
-          <div class="grid gap-3">
-            <div class="bg-neutral-100 border-l-4 border-neutral-400 p-3 rounded-r-lg">
-              <h5 class="font-bold text-neutral-800 mb-1 flex items-center gap-1 text-xs">
-                <i data-lucide="lock" class="w-3.5 h-3.5"></i> 智慧鎖定機制 (New!)
-              </h5>
-              <p class="text-xs text-neutral-600">
-                系統將自動鎖定<b>「前兩個月以前」</b>的歷史資料。被鎖定的卡片會變淡且出現鎖頭，無法再進行點名或修改，確保薪資結算數據不被誤觸跑掉。
-              </p>
-              <p class="text-xs text-neutral-600">
-                <b>若有特殊更改需求可與管理者聯絡!</b>
-              </p>
-            </div>
-
-            <div class="bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r-lg">
-              <h5 class="font-bold text-blue-800 mb-1 flex items-center gap-1 text-xs">
-                <i data-lucide="mouse-pointer-2" class="w-3.5 h-3.5"></i> 點擊卡片區塊 (點名)
-              </h5>
-              <p class="text-xs text-blue-900/80">
-                點一下切換狀態：
-                <span class="font-bold text-green-700">綠(上課)</span> →
-                <span class="font-bold text-amber-700">咖(請假)</span> →
-                <span class="font-bold text-red-700">紅(曠課)</span> →
-                <span class="font-bold text-gray-500">灰(未點名)</span>。
-              </p>
-            </div>
-
-            <div class="bg-orange-50 border-l-4 border-orange-400 p-3 rounded-r-lg">
-              <h5 class="font-bold text-orange-800 mb-1 flex items-center gap-1 text-xs">
-                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> 卡片右上按鈕 (滑鼠移入顯示)
-              </h5>
-              <ul class="text-xs text-orange-900/80 list-disc pl-4 space-y-1">
-                <li><b class="text-yellow-700">黃色貼紙：</b>設定「日期區間」備註，可自動偵測重複備註。</li>
-                <li><b class="text-blue-700">藍色鉛筆：</b>修改本堂課在資料庫的固定母版設定。</li>
-                <li><b class="text-gray-600">灰色複製：</b>快速複製資料排入指定日期 (調課神器)。</li>
-                <li><b class="text-red-600">紅色垃圾桶：</b>刪除此課程的所有固定排程。</li>
-              </ul>
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <p class="text-xs text-gray-700 mb-2">在「本週課表」模式下，直接點擊卡片空白處即可切換狀態：</p>
+            <div class="flex flex-wrap gap-2 text-xs font-bold">
+              <span class="bg-green-100 text-green-700 px-2 py-1 rounded">✅ 上課 (綠)</span>
+              <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded">☕ 請假 (咖)</span>
+              <span class="bg-red-100 text-red-700 px-2 py-1 rounded">❌ 曠課 (紅)</span>
+              <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded">🎹 練習 (藍)</span>
             </div>
           </div>
         </section>
@@ -461,24 +433,52 @@
           <h4 class="font-bold text-neutral-900 text-base mb-2 flex items-center gap-2">
             <span
               class="bg-neutral-800 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">3</span>
-            實用小芝士🧀
+            卡片功能 (滑鼠移至卡片右上角)
           </h4>
-          <div class="bg-emerald-50 border border-emerald-100 rounded-lg p-3">
-            <ul class="space-y-2 text-xs text-emerald-900">
-              <li class="flex items-start gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                <span><b>自動對齊：</b>拖曳卡片可自訂當日的顯示順序，系統會自動記憶妳的習慣。</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                <span><b>隨手備忘錄：</b>側邊欄黃色便條紙會隨打隨存，適合紀錄特殊活動等。</span>
-              </li>
-              <li class="flex items-start gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></span>
-                <span><b>調課最速技：</b>按下「複製(灰)」按鈕 → 選取目標日期 → 存檔即完成調課。</span>
-              </li>
-            </ul>
-          </div>
+          <ul class="space-y-3 text-xs text-gray-700">
+            <li class="flex items-start gap-2 bg-yellow-50 p-2 rounded border border-yellow-100">
+              <i data-lucide="sticky-note" class="w-4 h-4 text-yellow-600 shrink-0 mt-0.5"></i>
+              <div class="leading-relaxed">
+                <b>設定備註：</b>可選擇一段日期範圍，系統會精準找出該範圍內的「同一堂課（同星期、同時段）」貼上黃色標籤（如：出國請假一個月）。
+                <span class="text-yellow-700 font-bold block mt-0.5 text-[11px]"><i data-lucide="shield-check"
+                    class="w-3 h-3 inline mr-0.5"></i> 安全防護：不會設定在該學生其他的課程！</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-2 bg-emerald-50 p-2 rounded border border-emerald-100">
+              <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
+              <div class="leading-relaxed">
+                <b>一鍵加課：</b>適合臨時需要多上一堂課的情況。系統會複製該堂課的收費與學生資訊，在您指定的新日期建立一堂獨立的「單次加課」。
+                <span class="text-emerald-700 font-bold block mt-0.5 text-[11px]"><i data-lucide="shield-check"
+                    class="w-3 h-3 inline mr-0.5"></i> 安全防護：全新的獨立課程！</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-2 bg-blue-50 p-2 rounded border border-blue-100">
+              <i data-lucide="repeat" class="w-4 h-4 text-blue-500 shrink-0 mt-0.5"></i>
+              <div class="leading-relaxed">
+                <b>一鍵調課：</b>遇到學生請假並要求換時間時使用。系統會將原時段無痕隱藏（並自動留下調課去向的備註），同時在指定日期建立一堂新課。
+                <span class="text-blue-700 font-bold block mt-0.5 text-[11px]"><i data-lucide="shield-check"
+                    class="w-3 h-3 inline mr-0.5"></i> 安全防護：原時段不會被算為曠課！</span>
+              </div>
+            </li>
+            <li class="flex items-start gap-2 bg-gray-50 p-2 rounded border border-gray-200">
+              <i data-lucide="pencil" class="w-4 h-4 text-gray-600 shrink-0 mt-0.5"></i>
+              <div class="leading-relaxed">
+                <b>單次修改：</b>專門應付「只有這週晚半小時」或「臨時換教室」的狀況。修改後系統會自動在背後將此堂課轉為「單次修改」狀態。
+                <span class="text-gray-600 font-bold block mt-0.5 text-[11px]"><i data-lucide="shield-check"
+                    class="w-3 h-3 inline mr-0.5"></i> 安全防護：只會套用在這個禮拜！</span>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+        <section class="text-sm text-gray-500 space-y-1.5 bg-emerald-50 py-3 px-4 rounded-lg border border-emerald-100">
+          <p class="font-bold mb-1 text-emerald-800 flex items-center gap-1.5"><i data-lucide="info"
+              class="w-4 h-4 text-emerald-500"></i> 實用小芝士🧀</p>
+          <ul class="space-y-1.5 text-xs leading-relaxed text-emerald-900/80">
+            <li>• <b>Excel 工具：</b>若需要大量修改資訊，使用頂部的「Excel 小工具」可根據 固定課表/歷史點名紀錄 下載後批次修改最快。</li>
+            <li>• <b>鎖定機制：</b>「兩個月前」的歷史紀錄會自動上鎖 (反灰)，防止誤觸影響到過去的薪資結算。(每個月的1號會自動鎖定2個月前的資料)</li>
+            <li>• <b>尋求支援：</b>如果不小心刪錯課或點錯名，或是日期已超過兩個月需要更改的話，可通知管理員協助修改或復原。</li>
+          </ul>
         </section>
 
         <section
@@ -491,7 +491,7 @@
             </li>
             <li class="flex gap-2 items-start">
               <span class="w-1 h-1 rounded-full bg-gray-300 shrink-0 mt-1.5"></span>
-              <p>若有任何功能建議或錯誤回報，請截圖聯繫 <b class="text-gray-500">鮪魚老師</b> :D</p>
+              <p>若有任何功能建議或錯誤回報，請保留截圖給 <b class="text-gray-500">鮪魚老師</b> :D</p>
             </li>
           </ul>
         </section>
@@ -502,6 +502,7 @@
             我瞭解了
           </button>
         </section>
+
       </div>
     </div>
   </div>
@@ -512,7 +513,7 @@
 
       <div class="flex justify-between items-center mb-5">
         <h3 class="font-bold text-lg flex items-center gap-2 text-indigo-900">
-          <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i> 資料調度中心
+          <i data-lucide="database" class="w-5 h-5 text-indigo-600"></i> Excel 小工具
         </h3>
         <button onclick="closeBatchModal()"
           class="text-gray-400 hover:text-red-500 transition-colors bg-gray-50 hover:bg-red-50 p-1.5 rounded-full">
@@ -522,7 +523,7 @@
 
       <div class="mb-6 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
         <h4 class="font-bold text-sm text-indigo-800 mb-1 flex items-center gap-1.5">
-          <i data-lucide="layout-template" class="w-4 h-4"></i> 1. 課程母版
+          <i data-lucide="layout-template" class="w-4 h-4"></i> 1. 固定課表
         </h4>
         <p class="text-[11px] text-indigo-600/80 mb-3 leading-relaxed">
           適用於每學期大換血、調漲學費或更換教室。系統將會對照「系統編號」安全更新，絕不影響過去的歷史點名紀錄。
@@ -530,7 +531,7 @@
         <div class="grid grid-cols-2 gap-2">
           <button onclick="exportMasterData()"
             class="flex items-center justify-center gap-1.5 py-2 bg-white border border-indigo-200 rounded-lg hover:border-indigo-400 hover:text-indigo-700 transition-all text-xs font-bold text-indigo-600 shadow-sm">
-            <i data-lucide="download" class="w-3.5 h-3.5"></i> 匯出母版
+            <i data-lucide="download" class="w-3.5 h-3.5"></i> 匯出課表
           </button>
           <button onclick="document.getElementById('import-master-input').click()"
             class="flex items-center justify-center gap-1.5 py-2 bg-indigo-600 border border-indigo-600 rounded-lg hover:bg-indigo-700 transition-all text-xs font-bold text-white shadow-sm">
@@ -546,7 +547,7 @@
           <i data-lucide="history" class="w-4 h-4"></i> 2. 歷史點名紀錄
         </h4>
         <p class="text-[11px] text-emerald-600/80 mb-3 leading-relaxed">
-          專用於補登舊資料或微調當日結算金額。僅會修改下方指定日期範圍內的狀態，完全不動到課程母版。
+          專用於補登舊資料或微調當日結算金額。僅會修改下方指定日期範圍內的狀態，完全不會影響到原本的固定課表設定。
         </p>
 
         <div class="flex gap-2 mb-3">
@@ -1119,7 +1120,7 @@
               <ul class="space-y-3 text-[11px] leading-relaxed">
                 <li class="flex gap-2">
                   <span class="text-neutral-400 font-bold">•</span>
-                  <span>修改課程母版前，建議先核對「薪資結算」分頁是否有尚未處理的金額修正，避免未來連動計算產生數據落差。</span>
+                  <span>大量修改固定課表前，建議先核對「薪資結算」分頁是否有尚未處理的金額修正，避免未來連動計算產生數據落差。</span>
                 </li>
                 <li class="flex gap-2">
                   <span class="text-neutral-400 font-bold">•</span>
@@ -1296,44 +1297,6 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div id="fixed-schedule-modal"
-    class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[1700] backdrop-blur-sm transition-opacity">
-    <div
-      class="bg-white rounded-2xl w-[95%] max-w-5xl h-[85vh] shadow-2xl flex flex-col overflow-hidden border border-gray-200">
-
-      <div class="p-4 border-b border-gray-100 bg-orange-50 flex flex-wrap justify-between items-center gap-3">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-sm">
-            <i data-lucide="calendar-days" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <h3 class="font-bold text-orange-900 m-0 text-lg" id="fixed-modal-name">老師固定課表</h3>
-            <p class="text-[10px] text-orange-600 font-medium">統覽全週固定母版</p>
-          </div>
-        </div>
-        <button onclick="closeFixedScheduleModal()"
-          class="text-gray-400 hover:text-red-500 bg-white p-1.5 rounded-full transition-colors border border-gray-100 shadow-sm">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="flex-1 overflow-auto bg-[#fbfbfa]">
-        <div id="fixed-schedule-container" class="flex min-w-max p-4 gap-2">
-        </div>
-      </div>
-
-      <div class="p-3 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
-        <span class="text-[10px] text-gray-500 font-bold">💡 這裡僅顯示「固定排程」，點擊卡片即可編輯母版。<span
-            class="text-orange-500">單次/臨時課不會顯示於此</span>。</span>
-        <button onclick="openModal()"
-          class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-colors">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增固定課
-        </button>
-      </div>
-
     </div>
   </div>
   <script src="./app.js"></script>
