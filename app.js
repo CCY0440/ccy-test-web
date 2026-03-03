@@ -2848,12 +2848,17 @@ async function loadLogs() {
     const list = document.getElementById("logs-list");
     list.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400"><i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i> 讀取中...</td></tr>`; lucide.createIcons();
 
-    const { data, error } = await _client.from('action_logs').select('*').neq('actor_name', 'Ccy').order('created_at', { ascending: false }).limit(100);
+    // 先全部抓下來
+    const { data, error } = await _client.from('action_logs').select('*').order('created_at', { ascending: false }).limit(100);
     if (error) return list.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500 font-bold">載入失敗：${error.message}</td></tr>`;
-    if (!data || data.length === 0) return list.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400">目前沒有任何操作紀錄</td></tr>`;
+
+    // ★ 終極隱形斗篷：在畫面上徹底濾掉任何 actor_name 包含 ccy 的紀錄 (不分大小寫)
+    const filteredData = (data || []).filter(log => !(log.actor_name || '').toLowerCase().includes('ccy'));
+
+    if (filteredData.length === 0) return list.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-400">目前沒有任何操作紀錄</td></tr>`;
 
     list.innerHTML = "";
-    data.forEach(log => {
+    filteredData.forEach(log => {
         const d = new Date(log.created_at); const timeStr = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         let badgeColor = "border-gray-200 text-gray-600 bg-gray-50";
         if (log.action_type.includes('新增')) badgeColor = "border-green-200 text-green-700 bg-green-50";
