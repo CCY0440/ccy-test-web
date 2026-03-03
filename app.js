@@ -1163,11 +1163,15 @@ function renderSchedule(list, records = [], startDate) {
                 clickAction = isLocked ? '' : `toggleRecordStatus('${item.id}', '${thisDayDateStr}', '${displayStatus}')`;
 
                 if (item.is_temporary) {
+                    // ★ 終極防呆：如果這堂單次課已經「被點名」，就隱藏垃圾桶，防止誤刪薪資紀錄！
+                    const deleteBtnHtml = (displayStatus === 'status-pending')
+                        ? `<button type="button" onclick="deleteCourse('${item.id}');" class="p-1 rounded-full text-red-500 hover:scale-110 transition-all cursor-pointer" title="刪除此單次課"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`
+                        : ``;
                     cardActionsHtml = `
                         <button type="button" onclick="openRemarkModal('${item.id}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-yellow-600 hover:scale-110 transition-all cursor-pointer" title="設定備註"><i data-lucide="sticky-note" class="w-4 h-4"></i></button>
                         <button type="button" onclick="openRescheduleModal('${item.id}', '${thisDayDateStr}', '${item.start_time}', '${item.end_time}'); return false;" class="p-1 rounded-full text-blue-500 hover:text-blue-700 hover:scale-110 transition-all cursor-pointer" title="一鍵調課"><i data-lucide="repeat" class="w-4 h-4"></i></button>
                         <button type="button" onclick="openEditModal('${item.id}', '${displayStatus}', '${thisDayDateStr}'); return false;" class="p-1 rounded-full text-gray-600 hover:text-gray-800 hover:scale-110 transition-all cursor-pointer" title="修改此單次課"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                        <button type="button" onclick="deleteCourse('${item.id}');" class="p-1 rounded-full text-red-500 hover:scale-110 transition-all cursor-pointer" title="刪除此單次課"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        ${deleteBtnHtml}
                     `;
                 } else {
                     cardActionsHtml = `
