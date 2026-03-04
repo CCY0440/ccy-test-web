@@ -53,7 +53,7 @@ body.is-dragging .schedule-card * {
     color: #78350f !important;
 }
 
-/* 曠課：紅色邊框 */
+/* 缺課：紅色邊框 */
 .status-absent {
     background-color: #fef2f2 !important;
     border-left: 4px solid #ef4444 !important;
