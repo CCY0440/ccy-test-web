@@ -185,7 +185,7 @@ function showSidebarDetail(itemId, dateStr) {
     let statusBadge = '';
     if (['attended', 'status-present'].includes(currentStatus)) statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-green-50 text-green-600 border border-green-100"><i data-lucide="check-circle" class="w-3 h-3 inline"></i> 已上課</span>';
     else if (['leave', 'status-leave'].includes(currentStatus)) statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-amber-50 text-amber-600 border border-amber-100"><i data-lucide="coffee" class="w-3 h-3 inline"></i> 已請假</span>';
-    else if (['absent', 'status-absent'].includes(currentStatus)) statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-red-50 text-red-600 border border-red-100"><i data-lucide="x-circle" class="w-3 h-3 inline"></i> 曠課</span>';
+    else if (['absent', 'status-absent'].includes(currentStatus)) statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-red-50 text-red-600 border border-red-100"><i data-lucide="x-circle" class="w-3 h-3 inline"></i> 缺課</span>';
     else if (currentStatus === 'status-practice') statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-blue-50 text-blue-600 border border-blue-100"><i data-lucide="music" class="w-3 h-3 inline"></i> 練習</span>';
     else statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-gray-50 text-gray-500 border border-gray-200">尚未點名</span>';
 
@@ -196,13 +196,13 @@ function showSidebarDetail(itemId, dateStr) {
     } else {
         let nextText = '點名上課', nextColor = 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100', nextIcon = 'check-circle';
         if (['attended', 'status-present'].includes(currentStatus)) { nextText = '改為請假'; nextColor = 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'; nextIcon = 'coffee'; }
-        else if (['leave', 'status-leave'].includes(currentStatus)) { nextText = '改為曠課'; nextColor = 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'; nextIcon = 'x-circle'; }
+        else if (['leave', 'status-leave'].includes(currentStatus)) { nextText = '改為缺課'; nextColor = 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'; nextIcon = 'x-circle'; }
         else if (['absent', 'status-absent'].includes(currentStatus)) { nextText = '改為練習'; nextColor = 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100'; nextIcon = 'music'; }
         else if (currentStatus === 'status-practice') { nextText = '取消點名'; nextColor = 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'; nextIcon = 'rotate-ccw'; }
 
         // 找到 showSidebarDetail 裡面的這段，加上嚴格比對 (===)
         let specificActionBtn = ''; let editBtnHtml = '';
-        const isTemp = (item.is_temporary === true || item.is_temporary === 'true');
+        const isTemp = String(item.is_temporary).toLowerCase() === 'true';
         if (isTemp) {
             specificActionBtn = `<button onclick="deleteCourse('${item.id}'); document.getElementById('class-detail-panel').classList.add('-translate-x-full'); setTimeout(() => document.getElementById('class-detail-panel').classList.add('hidden'), 300);" class="py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl font-bold shadow-sm hover:bg-red-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="trash-2" class="w-4 h-4"></i> 刪除此課</button>`;
             editBtnHtml = `<button onclick="openEditModal('${item.id}', '${currentStatus}', '${dateStr}')" class="py-2.5 col-span-2 bg-gray-50 text-gray-700 border border-gray-300 rounded-xl font-bold shadow-sm hover:bg-gray-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="pencil" class="w-4 h-4"></i> 修改此單次課程資料</button>`;
@@ -866,7 +866,7 @@ async function exportMasterData() {
         const reverseStatusMap = {
             'status-present': '上課',
             'status-leave': '請假',
-            'status-absent': '曠課',
+            'status-absent': '缺課',
             'status-pending': '尚未點名',
             'status-practice': '學生練習'
         };
@@ -962,7 +962,7 @@ async function exportHistoryData() {
                 let sText = '尚未點名';
                 if (['attended', 'status-present'].includes(status)) sText = '上課';
                 else if (['leave', 'status-leave'].includes(status)) sText = '請假';
-                else if (['absent', 'status-absent'].includes(status)) sText = '曠課';
+                else if (['absent', 'status-absent'].includes(status)) sText = '缺課';
                 else if (['status-practice'].includes(status)) sText = '學生練習';
 
                 // ★ 在匯出的資料中插入「星期」欄位
@@ -1010,7 +1010,7 @@ async function handleImportDaily(input) {
         try {
             const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
             const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { raw: false });
-            const statusMap = { '上課': 'status-present', '請假': 'status-leave', '曠課': 'status-absent', '尚未點名': 'status-pending', '學生練習': 'status-practice' };
+            const statusMap = { '上課': 'status-present', '請假': 'status-leave', '缺課': 'status-absent', '尚未點名': 'status-pending', '學生練習': 'status-practice' };
             const updates = [];
 
             for (const row of jsonRows) {
@@ -1096,7 +1096,7 @@ async function refreshData() {
 
         // ★ 資料淨化器：強制把字串的 "false" 轉成真正的布林值 false
         _cachedSchedule = (sData || []).map(s => {
-            s.is_temporary = (s.is_temporary === true || s.is_temporary === 'true');
+            s.is_temporary = String(s.is_temporary).toLowerCase() === 'true';
             return s;
         });
         _cachedRecords = rData || [];
@@ -1495,7 +1495,7 @@ function updateStatsUI() {
     }
 
     if (statsTag) {
-        statsTag.textContent = `總堂數：${total} | 已點名+曠課：${presentOrAbsentCount} | 請假：${leaveCount}`;
+        statsTag.textContent = `總堂數：${total} | 已點名+缺課：${presentOrAbsentCount} | 請假：${leaveCount}`;
         statsTag.className = "text-[10px] md:text-xs px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-bold mt-0.5 -ml-2 border border-blue-100";
     }
 }
@@ -1655,7 +1655,7 @@ async function toggleRecordStatus(scheduleId, dateStr, currentStatus) {
             }
 
             // 紀錄日誌
-            const statusZhMap = { 'status-present': '上課', 'status-leave': '請假', 'status-absent': '曠課', 'status-pending': '尚未點名', 'status-practice': '練習' };
+            const statusZhMap = { 'status-present': '上課', 'status-leave': '請假', 'status-absent': '缺課', 'status-pending': '尚未點名', 'status-practice': '練習' };
             await recordLog('修改點名', `將 [${masterItem.course_name}] 在 ${dateStr} 的狀態改為 [${statusZhMap[nextStatus] || nextStatus}]`, 'lesson_records',
                 { schedule_id: scheduleId, actual_date: dateStr, status: currentStatus },
                 { schedule_id: scheduleId, actual_date: dateStr, status: nextStatus }
@@ -2064,14 +2064,23 @@ async function executeAddClass() {
 async function autoSyncNewStudent(courseName, phone) {
     if (!courseName) return;
     const cleanName = courseName.replace(/\(.*?\)|（.*?）/g, '').trim();
+    const cleanPhone = phone ? phone.trim() : "";
+
     try {
-        const { data: existingStudent, error: searchErr } = await _client
-            .from("students").select("id").eq("name", cleanName).maybeSingle();
+        // 使用姓名與電話進行「雙重比對」
+        let query = _client.from("students").select("id").eq("name", cleanName);
+
+        // 如果有輸入電話，才加入電話作為篩選條件，避免無電話的新生被誤判
+        if (cleanPhone) {
+            query = query.eq("phone", cleanPhone);
+        }
+
+        const { data: existingStudent, error: searchErr } = await query.maybeSingle();
         if (searchErr) throw searchErr;
 
         if (!existingStudent) {
             const { error: insertErr } = await _client
-                .from("students").insert([{ name: cleanName, phone: phone || "" }]);
+                .from("students").insert([{ name: cleanName, phone: cleanPhone }]);
             if (insertErr) throw insertErr;
             console.log(`🎉 幕後魔法觸發：已自動將新生 [${cleanName}] 加入通訊錄！`);
         }
@@ -2400,7 +2409,7 @@ function openEditModal(id, status, dateStr) {
     if (tempCheckbox) {
         // 【原本是 tempCheckbox.checked = item.is_temporary || false; 】
         // ★ 請替換為以下這行：
-        tempCheckbox.checked = (item.is_temporary === true || item.is_temporary === 'true');
+        tempCheckbox.checked = String(item.is_temporary).toLowerCase() === 'true';
 
         if (dateWrapper) dateWrapper.classList.toggle('hidden', !tempCheckbox.checked);
         if (dateInput) dateInput.value = item.target_date || dateStr || formatDate(new Date());
@@ -2598,7 +2607,7 @@ function renderSalaryTable() {
         let statusText = '', statusColor = ''; const s = item.status;
         if (['attended', 'status-present'].includes(s)) { statusText = '✅ 上課'; statusColor = 'text-green-600 bg-green-50'; }
         else if (['leave', 'status-leave'].includes(s)) { statusText = '☕ 請假'; statusColor = 'text-amber-600 bg-amber-50'; }
-        else if (['absent', 'status-absent'].includes(s)) { statusText = '❌ 曠課'; statusColor = 'text-red-600 bg-red-50'; }
+        else if (['absent', 'status-absent'].includes(s)) { statusText = '❌ 缺課'; statusColor = 'text-red-600 bg-red-50'; }
         else if (['status-practice'].includes(s)) { statusText = '🎹 練習'; statusColor = 'text-blue-600 bg-blue-50'; }
         else { statusText = '狀態異常'; statusColor = 'text-gray-400'; }
 
@@ -2884,7 +2893,7 @@ async function calculateStats() {
     ['present', 'leave', 'absent'].forEach(id => document.getElementById(`label-${id}`).textContent = Math.round((c[id] / total) * 100) + "%");
     if (document.getElementById("label-pending")) document.getElementById("label-pending").parentElement.classList.add("hidden");
 
-    document.getElementById("stat-details").innerHTML = `<div class="flex justify-between p-2 bg-green-50 rounded border border-green-100"><span class="text-green-800 font-bold">✅ 正常上課</span><span class="font-mono font-bold">${c.present}</span></div><div class="flex justify-between p-2 bg-amber-50 rounded border border-amber-100"><span class="text-amber-800 font-bold">☕ 請假</span><span class="font-mono font-bold">${c.leave}</span></div><div class="flex justify-between p-2 bg-red-50 rounded border border-red-100"><span class="text-red-800 font-bold">❌ 曠課</span><span class="font-mono font-bold">${c.absent}</span></div>`;
+    document.getElementById("stat-details").innerHTML = `<div class="flex justify-between p-2 bg-green-50 rounded border border-green-100"><span class="text-green-800 font-bold">✅ 正常上課</span><span class="font-mono font-bold">${c.present}</span></div><div class="flex justify-between p-2 bg-amber-50 rounded border border-amber-100"><span class="text-amber-800 font-bold">☕ 請假</span><span class="font-mono font-bold">${c.leave}</span></div><div class="flex justify-between p-2 bg-red-50 rounded border border-red-100"><span class="text-red-800 font-bold">❌ 缺課</span><span class="font-mono font-bold">${c.absent}</span></div>`;
     setStatus(`分析完成：共 ${total} 堂有效紀錄`, "success");
 }
 
@@ -3409,7 +3418,7 @@ async function executeMasterCopyImport(input) {
             const workbook = XLSX.read(data, { type: 'array' });
             const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
 
-            const statusMap = { '上課': 'status-present', '請假': 'status-leave', '曠課': 'status-absent', '尚未點名': 'status-pending', '學生練習': 'status-practice' };
+            const statusMap = { '上課': 'status-present', '請假': 'status-leave', '缺課': 'status-absent', '尚未點名': 'status-pending', '學生練習': 'status-practice' };
             const upsertData = [];
 
             const findVal = (row, keyword) => {
