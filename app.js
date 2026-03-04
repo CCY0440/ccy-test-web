@@ -189,9 +189,18 @@ function showSidebarDetail(itemId, dateStr) {
     else if (currentStatus === 'status-practice') statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-blue-50 text-blue-600 border border-blue-100"><i data-lucide="music" class="w-3 h-3 inline"></i> 練習</span>';
     else statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-gray-50 text-gray-500 border border-gray-200">尚未點名</span>';
 
-    // 4. 按鈕佈局 (不變)
+    // 4. 按鈕佈局
     let actionButtonsHtml = '';
-    if (isLocked) {
+
+    // 🟠 新增防護：如果現在是橘色母版模式，側邊欄只顯示「編輯」與「徹底刪除」！
+    if (window.isFixedViewMode) {
+        actionButtonsHtml = `
+            <button onclick="openEditModal('${item.id}', 'status-pending', '${formatDate(new Date())}')" class="py-2.5 col-span-1 bg-white text-orange-600 border border-orange-200 rounded-xl font-bold shadow-sm hover:bg-orange-50 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="pencil" class="w-4 h-4"></i> 編輯</button>
+            <button onclick="deleteCourse('${item.id}'); document.getElementById('class-detail-panel').classList.add('-translate-x-full'); setTimeout(() => document.getElementById('class-detail-panel').classList.add('hidden'), 300);" class="py-2.5 col-span-1 bg-red-50 text-red-600 border border-red-200 rounded-xl font-bold shadow-sm hover:bg-red-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="trash-2" class="w-4 h-4"></i> 刪除</button>
+        `;
+    }
+    // 🔵 以下維持藍色模式原本的邏輯
+    else if (isLocked) {
         actionButtonsHtml = `<div class="col-span-2 text-center text-[11px] text-gray-400 font-bold py-2.5 bg-gray-50 rounded-xl border border-gray-200"><i data-lucide="lock" class="w-3.5 h-3.5 inline mb-0.5"></i> 歷史紀錄已鎖定，無法修改</div>`;
     } else {
         let nextText = '點名上課', nextColor = 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100', nextIcon = 'check-circle';
@@ -200,14 +209,13 @@ function showSidebarDetail(itemId, dateStr) {
         else if (['absent', 'status-absent'].includes(currentStatus)) { nextText = '改為練習'; nextColor = 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100'; nextIcon = 'music'; }
         else if (currentStatus === 'status-practice') { nextText = '取消點名'; nextColor = 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'; nextIcon = 'rotate-ccw'; }
 
-        // 找到 showSidebarDetail 裡面的這段，加上嚴格比對 (===)
         let specificActionBtn = ''; let editBtnHtml = '';
         const isTemp = String(item.is_temporary).toLowerCase() === 'true';
         if (isTemp) {
             specificActionBtn = `<button onclick="deleteCourse('${item.id}'); document.getElementById('class-detail-panel').classList.add('-translate-x-full'); setTimeout(() => document.getElementById('class-detail-panel').classList.add('hidden'), 300);" class="py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl font-bold shadow-sm hover:bg-red-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="trash-2" class="w-4 h-4"></i> 刪除此課</button>`;
             editBtnHtml = `<button onclick="openEditModal('${item.id}', '${currentStatus}', '${dateStr}')" class="py-2.5 col-span-2 bg-gray-50 text-gray-700 border border-gray-300 rounded-xl font-bold shadow-sm hover:bg-gray-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="pencil" class="w-4 h-4"></i> 修改此單次課程資料</button>`;
         } else {
-            specificActionBtn = `<button onclick="openAddClassModal('${item.id}', '${dateStr}', '${item.start_time}', '${item.end_time}')" class="py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl font-bold shadow-sm hover:bg-emerald-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="plus-circle" class="w-4 h-4"></i> 一鍵加課</button>`;
+            specificActionBtn = `<button onclick="openAddClassModal('${item.id}', '${dateStr}', '${item.start_time}', '${item.end_time}')" class="py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-xl font-bold shadow-sm hover:bg-emerald-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="plus-circle" class="w-4 h-4"></i> 加課</button>`;
             editBtnHtml = `<button onclick="openEditInstanceModal('${item.id}', '${dateStr}')" class="py-2.5 col-span-2 bg-white text-gray-700 border border-gray-200 rounded-xl font-bold shadow-sm hover:bg-gray-50 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="file-edit" class="w-4 h-4"></i> 修改本週此堂課</button>`;
         }
 
@@ -851,7 +859,7 @@ function closeBatchModal() {
 async function exportMasterData() {
     if (!currentTid) return sysAlert("請先選擇老師", "操作提示");
 
-    setStatus("正在準備母版資料...");
+    setStatus("正在準備固定課表資料...");
     try {
         const { data, error } = await _client.from("schedules").select("*").eq("teacher_id", currentTid);
         if (error) throw error;
@@ -1686,12 +1694,34 @@ async function toggleRecordStatus(scheduleId, dateStr, currentStatus) {
     }, 500); // 500 代表 0.5 秒 (停下來的 0.5 秒後更新資料庫)
 }
 
-/** 刪除課程 */
+/** 刪除課程 (包含解除隱藏母版的智慧邏輯) */
 async function deleteCourse(id) {
     if (!(await sysConfirm("確定要刪除這堂課嗎？<br><span class='text-xs text-red-500'>*此操作將會記錄在系統日誌中</span>", "刪除確認", "danger"))) return;
+
     const oldData = _cachedSchedule.find(s => s.id === id);
+
+    // ★ 智慧連動魔法：如果刪除的是「單次課」，自動尋找這天有沒有被隱藏的「同名母版」，並解除封印！
+    if (oldData && String(oldData.is_temporary).toLowerCase() === 'true' && oldData.target_date) {
+        // 找出這天被隱藏的同名母版點名紀錄
+        const hiddenRecord = _cachedRecords.find(r => {
+            if (r.status !== 'status-hidden' || r.actual_date !== oldData.target_date) return false;
+            const masterCard = _cachedSchedule.find(ms => ms.id === r.schedule_id);
+            return masterCard && masterCard.course_name === oldData.course_name;
+        });
+
+        if (hiddenRecord) {
+            // 把那個隱藏紀錄刪掉，母版的遮罩就會解除，重新出現在畫面上！
+            console.log("🔍 發現關聯的隱藏固定課表，正在執行解除封印...");
+            await _client.from('lesson_records').delete().eq('id', hiddenRecord.id);
+        }
+    }
+
+    // 執行原本的刪除動作
     const { error } = await _client.from("schedules").delete().eq("id", id);
-    if (!error && oldData) await recordLog('刪除課程', `刪除了 [${oldData.course_name}] 的課程`, 'schedules', oldData, null);
+    if (!error && oldData) {
+        await recordLog('刪除課程', `刪除了 [${oldData.course_name}] 的課程`, 'schedules', oldData, null);
+    }
+
     await refreshData();
 }
 
