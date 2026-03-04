@@ -279,7 +279,7 @@
                 <option value="status-pending" selected>⬜ 尚未點名</option>
                 <option value="status-present">✅ 上課</option>
                 <option value="status-leave">☕ 請假</option>
-                <option value="status-absent">❌ 曠課</option>
+                <option value="status-absent">❌ 缺課</option>
                 <option value="status-practice">🎹 學生練習</option>
               </select>
             </div>
@@ -430,7 +430,7 @@
               <div class="flex flex-wrap gap-1.5 text-xs font-bold mt-1.5">
                 <span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded">✅ 上課</span>
                 <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">☕ 請假</span>
-                <span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded">❌ 曠課</span>
+                <span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded">❌ 缺課</span>
                 <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">🎹 練習</span>
               </div>
             </div>
@@ -448,7 +448,7 @@
               class="w-4 h-4 text-emerald-500"></i> 實用小芝士🧀</p>
           <ul class="space-y-1.5 text-xs leading-relaxed text-emerald-900/80">
             <li>• <b>Excel 工具：</b>若需要大量修改資訊，使用頂部的「Excel 小工具」可根據 固定課表/歷史點名紀錄 下載後批次修改最快。</li>
-            <li>• <b>鎖定機制：</b>「兩個月前」的歷史紀錄會自動上鎖 (反灰)，防止誤觸影響到過去的薪資結算。(每個月的1號會自動鎖定2個月前的資料)</li>
+            <li>• <b>鎖定機制：</b>「兩個月前」的歷史紀錄會自動上鎖 (反灰)，防止誤觸影響到過去的薪資結算(每個月的1號會自動鎖定2個月前的資料)，若有需要修改的需求可聯繫後台管理員。</li>
             <li>• <b>尋求支援：</b>如果不小心刪錯課或點錯名，或是日期已超過兩個月需要更改的話，可通知管理員協助修改或復原。</li>
           </ul>
         </section>
@@ -589,7 +589,7 @@
           <div
             class="flex-1 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 text-white shadow-lg relative overflow-hidden">
             <div class="absolute -right-4 -bottom-4 opacity-20"><i data-lucide="coins" class="w-24 h-24"></i></div>
-            <p class="text-emerald-100 text-xs font-bold mb-1">總薪資 (上課+曠課)</p>
+            <p class="text-emerald-100 text-xs font-bold mb-1">總薪資 (上課+缺課)</p>
             <p class="text-3xl font-bold tracking-tight" id="total-salary">$0</p>
           </div>
           <div class="flex-1 bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-center">
@@ -870,7 +870,7 @@
                     id="label-present">0%</span></div>
                 <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-400"></span> 請假 <span
                     id="label-leave">0%</span></div>
-                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500"></span> 曠課 <span
+                <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500"></span> 缺課 <span
                     id="label-absent">0%</span></div>
                 <div class="flex items-center gap-1.5">
                   <span class="w-3 h-3 rounded-full bg-gray-300"></span> 尚未點名 <span id="label-pending">0%</span>
