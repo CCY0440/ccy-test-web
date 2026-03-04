@@ -214,3 +214,237 @@ body.is-pinching * {
         font-size: 14px !important;
     }
 }
+
+/* ==========================================================================
+ * ★ Flatpickr 日曆外掛 - 幕尼克變色龍主題 (清透馬卡龍版)
+ * ========================================================================== */
+/* 1. 宣告各情境的色彩變數 (預設：清透天空藍) */
+.flatpickr-calendar {
+    --fp-bg: #ffffff; 
+    --fp-border: #f1f5f9; /* 極淡的乾淨邊框 */
+    --fp-header-bg: #89b4f8; /* 清透天空藍 */
+    --fp-header-text: #ffffff;
+    --fp-day-text: #374151; /* 乾淨清晰的深灰色 */
+    --fp-day-hover: #eff6ff; 
+    --fp-today-border: #93c5fd; 
+    --fp-selected-bg: #89b4f8;
+    
+    background: var(--fp-bg) !important;
+    border: 1px solid var(--fp-border) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08) !important; 
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+
+/* 🟢 綠色主題：清新薄荷綠 (薪資結算、一鍵加課) */
+.flatpickr-calendar.theme-emerald {
+    --fp-header-bg: #81c995; 
+    --fp-day-hover: #f0fdf4; 
+    --fp-today-border: #86efac; 
+    --fp-selected-bg: #81c995;
+}
+
+/* 🟡 黃色主題：溫暖蜂蜜黃 (設定備註) */
+.flatpickr-calendar.theme-yellow {
+    --fp-header-bg: #f4b33d; 
+    --fp-day-hover: #fefce8; 
+    --fp-today-border: #fde047; 
+    --fp-selected-bg: #f4b33d;
+}
+
+/* 🟠 橘色主題：甜美蜜桃橘 (固定母版排課) */
+.flatpickr-calendar.theme-orange {
+    --fp-header-bg: #fc9d7d; 
+    --fp-day-hover: #fff7ed; 
+    --fp-today-border: #fdba74; 
+    --fp-selected-bg: #fc9d7d;
+}
+
+/* 🔘 灰色主題：專業石板灰 (薪資與統計報表) */
+.flatpickr-calendar.theme-slate {
+    --fp-header-bg: #64748b; /* 沉穩乾淨的深灰色 */
+    --fp-day-hover: #f1f5f9; 
+    --fp-today-border: #94a3b8; 
+    --fp-selected-bg: #64748b;
+}
+
+/* 2. 將變數套用到日曆的各個元件 */
+.flatpickr-months { background: var(--fp-header-bg) !important; padding: 10px 0 8px 0 !important; }
+.flatpickr-months .flatpickr-month, .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { color: var(--fp-header-text) !important; fill: var(--fp-header-text) !important; }
+.flatpickr-months .flatpickr-prev-month:hover, .flatpickr-months .flatpickr-next-month:hover { opacity: 0.8; }
+.flatpickr-current-month .flatpickr-monthDropdown-months { background: transparent !important; font-weight: bold !important; }
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover { background: rgba(0,0,0,0.1) !important; border-radius: 4px; }
+
+.flatpickr-weekdays { background: var(--fp-bg) !important; padding: 4px 0 !important; }
+span.flatpickr-weekday { color: var(--fp-header-bg) !important; font-weight: 800 !important; }
+
+.flatpickr-day { color: var(--fp-day-text) !important; font-weight: 500; }
+.flatpickr-day:hover { background: var(--fp-day-hover) !important; border-color: var(--fp-day-hover) !important; color: var(--fp-header-bg) !important; }
+
+.flatpickr-day.today { border-color: var(--fp-today-border) !important; font-weight: 800; }
+.flatpickr-day.today:hover { background: var(--fp-day-hover) !important; border-color: var(--fp-today-border) !important; }
+
+.flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--fp-selected-bg) !important; border-color: var(--fp-selected-bg) !important; color: #ffffff !important; font-weight: bold; }
+
+/* 3. 時間選擇器也連動變色 */
+.flatpickr-time { border-top: 1px solid var(--fp-border) !important; background: var(--fp-bg) !important; }
+.flatpickr-time input, .flatpickr-time .flatpickr-time-separator { color: var(--fp-header-bg) !important; font-weight: bold; }
+.flatpickr-time input:hover, .flatpickr-time input:focus { background: var(--fp-day-hover) !important; }
+.flatpickr-time .numInputWrapper span.arrowUp, .flatpickr-time .numInputWrapper span.arrowDown { display: none !important; }
+.flatpickr-time .numInputWrapper input { cursor: ns-resize !important; }
+
+/* 卡片點擊時的微幅縮放回饋，提升操作質感 */
+.schedule-card {
+    transition: transform 0.1s ease, background-color 0.2s ease;
+}
+.schedule-card:active {
+    transform: scale(0.98);
+}
+
+/* ==========================================================================
+ * ★ UI 優化：日曆非本月日期淡化
+ * ========================================================================== */
+.flatpickr-day.prevMonthDay, 
+.flatpickr-day.nextMonthDay {
+    color: #94a3b8 !important; /* 柔和的灰色 */
+    opacity: 0.35 !important;
+}
+.flatpickr-day.prevMonthDay:hover, 
+.flatpickr-day.nextMonthDay:hover {
+    opacity: 0.8 !important;
+}
+
+/* ==========================================================================
+ * ★ 插件美化：Tom Select 終極完美無縫融合版 (徹底拔除預設邊框與折行)
+ * ========================================================================== */
+/* 1. 確保外掛容器滿寬且無多餘間距 */
+.ts-wrapper {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* 2. 主控制框：完全對齊系統原本的輸入框尺寸與質感 */
+.ts-control {
+    border-radius: 0.75rem !important; /* 對齊原本的 rounded-xl */
+    border: 1px solid #e5e7eb !important;
+    padding: 0.5rem 0.75rem !important; /* 精準對齊文字輸入框的 Padding */
+    font-size: 0.875rem !important;
+    background-color: #f9fafb !important;
+    min-height: 42px !important; /* 強制與旁邊的文字輸入框等高 */
+    display: flex !important;
+    align-items: center !important;
+    box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05) !important;
+    flex-wrap: nowrap !important; /* ★ 致命修復：絕對禁止折行，修復尚未點名破版 */
+}
+
+.ts-control.focus {
+    background-color: #ffffff !important;
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.5) !important;
+}
+
+/* 3. 核心修復：徹底消滅裡面那個礙眼的「內圈標籤」 */
+.ts-wrapper.single .ts-control .item,
+div.ts-control > div.item {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    color: #374151 !important;
+    border-radius: 0 !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important; /* ★ 強制文字不准斷行 */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important; /* 字真的太長就顯示 ... */
+    flex: 1 1 auto !important;
+    line-height: 1.25rem !important;
+}
+
+/* 4. 輸入游標區塊瘦身，確保不會撐開版面 */
+.ts-control > input {
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 0.875rem !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    flex: 1 1 auto !important;
+}
+
+/* 5. 右側下拉小箭頭的精準定位 */
+.ts-wrapper.single .ts-control::after {
+    border-color: #9ca3af transparent transparent transparent !important;
+    border-width: 5px 4px 0 4px !important;
+    right: 12px !important;
+    margin-top: -2.5px !important;
+}
+
+/* 6. 下拉選單列表外觀 (升級為 Mac/iOS 的懸浮風格) */
+.ts-dropdown {
+    border-radius: 0.75rem !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+    margin-top: 6px !important;
+    font-size: 0.875rem !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+    padding: 6px !important; /* 給內部選項一點呼吸空間 */
+}
+
+/* 7. 下拉選單裡的每個選項 (圓角化) */
+.ts-dropdown .option {
+    padding: 8px 12px !important;
+    border-radius: 8px !important; /* 讓選項本身也變成精美的圓角色塊 */
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+    margin-bottom: 2px !important;
+}
+.ts-dropdown .option:last-child {
+    margin-bottom: 0 !important;
+}
+
+.ts-dropdown .option.active, 
+.ts-dropdown .option:hover {
+    background-color: #eff6ff !important;
+    color: #1d4ed8 !important;
+    font-weight: 700 !important;
+}
+
+/* 8. 針對統計報表區的特例 (因為報表區的輸入框比較扁) */
+#stat-teacher ~ .ts-wrapper .ts-control {
+    min-height: 34px !important; 
+    padding: 0.25rem 0.6rem !important;
+    border-radius: 0.5rem !important;
+}
+#stat-teacher ~ .ts-wrapper .ts-control::after {
+    right: 8px !important;
+}
+
+/* ==========================================================================
+ * ★ 層級修復：防止下拉選單被下方區塊 (如單次日期、圖表) 遮擋
+ * ========================================================================== */
+
+/* 1. 提升新增/修改課程表單中的「老師與時間列」層級 */
+#course-form > div.p-6 > div:nth-child(2) {
+    position: relative;
+    z-index: 50;
+}
+
+/* 2. 提升「預設狀態列」層級 */
+#course-form > div.p-6 > div:nth-child(3) {
+    position: relative;
+    z-index: 40;
+}
+
+/* 3. 提升統計報表中的「過濾選單列」層級 (防止被圓餅圖蓋住) */
+#tab-content-stats > div:first-child {
+    position: relative;
+    z-index: 50;
+}
+
+/* 4. 確保外掛選單本身擁有絕對的高層級 */
+.ts-dropdown {
+    z-index: 9999 !important;
+}
