@@ -112,7 +112,7 @@ function setStatus(msg, type = "warn") {
     let colorClass = "bg-yellow-100 text-yellow-800";
     if (type === "error") colorClass = "bg-red-100 text-red-800";
     if (type === "success") colorClass = "bg-green-100 text-green-800";
-    el.className = `text-[10px] md:text-xs px-2.5 py-1 rounded-md font-medium mt-0.5 -ml-2 ${colorClass}`;
+    el.className = `text-[10px] md:text-xs px-2.5 py-1.5 rounded-lg font-medium mt-1 inline-block max-w-full whitespace-normal leading-relaxed break-words shadow-sm ${colorClass}`;
 }
 
 function togglePendingView() {
@@ -152,7 +152,6 @@ function showSidebarDetail(itemId, dateStr) {
         // ★ 加上 -translate-x-full 讓它預設躲在左邊螢幕外，並設定 300ms 的過渡動畫
         panel.className = 'absolute inset-0 bg-white z-50 flex flex-col shadow-xl transition-transform duration-300 -translate-x-full hidden';
         if (sidebar) {
-            sidebar.style.position = 'relative';
             sidebar.style.overflowX = 'hidden'; // 防止滑動過程產生橫向捲軸
             sidebar.appendChild(panel);
         }
@@ -231,9 +230,9 @@ function showSidebarDetail(itemId, dateStr) {
     // 5. 繪製精美面板 UI (修改了「返回按鈕」的 onclick，加入收回動畫)
     panel.innerHTML = `
         <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 shrink-0">
-            <button onclick="const p = document.getElementById('class-detail-panel'); p.classList.add('-translate-x-full'); p.dataset.currentId = ''; setTimeout(() => { if(p.dataset.currentId === '') p.classList.add('hidden'); }, 300);" class="flex items-center gap-1 text-gray-500 hover:text-gray-800 font-bold text-sm transition-colors">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回
-            </button>
+                <button onclick="const p = document.getElementById('class-detail-panel'); p.classList.add('-translate-x-full'); p.dataset.currentId = ''; setTimeout(() => { if(p.dataset.currentId === '') p.classList.add('hidden'); }, 300); if(window.innerWidth < 640) toggleSidebar();" class="flex items-center gap-1 text-gray-500 hover:text-gray-800 font-bold text-sm transition-colors">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回
+                </button>
             ${statusBadge}
         </div>
         
@@ -277,8 +276,18 @@ function showSidebarDetail(itemId, dateStr) {
     // ★ 6. 核心魔法：如果是剛打開，執行平滑滑入動畫
     if (!isPanelOpen) {
         panel.classList.remove('hidden');
-        void panel.offsetWidth; // 強制瀏覽器重繪 (Reflow)，這樣 CSS 動畫才會生效
-        panel.classList.remove('-translate-x-full'); // 移除向左偏移，面板就會平滑滑進來！
+        void panel.offsetWidth;
+        panel.classList.remove('-translate-x-full');
+    }
+
+    // ✨ 新增防護：如果是手機/平板版，強制把整個側邊欄也推出來！
+    if (window.innerWidth < 1024) {
+        const side = document.getElementById('sidebar');
+        const over = document.getElementById('sidebar-overlay');
+        if (side && over) {
+            side.classList.remove('-translate-x-full');
+            over.classList.remove('hidden');
+        }
     }
 
     if (window.lucide) lucide.createIcons();
@@ -793,7 +802,7 @@ async function switchTeacher(tid, name) {
     if (memoInput) memoInput.value = (targetTeacher && targetTeacher.memo) ? targetTeacher.memo : "";
     _userSortOrder = (targetTeacher && targetTeacher.card_order) ? targetTeacher.card_order.split(',') : [];
 
-    if (window.innerWidth < 768) toggleSidebar();
+    if (window.innerWidth < 1024) toggleSidebar();
     await refreshData();
 }
 
@@ -836,6 +845,14 @@ function toggleSidebar() {
     } else {
         sidebar.classList.add('-translate-x-full');
         overlay.classList.add('hidden');
+
+        // ✨ 新增：收起側邊欄時，順便把「課程詳細面板」也徹底關閉隱藏
+        const p = document.getElementById('class-detail-panel');
+        if (p && !p.classList.contains('hidden')) {
+            p.classList.add('-translate-x-full');
+            p.dataset.currentId = '';
+            setTimeout(() => p.classList.add('hidden'), 300);
+        }
     }
 }
 
@@ -1466,7 +1483,7 @@ function updateStatsUI() {
     if (window.isFixedViewMode) {
         if (statsTag) {
             statsTag.textContent = "⚙️ 固定課表模式 (僅顯示每週排程，不含單次課與點名)";
-            statsTag.className = "text-[10px] md:text-xs px-2.5 py-1 rounded-md bg-orange-100 text-orange-800 font-bold mt-0.5 -ml-2 border border-orange-200";
+            statsTag.className = "text-[10px] md:text-xs px-2.5 py-1.5 rounded-lg bg-orange-50 text-orange-700 font-bold mt-1 border border-orange-200 inline-block max-w-full whitespace-normal leading-relaxed break-words shadow-sm";
         }
         return;
     }
@@ -1504,7 +1521,7 @@ function updateStatsUI() {
 
     if (statsTag) {
         statsTag.textContent = `總堂數：${total} | 已點名+缺課：${presentOrAbsentCount} | 請假：${leaveCount}`;
-        statsTag.className = "text-[10px] md:text-xs px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-bold mt-0.5 -ml-2 border border-blue-100";
+        statsTag.className = "text-[10px] md:text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold mt-1 border border-blue-200 inline-block max-w-full whitespace-normal leading-relaxed break-words shadow-sm";
     }
 }
 
@@ -2521,7 +2538,7 @@ async function saveQuickRemark(forceClear = false) {
     }
 }
 
-function openInstructionsModal() { if (window.innerWidth < 768) toggleSidebar(); document.getElementById("instructions-modal").classList.remove("hidden"); }
+function openInstructionsModal() { if (window.innerWidth < 640) toggleSidebar(); document.getElementById("instructions-modal").classList.remove("hidden"); }
 function closeInstructionsModal() { document.getElementById("instructions-modal").classList.add("hidden"); }
 
 function openPasswordModal() { document.getElementById("password-modal").classList.remove("hidden"); }
@@ -2673,11 +2690,26 @@ function openAdminModal() {
 function closeAdminModal() { document.getElementById("admin-modal").classList.add("hidden"); }
 
 function switchAdminTab(tabName) {
-    document.querySelectorAll('.admin-tab').forEach(b => { b.classList.remove('text-white', 'border-white', 'bg-neutral-700'); b.classList.add('text-gray-300', 'border-transparent'); });
-    document.getElementById(`tab-btn-${tabName}`).classList.add('text-white', 'border-white', 'bg-neutral-700'); document.getElementById(`tab-btn-${tabName}`).classList.remove('text-gray-300', 'border-transparent');
-    document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
-    document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+    // 1. 切換上方按鈕的視覺狀態
+    document.querySelectorAll('.admin-tab').forEach(b => {
+        b.classList.remove('text-white', 'border-white', 'bg-neutral-700');
+        b.classList.add('text-gray-300', 'border-transparent');
+    });
+    document.getElementById(`tab-btn-${tabName}`).classList.add('text-white', 'border-white', 'bg-neutral-700');
+    document.getElementById(`tab-btn-${tabName}`).classList.remove('text-gray-300', 'border-transparent');
 
+    // ★ 2. 核心修復：強制使用 inline style 徹底隱藏，破解 Tailwind 的 sm:flex 優先級
+    document.querySelectorAll('.admin-tab-content').forEach(c => {
+        c.classList.add('hidden');
+        c.style.display = 'none'; // 加上這行，強制隱形！
+    });
+
+    // 3. 將目標分頁解除封印
+    const activeTab = document.getElementById(`tab-content-${tabName}`);
+    activeTab.classList.remove('hidden');
+    activeTab.style.display = ''; // 加上這行，清空 inline style，讓 Tailwind 接管排版
+
+    // 4. 載入對應分頁的資料
     if (tabName === 'directory') loadDirectoryData();
     if (tabName === 'teachers') renderTeacherManageList();
     if (tabName === 'logs') loadLogs();
@@ -2798,10 +2830,10 @@ function renderDirectory() {
     if (countDisplay) {
         if (keyword) {
             countDisplay.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="filter" class="w-4 h-4"></i> 符合：${directoryList.length} 人</div>`;
-            countDisplay.className = "shrink-0 text-sm font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-xl border border-amber-200 transition-colors shadow-sm";
+            countDisplay.className = "shrink-0 text-[13px] sm:text-sm font-bold text-amber-600 bg-amber-50 px-3 py-2 sm:py-2.5 rounded-xl border border-amber-200 transition-colors shadow-sm flex items-center justify-center whitespace-nowrap min-w-fit";
         } else {
             countDisplay.innerHTML = `<div class="flex items-center gap-1.5"><i data-lucide="users" class="w-4 h-4"></i> 總共：${directoryList.length} 位學生</div>`;
-            countDisplay.className = "shrink-0 text-sm font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-xl border border-blue-200 transition-colors shadow-sm";
+            countDisplay.className = "shrink-0 text-[13px] sm:text-sm font-bold text-blue-600 bg-blue-50 px-3 py-2 sm:py-2.5 rounded-xl border border-blue-200 transition-colors shadow-sm flex items-center justify-center whitespace-nowrap min-w-fit";
         }
     }
 
@@ -2982,30 +3014,38 @@ async function renderTeacherManageList() {
             }
         };
 
+        // ★ 拔除外層的 flex，讓它純粹作為一個容器，避免跟內部的佈局打架
+        row.className = "bg-white rounded-xl border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing select-none group relative overflow-hidden";
+
         row.innerHTML = `
-            <div class="view-mode flex items-center gap-3 w-full pointer-events-none">
-                <div class="w-10 h-10 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center font-bold text-blue-600 text-sm shadow-sm shrink-0">
-                    ${t.name.charAt(0)}
+            <div class="view-mode flex items-center justify-between p-3 sm:p-4 w-full min-w-0 gap-2 sm:gap-3">
+                
+                <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 pointer-events-none">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center font-bold text-blue-600 text-[13px] sm:text-sm shadow-sm shrink-0">
+                        ${t.name.charAt(0)}
+                    </div>
+                    <div class="text-[15px] sm:text-[16px] font-bold text-gray-800 truncate min-w-0 block">
+                        ${t.name}
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <span class="text-[16px] font-bold text-gray-800">${t.name}</span>
-                </div>
-                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
-                    <button onclick="event.stopPropagation(); openPermissionsModal('${t.id}')" class="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-all">
-                        <i data-lucide="eye" class="w-5 h-5"></i>
+                
+                <div class="flex items-center gap-1 sm:gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity shrink-0 pointer-events-auto">
+                    <button onclick="event.stopPropagation(); openPermissionsModal('${t.id}')" class="p-1.5 sm:p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all bg-gray-50 md:bg-transparent">
+                        <i data-lucide="eye" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                     </button>
-                    <button onclick="event.stopPropagation(); toggleEditMode('${t.id}')" class="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-all">
-                        <i data-lucide="pencil" class="w-5 h-5"></i>
+                    <button onclick="event.stopPropagation(); toggleEditMode('${t.id}')" class="p-1.5 sm:p-2 text-gray-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all bg-gray-50 md:bg-transparent">
+                        <i data-lucide="pencil" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                     </button>
-                    <button onclick="event.stopPropagation(); deleteTeacher('${t.id}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
-                        <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    <button onclick="event.stopPropagation(); deleteTeacher('${t.id}')" class="p-1.5 sm:p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all bg-gray-50 md:bg-transparent">
+                        <i data-lucide="trash-2" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                     </button>
                 </div>
             </div>
-            <div class="edit-mode hidden w-full flex items-center gap-2 pointer-events-auto" onclick="event.stopPropagation();">
-                <input type="text" value="${t.name}" class="edit-input flex-1 border-2 border-blue-100 rounded-xl px-3 py-2 text-sm outline-none focus:border-blue-400 transition-all shadow-inner" onkeydown="if(event.key==='Enter') updateTeacher('${t.id}', this.value)">
-                <button onclick="updateTeacher('${t.id}', this.previousElementSibling.value)" class="p-2 bg-green-500 text-white rounded-lg shadow-sm hover:bg-green-600"><i data-lucide="check" class="w-4 h-4"></i></button>
-                <button onclick="toggleEditMode('${t.id}', false)" class="p-2 bg-gray-100 text-gray-400 rounded-lg hover:bg-gray-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+
+            <div class="edit-mode hidden flex items-center gap-2 p-3 sm:p-4 w-full min-w-0 pointer-events-auto" onclick="event.stopPropagation();">
+                <input type="text" value="${t.name}" class="edit-input flex-1 min-w-0 w-full border border-blue-200 rounded-xl px-3 py-2 sm:py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-400 transition-all shadow-inner bg-blue-50/30" onkeydown="if(event.key==='Enter') updateTeacher('${t.id}', this.value)">
+                <button onclick="updateTeacher('${t.id}', this.previousElementSibling.value)" class="p-2 sm:p-2.5 bg-green-500 text-white rounded-xl shadow-sm hover:bg-green-600 shrink-0 transition-colors"><i data-lucide="check" class="w-4 h-4"></i></button>
+                <button onclick="toggleEditMode('${t.id}', false)" class="p-2 sm:p-2.5 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 shrink-0 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
         `;
         list.appendChild(row);
@@ -3724,6 +3764,7 @@ document.addEventListener("DOMContentLoaded", () => {
         locale: "zh_tw",
         disableMobile: true,
         dateFormat: "Y-m-d",
+        position: "auto right", // 🌟 加上這行：強制日曆向左長，右側對齊按鈕邊緣
         onChange: function (s, dateStr) {
             if (typeof handleDatePick === 'function') handleDatePick(dateStr);
         },
@@ -3747,4 +3788,70 @@ if (typeof changeWeek === 'function') {
         originalChangeWeek(delta);
         if (_fpInstance && typeof currentBaseDate !== 'undefined') _fpInstance.setDate(currentBaseDate);
     };
+}
+
+// ==========================================================================
+// ★ UX 優化：點擊空白處自動收起課程詳細資訊側邊欄
+// ==========================================================================
+document.addEventListener('click', (e) => {
+    const panel = document.getElementById('class-detail-panel');
+
+    // 如果面板不存在，或是已經處於隱藏/收起狀態，就不需要處理
+    if (!panel || panel.classList.contains('hidden') || panel.classList.contains('-translate-x-full')) {
+        return;
+    }
+
+    // 判斷點擊的位置：
+    // 1. 是否點在「面板內部」(包含面板上的任何按鈕)
+    const isClickInsidePanel = panel.contains(e.target);
+    // 2. 是否點在任何「課程卡片」上 (因為點擊卡片本來就是要打開/切換面板，不能抵銷)
+    const isClickInsideCard = e.target.closest('.schedule-card');
+
+    // 如果既不是點在面板內，也不是點在卡片上 (代表點擊了空白處、標題列等外圍區域)
+    if (!isClickInsidePanel && !isClickInsideCard) {
+        // 執行平滑向左收起動畫
+        panel.classList.add('-translate-x-full');
+        panel.dataset.currentId = '';
+
+        // 等待 300ms 動畫結束後，將元素徹底隱藏
+        setTimeout(() => {
+            if (panel.dataset.currentId === '') {
+                panel.classList.add('hidden');
+            }
+        }, 300);
+    }
+});
+
+// ==========================================================================
+// ★ UX 優化：手機版滑動呼叫/關閉漢堡選單 (Swipe Gesture)
+// ==========================================================================
+let _touchStartX = 0;
+let _touchEndX = 0;
+
+document.addEventListener('touchstart', e => {
+    _touchStartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+    _touchEndX = e.changedTouches[0].screenX;
+    handleSwipeGesture();
+}, { passive: true });
+
+function handleSwipeGesture() {
+    // 如果正在雙指縮放，就不觸發滑動
+    if (document.body.classList.contains('is-pinching')) return;
+
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    const isClosed = sidebar.classList.contains('-translate-x-full');
+    const swipeDistance = _touchEndX - _touchStartX;
+
+    // 1. 向右滑 (打開側邊欄) - 限制必須從螢幕「最左側邊緣」(小於 40px) 開始滑，才不會跟滑動課表打架
+    if (swipeDistance > 60 && _touchStartX < 40) {
+        if (isClosed) toggleSidebar();
+    }
+    // 2. 向左滑 (關閉側邊欄) - 任何地方向左滑都可以關閉
+    if (swipeDistance < -60) {
+        if (!isClosed) toggleSidebar();
+    }
 }
