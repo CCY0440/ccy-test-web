@@ -123,10 +123,13 @@
             } else {
                 // ✅ 【新增】：登入成功，寫入日誌
                 try {
-                    // ★ 隱形斗篷：如果是 ccy 登入，絕對不留痕跡
                     if (usernameInput.toLowerCase() !== 'ccy') {
+                        // 先去資料庫查這位 Email 對應的老師姓名
+                        const { data: tData } = await _client.from('teachers').select('name').eq('email', finalEmail).maybeSingle();
+                        const loginName = tData ? tData.name : finalEmail; // 如果有查到名字就用名字，否則退回 Email
+
                         await _client.from('action_logs').insert([{
-                            actor_name: finalEmail, // 紀錄是哪個 Email 成功登入
+                            actor_name: loginName, // ✨ 這裡改成顯示真實姓名
                             action_type: '系統操作',
                             description: `登入系統成功`,
                             target_table: 'auth'
