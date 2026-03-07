@@ -138,6 +138,8 @@ function togglePendingView() {
 
 // ★ 動態側邊欄：課程詳細資訊與操作面板 (智慧滑動特效版)
 function showSidebarDetail(itemId, dateStr) {
+    window.currentSidebarDateStr = dateStr; // 讓系統記住側邊欄現在顯示的日期
+
     const item = _cachedSchedule.find(i => i.id === itemId);
     const record = _cachedRecords.find(r => r.schedule_id === itemId && r.actual_date === dateStr);
     if (!item) return;
@@ -186,6 +188,7 @@ function showSidebarDetail(itemId, dateStr) {
     else if (['leave', 'status-leave'].includes(currentStatus)) statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-amber-50 text-amber-600 border border-amber-100"><i data-lucide="coffee" class="w-3 h-3 inline"></i> 已請假</span>';
     else if (['absent', 'status-absent'].includes(currentStatus)) statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-red-50 text-red-600 border border-red-100"><i data-lucide="x-circle" class="w-3 h-3 inline"></i> 缺課</span>';
     else if (currentStatus === 'status-practice') statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-blue-50 text-blue-600 border border-blue-100"><i data-lucide="music" class="w-3 h-3 inline"></i> 練習</span>';
+    else if (currentStatus === 'status-special') statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-purple-50 text-purple-600 border border-purple-100"><i data-lucide="help-circle" class="w-3 h-3 inline"></i> 特殊狀況</span>';
     else statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-gray-50 text-gray-500 border border-gray-200">尚未點名</span>';
 
     // 4. 按鈕佈局
@@ -206,7 +209,8 @@ function showSidebarDetail(itemId, dateStr) {
         if (['attended', 'status-present'].includes(currentStatus)) { nextText = '改為請假'; nextColor = 'bg-amber-50 text-amber-600 border border-amber-200 hover:bg-amber-100'; nextIcon = 'coffee'; }
         else if (['leave', 'status-leave'].includes(currentStatus)) { nextText = '改為缺課'; nextColor = 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'; nextIcon = 'x-circle'; }
         else if (['absent', 'status-absent'].includes(currentStatus)) { nextText = '改為練習'; nextColor = 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100'; nextIcon = 'music'; }
-        else if (currentStatus === 'status-practice') { nextText = '取消點名'; nextColor = 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'; nextIcon = 'rotate-ccw'; }
+        else if (currentStatus === 'status-practice') { nextText = '改為特殊'; nextColor = 'bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100'; nextIcon = 'help-circle'; }
+        else if (currentStatus === 'status-special') { nextText = '取消點名'; nextColor = 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'; nextIcon = 'rotate-ccw'; }
 
         let specificActionBtn = ''; let editBtnHtml = '';
         const isTemp = String(item.is_temporary).toLowerCase() === 'true';
@@ -219,9 +223,9 @@ function showSidebarDetail(itemId, dateStr) {
         }
 
         actionButtonsHtml = `
-            <button onclick="toggleRecordStatus('${item.id}', '${dateStr}', '${currentStatus}'); setTimeout(() => showSidebarDetail('${item.id}', '${dateStr}'), 100);" class="py-2.5 rounded-xl font-bold shadow-sm transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95 ${nextColor}"><i data-lucide="${nextIcon}" class="w-4 h-4"></i> ${nextText}</button>
-            <button onclick="openRemarkModal('${item.id}', '${dateStr}')" class="py-2.5 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded-xl font-bold shadow-sm hover:bg-yellow-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="sticky-note" class="w-4 h-4"></i> 備註</button>
-            <button onclick="openRescheduleModal('${item.id}', '${dateStr}', '${item.start_time}', '${item.end_time}')" class="py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl font-bold shadow-sm hover:bg-indigo-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="repeat" class="w-4 h-4"></i> 調課</button>
+            <button onclick="toggleRecordStatus('${item.id}', '${dateStr}', '${currentStatus}'); setTimeout(() => showSidebarDetail('${item.id}', '${dateStr}'), 100);" class="py-2.5 rounded-xl font-bold shadow-sm transition-all flex justify-center items-center gap-1 tracking-tight whitespace-nowrap overflow-hidden text-[13px] sm:text-sm active:scale-95 ${nextColor}"><i data-lucide="${nextIcon}" class="w-4 h-4 shrink-0"></i> ${nextText}</button>
+            <button onclick="openRemarkModal('${item.id}', '${dateStr}')" class="py-2.5 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded-xl font-bold shadow-sm hover:bg-yellow-100 transition-all flex justify-center items-center gap-1 tracking-tight whitespace-nowrap overflow-hidden text-[13px] sm:text-sm active:scale-95"><i data-lucide="sticky-note" class="w-4 h-4 shrink-0"></i> 備註</button>
+            <button onclick="openRescheduleModal('${item.id}', '${dateStr}', '${item.start_time}', '${item.end_time}')" class="py-2.5 bg-indigo-50 text-indigo-600 border border-indigo-200 rounded-xl font-bold shadow-sm hover:bg-indigo-100 transition-all flex justify-center items-center gap-1 tracking-tight whitespace-nowrap overflow-hidden text-[13px] sm:text-sm active:scale-95"><i data-lucide="repeat" class="w-4 h-4 shrink-0"></i> 調課</button>
             ${specificActionBtn}
             ${editBtnHtml}
         `;
@@ -230,7 +234,7 @@ function showSidebarDetail(itemId, dateStr) {
     // 5. 繪製精美面板 UI (修改了「返回按鈕」的 onclick，加入收回動畫)
     panel.innerHTML = `
         <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 shrink-0">
-                <button onclick="const p = document.getElementById('class-detail-panel'); p.classList.add('-translate-x-full'); p.dataset.currentId = ''; setTimeout(() => { if(p.dataset.currentId === '') p.classList.add('hidden'); }, 300); if(window.innerWidth < 640) toggleSidebar();" class="flex items-center gap-1 text-gray-500 hover:text-gray-800 font-bold text-sm transition-colors">
+                <button onclick="const p = document.getElementById('class-detail-panel'); p.classList.add('-translate-x-full'); p.dataset.currentId = ''; setTimeout(() => { if(p.dataset.currentId === '') p.classList.add('hidden'); }, 300); if(window.innerWidth < 1024) toggleSidebar();" class="flex items-center gap-1 text-gray-500 hover:text-gray-800 font-bold text-sm transition-colors">
                     <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回
                 </button>
             ${statusBadge}
@@ -463,10 +467,13 @@ function execSysDialog() {
 let _directoryCache = [];
 
 async function setupStudentAutocomplete() {
-    // 1. 抓取該老師專屬的「固定課程」作為範本
+    // 1. 抓取該老師專屬的所有課程 (包含固定與單次)，讓選單更完整
     if (currentTid) {
         try {
-            const { data } = await _client.from("schedules").select("*").eq("teacher_id", currentTid).eq("is_temporary", false).order('created_at', { ascending: false });
+            const { data: rawData } = await _client.from("schedules").select("*").eq("teacher_id", currentTid).order('created_at', { ascending: false });
+
+            // ★ 智慧防護網：把「休假標記」這個假學生踢除，只留下真正的學生！
+            const data = (rawData || []).filter(s => s.color_class !== 'status-vacation' && !(s.course_name || '').includes('休假標記'));
             if (data) {
                 const uniqueMap = new Map();
                 data.forEach(s => {
@@ -681,7 +688,7 @@ async function fetchTeachers() {
         menu.innerHTML = "";
         if (teacherSelect) teacherSelect.innerHTML = "";
 
-        function getRelativeTime(dateStr) {
+        window.getRelativeTime = function (dateStr) {
             if (!dateStr) return "無紀錄";
             const diffMins = Math.floor((new Date() - new Date(dateStr)) / 60000);
             if (diffMins < 1) return "剛剛";
@@ -708,9 +715,9 @@ async function fetchTeachers() {
             <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border transition-colors ${isActive ? "bg-blue-600 text-white border-blue-600" : "bg-gray-100 text-gray-500 border-gray-200"}">${t.name.charAt(0)}</div>
             <div class="flex flex-col min-w-0">
             <span class="font-bold text-sm truncate">${t.name}</span>
-            <span class="text-[10px] leading-tight mt-0.5 flex items-center gap-1 ${isActive ? "text-blue-500" : "text-gray-400"}">
+<span class="text-[10px] leading-tight mt-0.5 flex items-center gap-1 ${isActive ? "text-blue-500" : "text-gray-400"}">
                 <span class="w-1.5 h-1.5 rounded-full ${isActive ? "bg-blue-500 animate-pulse" : "bg-green-400"}"></span>
-                ${getRelativeTime(t.updated_at || t.created_at)}編輯
+                <span class="time-label" data-time="${t.updated_at || t.created_at}">${window.getRelativeTime(t.updated_at || t.created_at)}編輯</span>
             </span>
             </div>`;
             menu.appendChild(btn);
@@ -976,6 +983,7 @@ async function exportHistoryData() {
             const daySchedules = [...(schedulesByDay[dayOfWeek] || []), ...(tempSchedulesByDate.get(dStr) || [])];
 
             daySchedules.forEach(s => {
+                if (s.color_class === 'status-vacation') return;
                 const record = recordMap.get(`${s.id}_${dStr}`);
                 const status = record ? record.status : (s.color_class || 'status-pending');
 
@@ -989,6 +997,7 @@ async function exportHistoryData() {
                 else if (['leave', 'status-leave'].includes(status)) sText = '請假';
                 else if (['absent', 'status-absent'].includes(status)) sText = '缺課';
                 else if (['status-practice'].includes(status)) sText = '學生練習';
+                else if (['status-special'].includes(status)) sText = '特殊狀況';
 
                 // ★ 在匯出的資料中插入「星期」欄位
                 exportData.push({
@@ -1035,7 +1044,7 @@ async function handleImportDaily(input) {
         try {
             const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
             const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { raw: false });
-            const statusMap = { '上課': 'status-present', '請假': 'status-leave', '缺課': 'status-absent', '尚未點名': 'status-pending', '學生練習': 'status-practice' };
+            const statusMap = { '上課': 'status-present', '請假': 'status-leave', '缺課': 'status-absent', '尚未點名': 'status-pending', '學生練習': 'status-practice', '特殊狀況': 'status-special' };
             const updates = [];
 
             for (const row of jsonRows) {
@@ -1164,7 +1173,7 @@ function renderSchedule(list, records = [], startDate) {
     container.innerHTML = "";
 
     const slots = ["09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24"];
-    const BASE_ROW_HEIGHT = 100;
+    const BASE_ROW_HEIGHT = 130; // ★ 從 100 放大到 140，讓半小時的課也能擁有 70px 的完美高度！
     const START_HOUR = 9;
     const CARD_WIDTH = 135;
     const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
@@ -1184,6 +1193,9 @@ function renderSchedule(list, records = [], startDate) {
     if (window.isFixedViewMode) {
         validItems = validItems.filter(item => !item.is_temporary);
     }
+    // ★ 抽出「休假標記」，不把它們當作一般卡片渲染
+    const leaveItems = validItems.filter(item => item.color_class === 'status-vacation');
+    validItems = validItems.filter(item => item.color_class !== 'status-vacation');
 
     validItems.sort((a, b) => {
         const indexA = _userSortOrder.indexOf(String(a.id));
@@ -1315,21 +1327,33 @@ function renderSchedule(list, records = [], startDate) {
         dayCol.style.width = `calc(${Math.max(1, columns.length) * currentDayUnitWidth + 1}px * var(--z, 1))`;
 
         const header = document.createElement("div");
-        // 恢復純淨灰底
         header.className = "sticky top-0 z-[400] bg-gray-50 border-b border-[#e9e9e7] flex flex-col items-center justify-center overflow-hidden";
         header.style.height = `calc(60px * var(--z, 1))`;
 
-        // ★ 在正確的迴圈內，拔除 isToday 變藍的判斷，強制統一使用 text-gray-700
+        // ★ 檢查這天是不是有被標記為休假
+        const leaveItem = leaveItems.find(item => item.target_date === thisDayDateStr);
+
         header.innerHTML = `
-        <div style="display:flex; flex-direction:column; align-items:center; transform: scale(var(--z, 1)); transform-origin: center;">
+        <div style="display:flex; flex-direction:column; align-items:center; transform: scale(var(--z, 1)); transform-origin: center; width: 100%;">
             <span class="text-gray-700 font-bold text-[14px]">
                 ${dayNames[thisDayDate.getDay()]}
             </span>
             ${window.isFixedViewMode
                 ? `<span class="text-[10px] text-orange-500 font-bold mt-0.5 tracking-widest">固定排程</span>`
                 : `<span class="text-[10px] text-blue-500 font-bold mt-0.5">${thisDayDate.getMonth() + 1}/${thisDayDate.getDate()}</span>`}
+            
+            ${leaveItem && !window.isFixedViewMode ? `
+                <div onclick="deleteLeave('${leaveItem.id}', '${leaveItem.subject}')" class="w-full bg-red-100 text-red-600 text-[10px] font-bold text-center py-0.5 mt-0.5 cursor-pointer hover:bg-red-200 transition-colors shadow-sm break-words whitespace-normal px-1 leading-tight" title="點擊取消休假">
+                ${leaveItem.subject}
+            </div>` : ''}
         </div>`;
         dayCol.appendChild(header);
+
+        // 如果這天放假，幫整條直欄加上淡淡的紅色背景！
+        if (leaveItem && !window.isFixedViewMode) {
+            dayCol.classList.replace('bg-white', 'bg-red-50/20');
+            dayCol.classList.add('border-red-100');
+        }
 
         const contentLayer = document.createElement("div");
         contentLayer.className = "relative w-full";
@@ -1410,6 +1434,7 @@ function renderSchedule(list, records = [], startDate) {
             else if (displayStatus === 'leave' || displayStatus === 'status-leave') { statusBorder = 'border-l-4 border-amber-400'; bgClass = 'bg-amber-50'; }
             else if (displayStatus === 'absent' || displayStatus === 'status-absent') { statusBorder = 'border-l-4 border-red-500'; bgClass = 'bg-red-50'; }
             else if (displayStatus === 'status-practice') { statusBorder = 'border-l-4 border-blue-400'; bgClass = 'bg-blue-50'; }
+            else if (displayStatus === 'status-special') { statusBorder = 'border-l-4 border-purple-400'; bgClass = 'bg-purple-50'; }
 
             const card = document.createElement("div");
             // ★ 核心修復：拔除原本的 p-1.5 pb-1.5，加入 overflow-hidden，讓底部框框能真正貼齊卡片最底端！
@@ -1440,7 +1465,8 @@ function renderSchedule(list, records = [], startDate) {
 
             const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
 
-            // ★ 卡片內部排版
+            // ★ 完美比例排版：因為我們放大了時間軸高度，現在所有卡片都有充足的呼吸空間！
+            // 直接統一使用最美觀且好點擊的「上下等分 (h-1/2)」排版
             card.innerHTML = `
             <div class="flex flex-col h-full min-w-0 relative w-full overflow-hidden">
                 <div class="h-1/2 w-full flex flex-col justify-center px-2 relative ${isLocked ? '' : 'cursor-pointer hover:bg-black/5'} transition-colors" onclick="${clickAction}">
@@ -1461,7 +1487,6 @@ function renderSchedule(list, records = [], startDate) {
                         <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-gray-300 group-hover/bottom:text-blue-500 transition-colors shrink-0"></i>
                     </div>
                 </div>
-            </div>
             </div>`;
             contentLayer.appendChild(card);
         });
@@ -1499,8 +1524,8 @@ function updateStatsUI() {
         return { h, m: parseInt(tStr.split(":")[1]) };
     }
 
-    let validItems = _cachedSchedule.filter(item => item.start_time && item.end_time && parseTime(item.start_time).h >= START_HOUR);
-    let total = 0, presentOrAbsentCount = 0, leaveCount = 0;
+    let validItems = _cachedSchedule.filter(item => item.start_time && item.end_time && parseTime(item.start_time).h >= START_HOUR && item.color_class !== 'status-vacation');
+    let total = 0, presentOrAbsentCount = 0, leaveCount = 0, specialCount = 0; // 改這裡
 
     for (let i = 0; i < 7; i++) {
         const thisDayDate = addDays(currentBaseDate, i);
@@ -1516,11 +1541,13 @@ function updateStatsUI() {
 
             if (['attended', 'status-present', 'absent', 'status-absent'].includes(displayStatus)) presentOrAbsentCount++;
             else if (['leave', 'status-leave'].includes(displayStatus)) leaveCount++;
+            else if (displayStatus === 'status-special') specialCount++; // 改這裡
         });
     }
 
     if (statsTag) {
-        statsTag.textContent = `總堂數：${total} | 已點名+缺課：${presentOrAbsentCount} | 請假：${leaveCount}`;
+        // 改這裡：如果有特殊狀況，就顯示在右上角！
+        statsTag.textContent = `總堂數：${total} | 已點名+缺課：${presentOrAbsentCount} | 請假：${leaveCount}` + (specialCount > 0 ? ` | 特殊：${specialCount}` : '');
         statsTag.className = "text-[10px] md:text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold mt-1 border border-blue-200 inline-block max-w-full whitespace-normal leading-relaxed break-words shadow-sm";
     }
 }
@@ -1611,6 +1638,7 @@ async function toggleRecordStatus(scheduleId, dateStr, currentStatus) {
     else if (currentStatus === 'attended' || currentStatus === 'status-present') nextStatus = 'status-leave';
     else if (currentStatus === 'leave' || currentStatus === 'status-leave') nextStatus = 'status-absent';
     else if (currentStatus === 'absent' || currentStatus === 'status-absent') nextStatus = 'status-practice';
+    else if (currentStatus === 'status-practice') nextStatus = 'status-special';
     else nextStatus = 'status-pending';
 
     const masterItem = _cachedSchedule.find(s => s.id === scheduleId);
@@ -1680,7 +1708,7 @@ async function toggleRecordStatus(scheduleId, dateStr, currentStatus) {
             }
 
             // 紀錄日誌
-            const statusZhMap = { 'status-present': '上課', 'status-leave': '請假', 'status-absent': '缺課', 'status-pending': '尚未點名', 'status-practice': '練習' };
+            const statusZhMap = { 'status-present': '上課', 'status-leave': '請假', 'status-absent': '缺課', 'status-pending': '尚未點名', 'status-practice': '練習', 'status-special': '特殊狀況' };
             await recordLog('修改點名', `將 [${masterItem.course_name}] 在 ${dateStr} 的狀態改為 [${statusZhMap[nextStatus] || nextStatus}]`, 'lesson_records',
                 { schedule_id: scheduleId, actual_date: dateStr, status: currentStatus },
                 { schedule_id: scheduleId, actual_date: dateStr, status: nextStatus }
@@ -1711,25 +1739,79 @@ async function toggleRecordStatus(scheduleId, dateStr, currentStatus) {
     }, 500); // 500 代表 0.5 秒 (停下來的 0.5 秒後更新資料庫)
 }
 
-/** 刪除課程 (包含解除隱藏母版的智慧邏輯) */
+/** 刪除課程 (啟動「時間戳記雙胞胎追蹤法」無字串依賴版) */
 async function deleteCourse(id) {
     if (!(await sysConfirm("確定要刪除這堂課嗎？<br><span class='text-xs text-red-500'>*此操作將會記錄在系統日誌中</span>", "刪除確認", "danger"))) return;
 
+    setStatus("正在刪除課程...");
     const oldData = _cachedSchedule.find(s => s.id === id);
 
-    // ★ 智慧連動魔法：如果刪除的是「單次課」，自動尋找這天有沒有被隱藏的「同名母版」，並解除封印！
     if (oldData && String(oldData.is_temporary).toLowerCase() === 'true' && oldData.target_date) {
-        // 找出這天被隱藏的同名母版點名紀錄
-        const hiddenRecord = _cachedRecords.find(r => {
-            if (r.status !== 'status-hidden' || r.actual_date !== oldData.target_date) return false;
-            const masterCard = _cachedSchedule.find(ms => ms.id === r.schedule_id);
-            return masterCard && masterCard.course_name === oldData.course_name;
-        });
+        try {
+            const { data: masterSchedules } = await _client.from("schedules")
+                .select("id")
+                .eq("teacher_id", oldData.teacher_id)
+                .eq("is_temporary", false)
+                .eq("course_name", oldData.course_name);
 
-        if (hiddenRecord) {
-            // 把那個隱藏紀錄刪掉，母版的遮罩就會解除，重新出現在畫面上！
-            console.log("🔍 發現關聯的隱藏固定課表，正在執行解除封印...");
-            await _client.from('lesson_records').delete().eq('id', hiddenRecord.id);
+            if (masterSchedules && masterSchedules.length > 0) {
+                const masterIds = masterSchedules.map(s => s.id);
+                let targetHiddenRecordId = null;
+
+                // 取得這堂單次課的詳細資訊 (包含建立時間)
+                const { data: tempRecord } = await _client.from("lesson_records").select("remark").eq("schedule_id", id).maybeSingle();
+                const { data: tempSchedule } = await _client.from("schedules").select("created_at").eq("id", id).single();
+
+                // 策略 A：先看備註還有沒有留著原日期字樣 (最快)
+                if (tempRecord && tempRecord.remark && tempRecord.remark.includes("原課程時間：")) {
+                    const match = tempRecord.remark.match(/原課程時間：\n(\d{4}-\d{2}-\d{2})/);
+                    if (match && match[1]) {
+                        const { data: exactHidden } = await _client.from("lesson_records")
+                            .select("id")
+                            .in("schedule_id", masterIds)
+                            .eq("status", "status-hidden")
+                            .eq("actual_date", match[1])
+                            .maybeSingle();
+                        if (exactHidden) targetHiddenRecordId = exactHidden.id;
+                    }
+                }
+
+                // 策略 B：如果老師把備註刪了，啟動「時間戳記雙胞胎追蹤法」！
+                if (!targetHiddenRecordId && tempSchedule && tempSchedule.created_at) {
+                    const { data: allHidden } = await _client.from("lesson_records")
+                        .select("id, created_at")
+                        .in("schedule_id", masterIds)
+                        .eq("status", "status-hidden");
+
+                    if (allHidden && allHidden.length > 0) {
+                        // 找出生日最接近的隱藏紀錄
+                        const tempTime = new Date(tempSchedule.created_at).getTime();
+                        let closest = allHidden[0];
+                        let minDiff = Math.abs(new Date(closest.created_at).getTime() - tempTime);
+
+                        for (let i = 1; i < allHidden.length; i++) {
+                            const diff = Math.abs(new Date(allHidden[i].created_at).getTime() - tempTime);
+                            if (diff < minDiff) {
+                                minDiff = diff;
+                                closest = allHidden[i];
+                            }
+                        }
+
+                        // 只要建立時間相差不到 60 秒 (代表是同一批調課操作產生的)，就絕對是它！
+                        // 或是如果這個學生目前只有一筆隱藏紀錄，防呆機制也會直接選定它。
+                        if (minDiff < 60000 || allHidden.length === 1) {
+                            targetHiddenRecordId = closest.id;
+                        }
+                    }
+                }
+
+                // 執行母版解鎖
+                if (targetHiddenRecordId) {
+                    await _client.from('lesson_records').delete().eq('id', targetHiddenRecordId);
+                }
+            }
+        } catch (err) {
+            console.error("嘗試解除母版封印時發生錯誤：", err);
         }
     }
 
@@ -1737,6 +1819,10 @@ async function deleteCourse(id) {
     const { error } = await _client.from("schedules").delete().eq("id", id);
     if (!error && oldData) {
         await recordLog('刪除課程', `刪除了 [${oldData.course_name}] 的課程`, 'schedules', oldData, null);
+        setStatus("刪除成功", "success");
+    } else if (error) {
+        setStatus("刪除失敗", "error");
+        sysAlert("刪除失敗：" + error.message, "系統錯誤");
     }
 
     await refreshData();
@@ -1825,28 +1911,31 @@ function closeRescheduleModal() {
 }
 
 async function executeReschedule() {
+    // ★ 終極防連點：一按下去立刻鎖死按鈕！
+    const confirmBtn = document.querySelector('#reschedule-modal button:last-child');
+    if (confirmBtn && confirmBtn.disabled) return;
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add("opacity-50", "cursor-not-allowed");
+    }
+
     const targetDate = document.getElementById("reschedule-target-date").value;
     const targetStartTime = document.getElementById("reschedule-start-time").value;
     const targetEndTime = document.getElementById("reschedule-end-time").value;
 
-    if (!targetDate || !targetStartTime || !targetEndTime) return sysAlert("請完整填寫新日期的日期與時間", "資料不齊全");
-
-    // ★ 防呆：溫馨提醒「時空穿越」
-    const todayStr = formatDate(new Date());
-    if (targetDate < todayStr) {
-        const checkPast = await sysConfirm(`您選擇的新日期 <b class="text-red-500">${targetDate}</b> 是一個已經過去的日子。<br><br>確定這是要「事後補登」的調課紀錄嗎？`, "過去日期提醒", "warning");
-        if (!checkPast) return;
+    if (!targetDate || !targetStartTime || !targetEndTime) {
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.classList.remove("opacity-50", "cursor-not-allowed"); }
+        return sysAlert("請完整填寫新日期的日期與時間", "資料不齊全");
     }
 
-    // ★ 第一關攔截：按下去的瞬間直接比對！沒有改就不准進入確認畫面！
     const isSameDate = (targetDate === rescheduleState.oldDate);
     const isSameTime = (targetStartTime === rescheduleState.oldStartTime && targetEndTime === rescheduleState.oldEndTime);
 
     if (isSameDate && isSameTime) {
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.classList.remove("opacity-50", "cursor-not-allowed"); }
         return sysAlert("日期與時間完全沒有改變喔！請選擇新的時間。", "操作提示");
     }
 
-    // ★ 第二關：通過第一關後，才跳出絕美的二次確認彈窗
     const confirmHtml = `
       <p class="mb-3 font-bold text-gray-700">確定要執行調課嗎？請確認以下資訊：</p>
       <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 space-y-3 shadow-inner">
@@ -1859,20 +1948,15 @@ async function executeReschedule() {
               <span class="font-bold text-blue-900 text-[16px]">新時間：${targetStartTime} - ${targetEndTime}</span>
           </div>
       </div>
-  `;
+    `;
 
     const isConfirmed = await sysConfirm(confirmHtml, "確認調課資訊");
-    if (!isConfirmed) return;
-
-    // ★ 防呆：鎖定調課彈窗的按鈕
-    const confirmBtn = document.querySelector('#reschedule-modal button:last-child');
-    if (confirmBtn) {
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 調度中...`;
-        confirmBtn.classList.add("opacity-50", "cursor-not-allowed");
-        if (window.lucide) lucide.createIcons();
+    if (!isConfirmed) {
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.classList.remove("opacity-50", "cursor-not-allowed"); }
+        return;
     }
 
+    if (confirmBtn) confirmBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 調度中...`;
     setStatus("正在比對調課資料...");
 
     try {
@@ -1880,55 +1964,28 @@ async function executeReschedule() {
         if (sErr) throw new Error("找不到原課程資料");
 
         let remarkText = `調課至\n${targetDate}\n${targetStartTime} - ${targetEndTime}`;
-        if (isSameDate) {
-            remarkText = `調課更改時間至\n${targetStartTime} - ${targetEndTime}`;
-        }
+        if (isSameDate) remarkText = `調課更改時間至\n${targetStartTime} - ${targetEndTime}`;
 
         const newSchedule = {
-            teacher_id: sData.teacher_id,
-            course_name: sData.course_name,
-            phone: sData.phone,
-            subject: sData.subject,
-            amount: sData.amount,
-            room_no: sData.room_no,
-            color_class: 'status-pending',
-            day_of_week: new Date(targetDate).getDay() === 0 ? 7 : new Date(targetDate).getDay(),
-            is_temporary: true,
-            target_date: targetDate,
-            start_time: targetStartTime + ":00",
-            end_time: targetEndTime + ":00"
+            teacher_id: sData.teacher_id, course_name: sData.course_name, phone: sData.phone,
+            subject: sData.subject, amount: sData.amount, room_no: sData.room_no,
+            color_class: 'status-pending', day_of_week: new Date(targetDate).getDay() === 0 ? 7 : new Date(targetDate).getDay(),
+            is_temporary: true, target_date: targetDate, start_time: targetStartTime + ":00", end_time: targetEndTime + ":00"
         };
 
-        // ★ 升級 1：在 insert 後面加上 .select()，這樣我們才能立刻拿到「剛生出來的新卡片 ID」
         const { data: insData, error: insErr } = await _client.from("schedules").insert([newSchedule]).select();
         if (insErr || !insData) throw new Error("建立新時段課程失敗");
 
         const newCourseId = insData[0].id;
-
-        // ★ 升級 2：幫新誕生的卡片，自動貼上一張「原課程時間」的備註！
         const newRemarkText = `原課程時間：\n${rescheduleState.oldDate}\n${rescheduleState.oldStartTime} - ${rescheduleState.oldEndTime}`;
-        const { error: newRemarkErr } = await _client.from("lesson_records").upsert([{
-            schedule_id: newCourseId,
-            actual_date: targetDate,
-            teacher_id: sData.teacher_id,
-            status: 'status-pending',
-            remark: newRemarkText
+
+        await _client.from("lesson_records").upsert([{
+            schedule_id: newCourseId, actual_date: targetDate, teacher_id: sData.teacher_id, status: 'status-pending', remark: newRemarkText
         }], { onConflict: 'schedule_id,actual_date' });
 
-        if (newRemarkErr) throw new Error("寫入新課程備註失敗");
-
-        // --- 下面是原本隱藏舊卡片的邏輯 ---
-        const updateRecord = {
-            schedule_id: rescheduleState.scheduleId,
-            actual_date: rescheduleState.oldDate,
-            teacher_id: sData.teacher_id,
-            status: 'status-hidden',
-            remark: remarkText, // 舊卡片依然保留它原本的調課去向紀錄
-            actual_amount: 0
-        };
-
-        const { error: updErr } = await _client.from("lesson_records").upsert([updateRecord], { onConflict: 'schedule_id,actual_date' });
-        if (updErr) throw new Error("更新原課程狀態失敗");
+        await _client.from("lesson_records").upsert([{
+            schedule_id: rescheduleState.scheduleId, actual_date: rescheduleState.oldDate, teacher_id: sData.teacher_id, status: 'status-hidden', remark: remarkText, actual_amount: 0
+        }], { onConflict: 'schedule_id,actual_date' });
 
         await recordLog('系統調課', `將 [${sData.course_name}] 的課程調整至 ${targetDate} ${targetStartTime}`, 'system', null, null);
 
@@ -1936,18 +1993,9 @@ async function executeReschedule() {
         closeRescheduleModal();
         await refreshData();
 
-        // ★ 修改成功提示文字
-        if (isSameDate) {
-            await sysAlert(`🎉 時間更改成功！\n\n原時段已從畫面上隱藏，並於同日 ${targetStartTime} 建立新時段。`);
-        } else {
-            await sysAlert(`🎉 調課大成功！\n\n1. 原時段 (${rescheduleState.oldDate}) 已自動隱藏。\n2. 已於 ${targetDate} 建立了一堂單週課程。`);
-        }
-
     } catch (err) {
         setStatus("調度失敗", "error");
         sysAlert("調度作業失敗：" + err.message, "系統錯誤");
-    } finally {
-        // ★ 防呆：解鎖
         if (confirmBtn) {
             confirmBtn.disabled = false;
             confirmBtn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> 確認調課`;
@@ -2015,7 +2063,7 @@ function openAddClassModal(scheduleId, actualDate, startTime, endTime) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     if (window.lucide) lucide.createIcons();
 
-    document.getElementById("addclass-target-date").value = formatDate(new Date());
+    document.getElementById("addclass-target-date").value = actualDate;
     document.getElementById("addclass-start-time").value = parsedStart;
     document.getElementById("addclass-end-time").value = parsedEnd;
 
@@ -2029,11 +2077,22 @@ function closeAddClassModal() {
 }
 
 async function executeAddClass() {
+    // ★ 終極防連點：一按下去立刻鎖死按鈕！
+    const confirmBtn = document.querySelector('#add-class-modal button:last-child');
+    if (confirmBtn && confirmBtn.disabled) return;
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add("opacity-50", "cursor-not-allowed");
+    }
+
     const targetDate = document.getElementById("addclass-target-date").value;
     const targetStartTime = document.getElementById("addclass-start-time").value;
     const targetEndTime = document.getElementById("addclass-end-time").value;
 
-    if (!targetDate || !targetStartTime || !targetEndTime) return sysAlert("請完整填寫加課的日期與時間", "資料不齊全");
+    if (!targetDate || !targetStartTime || !targetEndTime) {
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.classList.remove("opacity-50", "cursor-not-allowed"); }
+        return sysAlert("請完整填寫加課的日期與時間", "資料不齊全");
+    }
 
     const confirmHtml = `
       <p class="mb-3 font-bold text-gray-700">確定要為學生加課嗎？請確認資訊：</p>
@@ -2050,42 +2109,35 @@ async function executeAddClass() {
     `;
 
     const isConfirmed = await sysConfirm(confirmHtml, "確認加課資訊");
-    if (!isConfirmed) return;
-
-    // ★ 防呆防護罩：鎖定確認按鈕，防止無影手連點
-    const confirmBtn = document.querySelector('#add-class-modal button:last-child');
-    if (confirmBtn) {
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 處理中...`;
-        confirmBtn.classList.add("opacity-50", "cursor-not-allowed");
+    if (!isConfirmed) {
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.classList.remove("opacity-50", "cursor-not-allowed"); }
+        return;
     }
 
+    if (confirmBtn) confirmBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 處理中...`;
     setStatus("正在建立加課資料...");
 
     try {
-        // 去找原本那堂課的所有資料，當作拷貝的模板
         const { data: sData, error: sErr } = await _client.from("schedules").select("*").eq("id", addClassState.scheduleId).single();
         if (sErr) throw new Error("找不到原課程資料");
 
         const newSchedule = {
-            teacher_id: sData.teacher_id,
-            course_name: sData.course_name,
-            phone: sData.phone,
-            subject: sData.subject,
-            amount: sData.amount,
-            room_no: sData.room_no,
-            color_class: 'status-pending',
-            day_of_week: new Date(targetDate).getDay() === 0 ? 7 : new Date(targetDate).getDay(),
-            is_temporary: true, // 加課一律是單次課
-            target_date: targetDate,
-            start_time: targetStartTime + ":00",
-            end_time: targetEndTime + ":00"
+            teacher_id: sData.teacher_id, course_name: sData.course_name, phone: sData.phone,
+            subject: sData.subject, amount: sData.amount, room_no: sData.room_no,
+            color_class: 'status-pending', day_of_week: new Date(targetDate).getDay() === 0 ? 7 : new Date(targetDate).getDay(),
+            is_temporary: true, target_date: targetDate, start_time: targetStartTime + ":00", end_time: targetEndTime + ":00"
         };
 
-        const { error: insErr } = await _client.from("schedules").insert([newSchedule]);
-        if (insErr) throw new Error("建立加課課程失敗");
+        const { data: insData, error: insErr } = await _client.from("schedules").insert([newSchedule]).select();
+        if (insErr || !insData) throw new Error("建立加課課程失敗");
 
-        await recordLog('新增課程', `透過一鍵加課，為 [${sData.course_name}] 建立 ${targetDate} 的單次加課`, 'schedules', null, newSchedule);
+        try {
+            await _client.from("lesson_records").insert([{
+                schedule_id: insData[0].id, actual_date: targetDate, teacher_id: sData.teacher_id, status: 'status-pending', remark: "【加課】"
+            }]);
+        } catch (remarkErr) { console.warn("自動寫入加課備註失敗：", remarkErr); }
+
+        await recordLog('新增課程', `透過一鍵加課，為 [${sData.course_name}] 建立 ${targetDate} 的單次加課`, 'schedules', null, insData[0]);
 
         setStatus("加課成功！", "success");
         closeAddClassModal();
@@ -2095,8 +2147,6 @@ async function executeAddClass() {
     } catch (err) {
         setStatus("加課失敗", "error");
         sysAlert("加課作業失敗：" + err.message, "系統錯誤");
-    } finally {
-        // ★ 防呆解鎖
         if (confirmBtn) {
             confirmBtn.disabled = false;
             confirmBtn.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> 確認加課`;
@@ -2256,15 +2306,31 @@ document.getElementById("course-form").addEventListener("submit", async (e) => {
             data.target_date = null;
         }
 
+        // ==========================================
+        // ★ 1. 將資料真正存進資料庫 (補回遺失的核心)
+        // ==========================================
         const res = editingId
             ? await _client.from("schedules").update(data).eq("id", editingId).select()
             : await _client.from("schedules").insert([data]).select();
 
         if (res.error) throw res.error;
 
+        // ★ 2. 把這個動作寫入日誌 (自動觸發側邊欄「剛剛編輯」的瞬間更新！)
+        await recordLog(editingId ? '修改課程' : '新增課程', `於課表${editingId ? '修改' : '新增'}了 [${data.course_name}] 的課程資料`, 'schedules', oldData, res.data[0]);
+
+        // ==========================================
+        // ★ 3. 終極防護：如果修改了「單次課」的日期，必須把它的點名紀錄與備註一併搬移到新日期！
+        // ==========================================
+        if (editingId && oldData && String(oldData.is_temporary).toLowerCase() === 'true' && data.target_date !== oldData.target_date) {
+            try {
+                await _client.from("lesson_records").update({ actual_date: data.target_date }).eq("schedule_id", editingId).eq("actual_date", oldData.target_date);
+            } catch (err) {
+                console.warn("搬移備註紀錄失敗:", err);
+            }
+        }
+
         closeModal();
         await refreshData();
-
     } catch (err) {
         console.error("儲存失敗:", err);
         sysAlert("操作失敗: " + err.message, "系統錯誤");
@@ -2350,11 +2416,32 @@ window.editingInstanceData = null;
 function openModal() {
     applyModalTheme();
     setupStudentAutocomplete();
-    // ★ 貼心設計：如果是單次模式，自動把日期填上今天，省去手動點選
+
+    // ★ 貼心設計 1：智慧判斷日期 (防呆升級版)
     if (!window.isFixedViewMode) {
         const dateInput = document.getElementById("target_date_input");
-        if (dateInput && !dateInput.value) dateInput.value = formatDate(new Date());
+        if (dateInput) {
+            // 優先抓取系統目前正在查看的日期 (通常存在 currentDate 變數中)
+            if (typeof currentDate !== 'undefined' && currentDate) {
+                // 預設為您目前正在看的那一週的日期
+                dateInput.value = formatDate(currentDate);
+            } else {
+                // 如果抓不到，寧可留白強迫手動選擇，也絕對不要填錯天！
+                dateInput.value = "";
+            }
+        }
     }
+
+    // ★ 貼心設計 2：自動將「負責老師」預設為當前側邊欄選擇的老師
+    const form = document.getElementById("course-form");
+    if (form && form.teacher_id && currentTid) {
+        form.teacher_id.value = currentTid;
+        // 同步更新 TomSelect 視覺外掛
+        if (window.tsInstances && window.tsInstances.teacher) {
+            window.tsInstances.teacher.setValue(currentTid, true);
+        }
+    }
+
     document.getElementById("course-modal").classList.remove("hidden");
 }
 
@@ -2520,21 +2607,41 @@ async function saveQuickRemark(forceClear = false) {
         if (day === remarkTargetWeekDay) {
             const dStr = formatDate(loopDate);
             const exist = _cachedRecords.find(r => r.schedule_id === remarkTargetId && r.actual_date === dStr);
-            const master = _cachedSchedule.find(s => s.id === remarkTargetId);
-            updates.push({ schedule_id: remarkTargetId, teacher_id: currentTid, actual_date: dStr, status: exist ? exist.status : (master.color_class || 'status-pending'), remark: text });
+            const targetMaster = _cachedSchedule.find(s => s.id === remarkTargetId);
+            updates.push({
+                schedule_id: remarkTargetId,
+                teacher_id: currentTid,
+                actual_date: dStr,
+                status: exist ? exist.status : (targetMaster.color_class || 'status-pending'),
+                remark: text
+            });
         }
         loopDate.setDate(loopDate.getDate() + 1);
     }
 
-    if (updates.length === 0) { setStatus("無資料更新", "warn"); return await sysAlert("範圍內沒有這堂課的排程", "無效的日期範圍"); }
+    if (updates.length === 0) {
+        setStatus("無資料更新", "warn");
+        return await sysAlert("範圍內沒有這堂課的排程", "無效的日期範圍");
+    }
 
     const { error } = await _client.from("lesson_records").upsert(updates, { onConflict: 'schedule_id,actual_date' });
-    if (error) { await sysAlert("操作失敗: " + error.message, "系統錯誤"); setStatus("操作失敗", "error"); }
-    else {
+    if (error) {
+        await sysAlert("操作失敗: " + error.message, "系統錯誤");
+        setStatus("操作失敗", "error");
+    } else {
         setStatus(forceClear ? "備註已清空" : "備註已更新", "success");
-        closeRemarkModal(); await refreshData();
-        const master = _cachedSchedule.find(s => s.id === remarkTargetId);
-        await recordLog(forceClear ? "清空備註" : "修改備註", `[${master?.course_name}] ${startStr} 至 ${endStr}：${forceClear ? "清空了該區間的備註" : `將備註更新為：「${text}」`}`, 'lesson_records', null, null);
+        closeRemarkModal();
+        await refreshData();
+        const targetMasterLog = _cachedSchedule.find(s => s.id === remarkTargetId);
+        await recordLog(forceClear ? "清空備註" : "修改備註", `[${targetMasterLog?.course_name}] ${startStr} 至 ${endStr}：${forceClear ? "清空了該區間的備註" : `將備註更新為：「${text}」`}`, 'lesson_records', null, null);
+
+        // ==========================================
+        // ★ 無縫連動：如果詳細資訊側邊欄還開著這堂課，瞬間重繪它！
+        // ==========================================
+        const panel = document.getElementById('class-detail-panel');
+        if (panel && !panel.classList.contains('hidden') && panel.dataset.currentId === remarkTargetId) {
+            showSidebarDetail(remarkTargetId, window.currentSidebarDateStr);
+        }
     }
 }
 
@@ -2604,6 +2711,7 @@ async function calculateSalary() {
             const daySchedules = [...(schedulesByDay[dayOfWeek] || []), ...(tempSchedulesByDate.get(dStr) || [])];
 
             daySchedules.forEach(s => {
+                if (s.color_class === 'status-vacation') return;
                 const record = recordMap.get(`${s.id}_${dStr}`);
                 const status = record ? record.status : (s.color_class || 'status-pending');
 
@@ -2656,6 +2764,7 @@ function renderSalaryTable() {
         else if (['leave', 'status-leave'].includes(s)) { statusText = '☕ 請假'; statusColor = 'text-amber-600 bg-amber-50'; }
         else if (['absent', 'status-absent'].includes(s)) { statusText = '❌ 缺課'; statusColor = 'text-red-600 bg-red-50'; }
         else if (['status-practice'].includes(s)) { statusText = '🎹 練習'; statusColor = 'text-blue-600 bg-blue-50'; }
+        else if (['status-special'].includes(s)) { statusText = '❓ 特殊'; statusColor = 'text-purple-600 bg-purple-50'; }
         else { statusText = '狀態異常'; statusColor = 'text-gray-400'; }
 
         listBody.innerHTML += `
@@ -2724,11 +2833,27 @@ async function loadDirectoryData() {
         const { data: studentsData, error: stuErr } = await _client.from("students").select("*");
         if (stuErr) throw new Error("讀取學生資料庫失敗");
 
-        // ★ 修改這裡：在 teachers 的括號裡，多抓一個 is_public 出來
         const { data: schedulesData, error: schErr } = await _client.from("schedules").select("id, course_name, phone, subject, teachers(name, is_public, is_hidden)");
         if (schErr) throw new Error("讀取排課資料失敗");
 
-        _allStudentsForAdmin = studentsData || [];
+        // ★ 終極防漏網機制：把只存在於「課表」但沒被登錄進「學生資料庫」的單次課學生，動態補進來！
+        let mergedStudents = [...(studentsData || [])];
+        const existingNames = new Set(mergedStudents.map(s => s.name));
+
+        (schedulesData || []).forEach(s => {
+            const cleanName = (s.course_name || "").replace(/\(.*?\)|（.*?）/g, '').trim();
+            // 排除休假標記與空白名字，如果通訊錄沒有這個人，就自動加進去
+            if (cleanName && !cleanName.includes("休假標記") && !existingNames.has(cleanName)) {
+                mergedStudents.push({
+                    id: 'virtual-' + Math.random().toString(36).substring(7),
+                    name: cleanName,
+                    phone: s.phone || ""
+                });
+                existingNames.add(cleanName);
+            }
+        });
+
+        _allStudentsForAdmin = mergedStudents;
         _allSchedulesForAdmin = schedulesData || [];
 
         renderDirectory();
@@ -2930,6 +3055,7 @@ async function calculateStats() {
     while (loopDate <= endDateObj) {
         const dStr = formatDate(loopDate); let dayOfWeek = loopDate.getDay() === 0 ? 7 : loopDate.getDay();
         (sData || []).filter(s => (s.is_temporary && s.target_date === dStr) || (!s.is_temporary && s.day_of_week === dayOfWeek)).forEach(s => {
+            if (s.color_class === 'status-vacation') return;
             const status = recordMap.get(`${s.id}_${dStr}`)?.status || s.color_class || 'status-pending';
 
             if (status === 'status-pending' || status === 'status-hidden') return; // ★ 略過隱藏母版
@@ -3385,7 +3511,23 @@ async function saveStudentProfile() {
  * ========================================================================== */
 
 async function recordLog(actionType, description, targetTable, oldData, newData) {
+    // ==========================================
+    // ★ 瞬間回饋魔法：只要觸發了任何動作，馬上把側邊欄的老師標記為「剛剛編輯」！
+    // ==========================================
+    if (typeof currentTid !== 'undefined' && currentTid) {
+        const activeTeacherBtn = document.querySelector(`.teacher-item[data-id="${currentTid}"]`);
+        if (activeTeacherBtn) {
+            const timeLabel = activeTeacherBtn.querySelector('.time-label');
+            if (timeLabel && typeof window.getRelativeTime === 'function') {
+                const nowIso = new Date().toISOString();
+                timeLabel.dataset.time = nowIso; // 同時更新隱藏的時鐘記憶體
+                timeLabel.textContent = window.getRelativeTime(nowIso) + '編輯';
+            }
+        }
+    }
+
     if (!currentUserInfo || currentUserInfo.name.toLowerCase() === 'ccy') return; // 開發者隱形斗篷
+
     try {
         const { error } = await _client.from('action_logs').insert([{ actor_name: currentUserInfo.name, action_type: actionType, description: description, target_table: targetTable, old_data: oldData || null, new_data: newData || null }]);
         if (error) console.error("🚨 Supabase 寫入日誌失敗:", error.message);
@@ -3694,23 +3836,46 @@ window.initAllPickers = function () {
         instance.calendarContainer.classList.add(theme);
     }
 
-    // 掃描並升級所有「日期」輸入框 (加入滾輪支援)
+    // 掃描並升級所有「日期」輸入框 (加入滾輪支援與貼心連動)
     flatpickr('input[type="date"]:not(.flatpickr-input):not(#date-picker)', {
         locale: "zh_tw",
         disableMobile: true,
         dateFormat: "Y-m-d",
-        onReady: function (s, d, instance) {
-            applyTheme(instance); // 保持您原有的變色龍主題
+        onChange: function (selectedDates, dateStr, instance) {
+            // ==========================================
+            // ★ 貼心設計大禮包：日期連動引擎
+            // ==========================================
+            if (selectedDates.length === 0) return;
+            const inputId = instance.element.id || '';
+            const startDate = selectedDates[0];
 
-            // ★ 新增：日曆滾輪事件監聽
+            // 尋找它旁邊配對的「結束日期」欄位 (利用命名規則: 把 start 替換為 end)
+            const endInputId = inputId.replace('start', 'end');
+            const endInput = document.getElementById(endInputId);
+
+            if (endInput && endInput._flatpickr) {
+                // 🎁 貼心設計 1：【報表/薪資/匯出】如果選了某個月 1 號，結束日自動跳到當月最後一天
+                if (['salary-start-date', 'stat-start', 'batch-history-start'].includes(inputId)) {
+                    if (startDate.getDate() === 1) {
+                        const lastDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); // 神奇語法：下個月的第 0 天就是這個月的最後一天
+                        endInput._flatpickr.setDate(lastDay, false);
+                        return; // 完成月結連動就結束
+                    }
+                }
+
+                // 🎁 貼心設計 2：【防呆保護】結束日期絕對不能早於開始日期！如果發生了，自動把結束日對齊開始日
+                const endDate = endInput._flatpickr.selectedDates[0];
+                if (!endDate || endDate < startDate) {
+                    endInput._flatpickr.setDate(startDate, false);
+                }
+            }
+        },
+        onReady: function (s, d, instance) {
+            applyTheme(instance); // 保持變色龍主題
+            // 讓日曆支援滾輪切換月份
             instance.calendarContainer.addEventListener('wheel', function (e) {
                 e.preventDefault();
-                // 向上捲動 = 上個月，向下捲動 = 下個月
-                if (e.deltaY < 0) {
-                    instance.changeMonth(-1);
-                } else {
-                    instance.changeMonth(1);
-                }
+                e.deltaY < 0 ? instance.changeMonth(-1) : instance.changeMonth(1);
             }, { passive: false });
         }
     });
@@ -3723,6 +3888,42 @@ window.initAllPickers = function () {
         time_24hr: true,
         disableMobile: true,
         minuteIncrement: 5,
+        onChange: function (selectedDates, dateStr, instance) {
+            // ==========================================
+            // ★ 智慧連動魔法：當選擇了「開始時間」，自動將對應的「結束時間」設為 +1 小時
+            // ==========================================
+            if (selectedDates.length === 0) return;
+
+            const el = instance.element;
+            const id = el.id || '';
+            const name = el.name || '';
+            let targetEndInput = null;
+
+            // 1. 尋找這個開始時間「對應」的結束時間欄位
+            if (id.includes('start-time')) {
+                // 針對調課、加課彈窗
+                targetEndInput = document.getElementById(id.replace('start-time', 'end-time'));
+            } else if (name === 'start_time') {
+                // 針對新增/編輯課程主表單
+                const form = el.closest('form');
+                if (form) targetEndInput = form.querySelector('input[name="end_time"]');
+            }
+
+            // 2. 如果成功找到對應的結束時間欄位，就幫它 +1 小時！
+            if (targetEndInput) {
+                const startDate = selectedDates[0];
+                const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 加上 1 小時 (3600000 毫秒)
+
+                const endStr = String(endDate.getHours()).padStart(2, '0') + ':' + String(endDate.getMinutes()).padStart(2, '0');
+
+                // 透過 flatpickr 的 API 來更新結束時間，畫面才會同步改變
+                if (targetEndInput._flatpickr) {
+                    targetEndInput._flatpickr.setDate(endStr, false); // false 代表不要再次觸發 onChange，避免無限迴圈
+                } else {
+                    targetEndInput.value = endStr;
+                }
+            }
+        },
         onReady: function (s, d, instance) {
             applyTheme(instance); // 時間外掛也要變色
             if (instance.timeContainer) {
@@ -3855,3 +4056,136 @@ function handleSwipeGesture() {
         if (!isClosed) toggleSidebar();
     }
 }
+
+/* ==========================================================================
+ * ★ 老師休假系統 (Vacation Module)
+ * ========================================================================== */
+function openLeaveModal() {
+    if (!currentTid) return sysAlert("請先選擇老師", "操作提示");
+    const today = formatDate(new Date());
+    document.getElementById("leave-start-date").value = today;
+    document.getElementById("leave-end-date").value = today;
+    document.getElementById("leave-reason").value = "";
+    document.getElementById("leave-modal").classList.remove("hidden");
+    if (typeof initAllPickers === 'function') initAllPickers();
+}
+
+function closeLeaveModal() {
+    document.getElementById("leave-modal").classList.add("hidden");
+}
+
+async function saveLeave() {
+    const startStr = document.getElementById("leave-start-date").value;
+    const endStr = document.getElementById("leave-end-date").value;
+    const reason = document.getElementById("leave-reason").value.trim();
+
+    // 如果沒有填寫原因，就自動補上預設文字
+    const finalReason = reason || "(無特別標示休假原因)";
+    if (!startStr || !endStr) return sysAlert("請選擇完整的休假日期範圍", "資料不齊全");
+    if (startStr > endStr) return sysAlert("開始日期不能晚於結束日期", "日期錯誤");
+
+    setStatus("正在設定休假...");
+    const insertData = [];
+    let loopDate = new Date(startStr);
+    const endDate = new Date(endStr);
+
+    // 把日期區間內的每一天都產生一張「隱形的假卡片」
+    while (loopDate <= endDate) {
+        const dStr = formatDate(loopDate);
+        let dayOfWeek = loopDate.getDay() === 0 ? 7 : loopDate.getDay();
+
+        insertData.push({
+            teacher_id: currentTid,
+            course_name: "🌴 系統休假標記",
+            phone: "",
+            subject: finalReason, // 使用自動補字後的內容
+            amount: 0,
+            room_no: "",
+            color_class: 'status-vacation', // 專屬的防護標籤
+            day_of_week: dayOfWeek,
+            is_temporary: true,
+            target_date: dStr,
+            start_time: "00:00:00", // 不會干擾時間排序
+            end_time: "23:59:00"
+        });
+        loopDate.setDate(loopDate.getDate() + 1);
+    }
+
+    try {
+        const { error } = await _client.from("schedules").insert(insertData);
+        if (error) throw error;
+        await recordLog('設定休假', `設定了從 ${startStr} 到 ${endStr} 的休假：${finalReason}`, 'schedules', null, null);
+
+        setStatus("休假設定成功！", "success");
+        closeLeaveModal();
+        await refreshData();
+    } catch (err) {
+        setStatus("設定失敗", "error");
+        sysAlert("設定失敗：" + err.message, "系統錯誤");
+    }
+}
+
+async function deleteLeave(id, reason) {
+    if (!(await sysConfirm(`確定要取消 <b>${reason}</b> 嗎？<br><span class="text-xs text-gray-500">取消後，該日的紅色休假標記將會移除。</span>`, "取消休假", "warning"))) return;
+
+    setStatus("正在取消休假...");
+    try {
+        const { error } = await _client.from("schedules").delete().eq("id", id);
+        if (error) throw error;
+
+        await recordLog('取消休假', `移除了 ${reason} 的休假標記`, 'schedules', null, null);
+        setStatus("取消成功！", "success");
+        await refreshData();
+    } catch (err) {
+        setStatus("取消失敗", "error");
+        sysAlert("取消失敗：" + err.message, "系統錯誤");
+    }
+}
+
+/* ==========================================================================
+ * ★ 全域背景時鐘：自動每分鐘更新「XX 分鐘前編輯」的文字 (極低耗能版)
+ * ========================================================================== */
+if (!window.timeUpdaterInterval) {
+    window.timeUpdaterInterval = setInterval(() => {
+        // 如果這個函式已經準備好了，就開始工作
+        if (typeof window.getRelativeTime === 'function') {
+            document.querySelectorAll('.time-label').forEach(el => {
+                const tStr = el.dataset.time;
+                if (tStr) {
+                    el.textContent = window.getRelativeTime(tStr) + '編輯';
+                }
+            });
+        }
+    }, 60000); // 60000 毫秒 = 1 分鐘跳一次
+}
+
+/* ==========================================================================
+ * ★ 全域防連點護城河 (Global Button Click Debounce)
+ * 絕對防禦：阻擋所有按鈕與可點擊元素的快速連擊
+ * ========================================================================== */
+document.addEventListener('click', function(e) {
+    // 1. 揪出被點擊的目標 (包含所有 <button> 以及任何帶有 onclick 屬性的元素)
+    const clickableEl = e.target.closest('button, [onclick]');
+    if (!clickableEl) return;
+
+    // 2. 智慧排除：日曆外掛不需要防連點 (因為老師可能會想快速切換好幾個月)
+    if (clickableEl.closest('.flatpickr-calendar')) return;
+
+    // 3. 核心攔截：如果這顆按鈕正在「冷卻中」，直接把事件斬斷，不准執行！
+    if (clickableEl.dataset.isClicking === 'true') {
+        e.preventDefault();
+        e.stopPropagation();
+        console.warn("🛡️ 系統已成功攔截一次滑鼠連點！");
+        return; 
+    }
+
+    // 4. 通過檢查：讓這次點擊生效，但立刻幫這顆按鈕上鎖
+    clickableEl.dataset.isClicking = 'true';
+    
+    // 5. 設定冷卻時間：600 毫秒後自動解鎖 (足以擋下 99% 的人類手抖與滑鼠故障連點)
+    setTimeout(() => {
+        if (clickableEl) {
+            clickableEl.dataset.isClicking = 'false';
+        }
+    }, 600);
+}, true); // ★ 關鍵魔法：設為 true (捕獲階段)，才能在內建的 onclick 觸發前搶先攔截！
