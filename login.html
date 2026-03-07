@@ -73,8 +73,8 @@
         const SUPABASE_KEY = "sb_publishable_0Dqlqe0ZXLRhjaevc7VB2g_39W_8eXP";
         const _client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // ★ 我們約定好的假網域
-        const FAKE_DOMAIN = "@moonick.music";
+        // ★ 我們約定好的全新標準網域
+        const FAKE_DOMAIN = "@moonick.music.com";
 
         async function handleLogin() {
             const usernameInput = document.getElementById('username').value.trim();
@@ -89,8 +89,21 @@
             msg.className = "text-center text-xs text-gray-500 font-bold mt-2";
             msg.textContent = "驗證中...";
 
-            // 自動補完 Email：如果使用者只打 willy，自動補上後綴
-            const finalEmail = usernameInput.includes('@') ? usernameInput : (usernameInput + FAKE_DOMAIN);
+            // ==========================================
+            // ★ 終極防呆登入邏輯：自動洗淨使用者的輸入
+            // ==========================================
+            let cleanUsername = usernameInput.trim();
+
+            // 如果老師習慣打全名，我們幫他把舊網域或新網域切掉，只保留帳號本身
+            if (cleanUsername.includes('@moonick.')) {
+                cleanUsername = cleanUsername.split('@')[0];
+            }
+
+            // 如果沒有 @，就自動幫他穿上最新的標準網域斗篷
+            let finalEmail = cleanUsername;
+            if (!cleanUsername.includes('@')) {
+                finalEmail = cleanUsername + FAKE_DOMAIN;
+            }
 
             const { data, error } = await _client.auth.signInWithPassword({
                 email: finalEmail,
