@@ -904,7 +904,7 @@ async function exportMasterData() {
         };
 
         const exportList = fixedSchedules.map(s => ({
-            "系統編號": s.id,
+            "系統編號(請勿修改)": s.id,
             "學生姓名": s.course_name || "",
             "電話": s.phone || "",
             "科目": s.subject || "",
@@ -3085,14 +3085,41 @@ async function calculateStats() {
     setStatus(`分析完成：共 ${total} 堂有效紀錄`, "success");
 }
 
-// --- 老師管理 (極簡穩定拖曳版) ---
+// --- 老師管理 (終極穩定滑順拖曳版) ---
 async function renderTeacherManageList() {
     const { data: teachers } = await _client.from("teachers").select("*").order("sort_order", { ascending: true });
     const list = document.getElementById("teacher-manage-list");
     if (!list) return;
 
     list.innerHTML = "";
-    list.className = "space-y-2 flex flex-col relative";
+    list.className = "flex flex-col gap-2.5 relative"; // 保持乾淨的 Tailwind 排版
+
+    // ==========================================
+    // ★ 終極穩定版拖曳系統 (防抖動魔法)
+    // 將判斷邏輯交給最外層的 list 容器，而不是每張卡片自己打架
+    // ==========================================
+    list.ondragover = (e) => {
+        e.preventDefault(); // 必須有這個才能允許放下
+        e.dataTransfer.dropEffect = "move";
+
+        const draggingRow = list.querySelector('.opacity-30'); // 找出正在被拖曳的那張卡片
+        if (!draggingRow) return;
+
+        // 找出所有「不是正在拖曳」的其他卡片
+        const siblings = [...list.querySelectorAll('div[data-id]:not(.opacity-30)')];
+
+        // 算出滑鼠現在的 Y 座標，找出它應該插在哪個卡片的前面
+        let nextSibling = siblings.find(sibling => {
+            const box = sibling.getBoundingClientRect();
+            // 取卡片的「垂直中心點」，滑鼠越過中心點才換位子，手感最穩！
+            return e.clientY <= box.top + box.height / 2;
+        });
+
+        // ★ 核心防抖：只有當「目標位置真的改變」時，才重新插入 DOM (解決亂跑的問題)
+        if (draggingRow.nextSibling !== nextSibling) {
+            list.insertBefore(draggingRow, nextSibling);
+        }
+    };
 
     teachers.forEach((t) => {
         if (t.is_hidden) return;
@@ -3100,52 +3127,26 @@ async function renderTeacherManageList() {
         const row = document.createElement("div");
         row.dataset.id = t.id;
         row.draggable = true;
+        // 已經幫您換成了十字箭頭 cursor-move
+        row.className = "bg-white rounded-xl border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all cursor-move select-none group relative overflow-hidden";
 
-        // 視覺：移除說明文字，加大姓名間距，讓整列看起來更像好抓的條塊
-        row.className = "flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 group hover:border-blue-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing select-none";
-
-        // 1. 開始拖曳：設定最穩定的傳輸模式
+        // 1. 開始拖曳：讓卡片微微縮小並變透明，增加操作實感
         row.ondragstart = (e) => {
             e.dataTransfer.setData("text/plain", t.id);
             e.dataTransfer.effectAllowed = "move";
-
-            // 延遲一點點改變外觀，防止瀏覽器在產生「拖拽分身」時失敗
             setTimeout(() => {
-                row.classList.add('opacity-30', 'bg-blue-50', 'border-blue-400');
+                row.classList.add('opacity-30', 'bg-blue-50', 'border-blue-400', 'scale-[0.98]');
             }, 0);
         };
 
-        // 2. 結束拖曳：立即恢復外觀並儲存
+        // 2. 結束拖曳：恢復原狀並立即存檔
         row.ondragend = () => {
-            row.classList.remove('opacity-30', 'bg-blue-50', 'border-blue-400');
+            row.classList.remove('opacity-30', 'bg-blue-50', 'border-blue-400', 'scale-[0.98]');
             saveTeacherSort();
         };
 
-        // 3. 拖曳中：精準插入位置
-        row.ondragover = (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-
-            const draggingRow = list.querySelector('.opacity-30');
-            if (!draggingRow || draggingRow === row) return;
-
-            const box = row.getBoundingClientRect();
-            const midpoint = box.top + box.height / 2;
-
-            // 根據滑鼠位置決定插入在目標的前面還是後面
-            if (e.clientY < midpoint) {
-                list.insertBefore(draggingRow, row);
-            } else {
-                list.insertBefore(draggingRow, row.nextSibling);
-            }
-        };
-
-        // ★ 拔除外層的 flex，讓它純粹作為一個容器，避免跟內部的佈局打架
-        row.className = "bg-white rounded-xl border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all cursor-grab active:cursor-grabbing select-none group relative overflow-hidden";
-
         row.innerHTML = `
             <div class="view-mode flex items-center justify-between p-3 sm:p-4 w-full min-w-0 gap-2 sm:gap-3">
-                
                 <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 pointer-events-none">
                     <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center font-bold text-blue-600 text-[13px] sm:text-sm shadow-sm shrink-0">
                         ${t.name.charAt(0)}
@@ -3154,7 +3155,6 @@ async function renderTeacherManageList() {
                         ${t.name}
                     </div>
                 </div>
-                
                 <div class="flex items-center gap-1 sm:gap-1.5 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity shrink-0 pointer-events-auto">
                     <button onclick="event.stopPropagation(); openPermissionsModal('${t.id}')" class="p-1.5 sm:p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all bg-gray-50 md:bg-transparent">
                         <i data-lucide="eye" class="w-4 h-4 sm:w-5 sm:h-5"></i>
@@ -3321,8 +3321,16 @@ async function addTeacher() {
 
     setStatus("正在建立帳號與資料...");
 
-    // ★ 關鍵修復 1：統一假網域為 @moonick.music (與登入頁面一致)
-    const finalEmail = username.includes('@') ? username : (username + "@moonick.music");
+    // ==========================================
+    // ★ 終極防呆與統一：將所有新建立的帳號，強制綁定在 @moonick.music.com 之下
+    // ==========================================
+    let finalEmail = username.trim();
+    if (!finalEmail.includes('@')) {
+        finalEmail += "@moonick.music.com"; // 沒打 @ 就自動補上統一網域
+    } else if (finalEmail.includes("@moonick.")) {
+        // 如果管理員手癢打了舊的 .music 或 .com，一律強制洗成最標準的 .music.com
+        finalEmail = finalEmail.split('@')[0] + "@moonick.music.com";
+    }
 
     const { data: authData, error: authError } = await _client.auth.signUp({ email: finalEmail, password: password });
     if (authError) return sysAlert("建立帳號失敗: " + authError.message, "系統錯誤");
@@ -4163,7 +4171,7 @@ if (!window.timeUpdaterInterval) {
  * ★ 全域防連點護城河 (Global Button Click Debounce)
  * 絕對防禦：阻擋所有按鈕與可點擊元素的快速連擊
  * ========================================================================== */
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     // 1. 揪出被點擊的目標 (包含所有 <button> 以及任何帶有 onclick 屬性的元素)
     const clickableEl = e.target.closest('button, [onclick]');
     if (!clickableEl) return;
@@ -4176,12 +4184,12 @@ document.addEventListener('click', function(e) {
         e.preventDefault();
         e.stopPropagation();
         console.warn("🛡️ 系統已成功攔截一次滑鼠連點！");
-        return; 
+        return;
     }
 
     // 4. 通過檢查：讓這次點擊生效，但立刻幫這顆按鈕上鎖
     clickableEl.dataset.isClicking = 'true';
-    
+
     // 5. 設定冷卻時間：600 毫秒後自動解鎖 (足以擋下 99% 的人類手抖與滑鼠故障連點)
     setTimeout(() => {
         if (clickableEl) {
