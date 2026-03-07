@@ -73,6 +73,16 @@ body.is-dragging .schedule-card * {
     color: #1e3a8a !important;
 }
 
+/* 特殊狀態：紫色邊框 */
+.status-special {
+    background-color: #faf5ff !important;
+    border-left: 4px solid #a855f7 !important;
+    border-top: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    color: #6b21a8 !important;
+}
+
 /* 尚未點名：灰色邊框 */
 .status-pending {
     background-color: #ffffff !important;
@@ -468,10 +478,13 @@ div.ts-control>div.item {
 .ts-dropdown .option {
     padding: 8px 12px !important;
     border-radius: 8px !important;
-    /* 讓選項本身也變成精美的圓角色塊 */
     transition: all 0.15s ease !important;
     cursor: pointer !important;
     margin-bottom: 2px !important;
+    
+    /* ★ 解決文字擠在一起的魔法 */
+    white-space: nowrap !important; /* 強制不准斷行，讓文字乖乖排成一列 */
+    line-height: 1.5 !important; /* 把行高拉開，給字體足夠的呼吸空間 */
 }
 
 .ts-dropdown .option:last-child {
@@ -564,4 +577,65 @@ div.ts-control>div.item {
     .flatpickr-calendar::after {
         display: none !important;
     }
+}
+
+/* ==========================================================================
+ * ★ 修復 Flatpickr 日曆月份選單「白底白字」的問題
+ * ========================================================================== */
+.flatpickr-calendar .flatpickr-monthDropdown-months option {
+    color: #1f2937 !important;
+    /* 強制設定為深灰色，確保絕對清晰 */
+    background-color: #ffffff !important;
+    /* 強制設定為純白背景 */
+    font-weight: bold !important;
+}
+
+/* 滑鼠停留在選單框上的微調，增加點擊質感 */
+.flatpickr-calendar .flatpickr-monthDropdown-months:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 4px;
+}
+
+/* ==========================================================================
+ * ★ 修復時間選擇器 (Time Picker) 跑版與滾輪太小的問題
+ * ========================================================================== */
+/* 1. 強制瘦身：讓它保持精緻小巧，不再超出輸入框 */
+.flatpickr-calendar.hasTime.noCalendar {
+    width: max-content !important;
+    min-width: 140px !important;
+    max-width: 160px !important;
+    margin-top: 4px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 2. 觸控區放大魔法：加高時間區塊，滑鼠隨便放都能滾 */
+.flatpickr-time {
+    height: 56px !important;
+    max-height: 56px !important;
+}
+
+/* 3. 把字體放大加粗，提升專業質感 */
+.flatpickr-time input.flatpickr-hour,
+.flatpickr-time input.flatpickr-minute {
+    height: 100% !important;
+    font-size: 18px !important;
+    font-weight: 800 !important;
+    color: #1f2937 !important;
+}
+
+.flatpickr-time .flatpickr-time-separator {
+    height: 100% !important;
+    line-height: 56px !important;
+    font-size: 18px !important;
+    font-weight: bold !important;
+}
+
+/* 4. 極簡化：隱藏超難點的微小上下箭頭，將空間還給數字 */
+.flatpickr-time .arrowUp,
+.flatpickr-time .arrowDown {
+    display: none !important;
+}
+
+.flatpickr-time .numInputWrapper {
+    width: 50% !important;
 }
