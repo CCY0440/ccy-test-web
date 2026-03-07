@@ -172,6 +172,12 @@
           <span class="hidden md:inline">固定課表</span><span class="md:hidden">固定</span>
         </button>
 
+        <button onclick="openLeaveModal()"
+          class="flex items-center gap-2 bg-red-50 text-red-700 border border-red-200 px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold hover:bg-red-100 transition-all shrink-0 shadow-sm">
+          <i data-lucide="palmtree" class="w-4 h-4"></i>
+          <span class="hidden md:inline">設定休假</span><span class="md:hidden">休假</span>
+        </button>
+
         <button onclick="openModal()"
           class="flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold hover:bg-blue-100 transition-all shrink-0 shadow-sm">
           <i data-lucide="plus" class="w-4 h-4"></i>
@@ -289,6 +295,7 @@
                 <option value="status-leave">☕ 請假</option>
                 <option value="status-absent">❌ 缺課</option>
                 <option value="status-practice">🎹 學生練習</option>
+                <option value="status-special">❓ 特殊狀況</option>
               </select>
             </div>
           </div>
@@ -431,22 +438,47 @@
               class="bg-neutral-800 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs">2</span>
             卡片操作方式
           </h4>
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3">
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3 shadow-sm">
             <div>
               <p class="text-sm font-bold text-gray-800 mb-1 flex items-center gap-1.5"><i
                   data-lucide="mouse-pointer-click" class="w-4 h-4 text-blue-500"></i> 點擊上半部：快速點名</p>
+              <p class="text-xs text-gray-500 mb-2">連續點擊卡片上半部，即可在以下狀態中快速切換：</p>
               <div class="flex flex-wrap gap-1.5 text-xs font-bold mt-1.5">
-                <span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded">✅ 上課</span>
-                <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">☕ 請假</span>
-                <span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded">❌ 缺課</span>
-                <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">🎹 練習</span>
+                <span class="bg-white text-gray-500 px-1.5 py-0.5 rounded shadow-sm border border-gray-300">🔄
+                  尚未點名</span>
+                <span class="bg-green-100 text-green-700 px-1.5 py-0.5 rounded shadow-sm border border-green-200">✅
+                  上課</span>
+                <span class="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded shadow-sm border border-amber-200">☕
+                  請假</span>
+                <span class="bg-red-100 text-red-700 px-1.5 py-0.5 rounded shadow-sm border border-red-200">❌ 缺課</span>
+                <span class="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded shadow-sm border border-blue-200">🎹
+                  練習</span>
+                <span class="bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded shadow-sm border border-purple-200">❓
+                  特殊</span>
               </div>
             </div>
             <hr class="border-gray-200">
             <div>
               <p class="text-sm font-bold text-gray-800 mb-1 flex items-center gap-1.5"><i
                   data-lucide="panel-right-open" class="w-4 h-4 text-emerald-500"></i> 點擊下半部：詳細資訊</p>
-              <p class="text-xs text-gray-500">展開側邊欄，即可進行複製電話、新增備註、調課、加課或修改。</p>
+              <p class="text-xs text-gray-500 mb-2">展開右側詳細面板，點擊號碼可複製電話，或使用快捷按鈕：</p>
+              <div class="flex flex-wrap gap-2 text-[11px] font-bold">
+                <span
+                  class="bg-yellow-50 text-yellow-600 border border-yellow-200 px-1.5 py-1 rounded-md flex items-center gap-1 shadow-sm"><i
+                    data-lucide="sticky-note" class="w-3 h-3"></i> 備註</span>
+                <span
+                  class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-1 rounded-md flex items-center gap-1 shadow-sm"><i
+                    data-lucide="plus-circle" class="w-3 h-3"></i> 加課</span>
+                <span
+                  class="bg-indigo-50 text-indigo-600 border border-indigo-200 px-1.5 py-1 rounded-md flex items-center gap-1 shadow-sm"><i
+                    data-lucide="repeat" class="w-3 h-3"></i> 調課</span>
+                <span
+                  class="bg-white text-gray-700 border border-gray-300 px-1.5 py-1 rounded-md flex items-center gap-1 shadow-sm"><i
+                    data-lucide="pencil" class="w-3 h-3"></i> 修改</span>
+                <span
+                  class="bg-red-50 text-red-600 border border-red-200 px-1.5 py-1 rounded-md flex items-center gap-1 shadow-sm"><i
+                    data-lucide="trash-2" class="w-3 h-3"></i> 刪除</span>
+              </div>
             </div>
           </div>
         </section>
@@ -478,8 +510,8 @@
 
         <section class="text-center pt-2">
           <button onclick="closeInstructionsModal()"
-            class="w-full bg-neutral-800 text-white py-3 rounded-xl font-bold hover:bg-black transition-all active:scale-95 shadow-md">
-            我瞭解了
+            class="w-full bg-neutral-800 text-white py-3 rounded-xl font-bold hover:bg-black transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+            <i data-lucide="check" class="w-4 h-4"></i> 我瞭解了
           </button>
         </section>
 
@@ -1303,6 +1335,57 @@
       </div>
     </div>
   </div>
+
+  <div id="leave-modal"
+    class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2000] backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl w-[90%] max-w-sm p-6 shadow-2xl border border-red-100 flex flex-col">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg flex items-center gap-2 text-red-800">
+          <i data-lucide="calendar-x" class="w-5 h-5"></i> 設定老師休假
+        </h3>
+        <button onclick="closeLeaveModal()"
+          class="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 p-1.5 rounded-full transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <p
+        class="text-[11px] text-gray-500 mb-5 leading-relaxed bg-red-50 p-2.5 rounded-lg border border-red-100 font-medium">
+        💡 設定後，該區間的課表上方會顯示醒目的紅字休假標記，且該日背景會呈現淡紅色。<br>
+        <span class="text-red-600 font-bold">註：此標記不會自動刪除原本的課程，您仍可手動將當日既有課程改為請假。</span>
+      </p>
+
+      <div class="space-y-4 mb-6">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-500 mb-1">開始日期</label>
+            <input type="date" id="leave-start-date"
+              class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-500 mb-1">結束日期</label>
+            <input type="date" id="leave-end-date"
+              class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">休假原因</label>
+          <input type="text" id="leave-reason" placeholder="例：年假、病假、員工旅遊"
+            class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-red-400 outline-none bg-gray-50 focus:bg-white transition-all shadow-inner">
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-auto pt-2 border-t border-gray-100">
+        <button onclick="closeLeaveModal()"
+          class="flex-1 bg-white border border-gray-200 text-gray-600 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors">取消</button>
+        <button onclick="saveLeave()"
+          class="flex-1 bg-red-500 text-white py-2 rounded-xl text-sm font-bold shadow-md hover:bg-red-600 transition-colors active:scale-95 flex items-center justify-center gap-1.5">
+          <i data-lucide="check-circle" class="w-4 h-4"></i> 確認休假
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="./app.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
