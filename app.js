@@ -3445,13 +3445,27 @@ function openFixedScheduleModal() {
 
 let stuCurrentBaseDate = new Date(); let stuCurrentName = ""; let stuCurrentPhone = "";
 
-function openStudentScheduleModal(name, phone) {
+async function openStudentScheduleModal(name, phone) {
+    // ==========================================
+    // ★ 1. 點擊瞬間，系統左上方立刻顯示載入中，安撫使用者的焦慮感！
+    // ==========================================
+    setStatus(`⏳ 正在為您撈取 ${name} 的課表...`, "warn");
+
     stuCurrentName = name; stuCurrentPhone = phone; stuCurrentBaseDate = getMonday(new Date());
     document.getElementById("stu-modal-name").textContent = `${name} · 個人全週課表`;
     document.getElementById("stu-modal-phone").textContent = phone || "無電話資訊";
     document.getElementById("stu-modal-initial").textContent = name.charAt(0);
     document.getElementById("student-schedule-modal").classList.remove("hidden");
-    renderStudentMiniSchedule();
+
+    // ==========================================
+    // ★ 2. 等待資料庫把課表畫完
+    // ==========================================
+    await renderStudentMiniSchedule();
+
+    // ==========================================
+    // ★ 3. 畫完之後，顯示成功！
+    // ==========================================
+    setStatus("課表載入完成！", "success");
 }
 
 function closeStudentScheduleModal() { document.getElementById("student-schedule-modal").classList.add("hidden"); }
