@@ -1143,7 +1143,8 @@
                 <i data-lucide="zap" class="w-4 h-4 fill-emerald-500"></i> 管理者專屬芝士 🧀
               </h4>
               <ul class="text-[11px] text-emerald-900/70 space-y-2 leading-relaxed">
-                <li class="flex gap-2"><span>•</span> <span><b>批量更新：</b>修改大量學費金額或教室時，直接用「Excel小工具」匯出 Excel 改最快。</span></li>
+                <li class="flex gap-2"><span>•</span> <span><b>批量更新：</b>修改大量學費金額或教室時，直接用「Excel小工具」匯出 Excel 改最快。</span>
+                </li>
                 <li class="flex gap-2"><span>•</span> <span><b>智慧鎖定：</b>系統會自動保護前兩個月資料，若需更動舊紀錄，請確保以管理員身分操作。</span></li>
               </ul>
             </section>
@@ -1383,6 +1384,37 @@
           <i data-lucide="check-circle" class="w-4 h-4"></i> 確認休假
         </button>
       </div>
+    </div>
+  </div>
+
+  <div id="log-detail-modal"
+    class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-[2500] backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl w-[90%] max-w-lg shadow-2xl flex flex-col overflow-hidden border border-gray-100">
+
+      <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-slate-50">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2 m-0">
+          <i data-lucide="file-code-2" class="w-5 h-5 text-slate-600"></i> 日誌詳細數據
+        </h3>
+        <button onclick="document.getElementById('log-detail-modal').classList.add('hidden')"
+          class="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 p-1.5 rounded-full transition-colors shadow-sm border border-gray-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5 bg-white space-y-4 text-sm max-h-[60vh] overflow-y-auto">
+        <div
+          class="bg-[#1e1e2e] p-5 rounded-xl shadow-inner overflow-x-auto border border-slate-800 font-mono text-[13px] leading-relaxed">
+          <div id="log-detail-content" class="m-0"></div>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-gray-100 bg-slate-50 flex justify-end gap-2 items-center shrink-0">
+        <button onclick="document.getElementById('log-detail-modal').classList.add('hidden')"
+          class="px-5 py-2 bg-slate-700 text-white rounded-xl font-bold hover:bg-slate-800 transition-all text-sm shadow-md active:scale-95 flex items-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i> 關閉視窗
+        </button>
+      </div>
+
     </div>
   </div>
 
