@@ -2656,6 +2656,8 @@ async function handleUpdatePassword() {
     const { data, error } = await _client.auth.updateUser({ password: newPwd });
     if (error) await sysAlert("變更失敗：" + error.message, "系統錯誤");
     else { await recordLog('安全設定', '修改了登入密碼', 'auth', null, null); await sysAlert("密碼變更成功！<br>下次登入請使用新密碼。", "變更成功"); closePasswordModal(); }
+    // ★ 寫入修改密碼日誌
+    await recordLog('修改密碼', `變更了個人的系統登入密碼`, 'auth', null, null);
 }
 
 
@@ -3369,11 +3371,60 @@ function openPermissionsModal(tid) {
 }
 function closePermissionsModal() { document.getElementById('permissions-modal').classList.add('hidden'); }
 async function savePermissions() {
+    // 1. 先抓取畫面上勾選的老師 IDs，並確保自己一定在裡面
     const ids = Array.from(document.querySelectorAll('#perm-checkbox-list input:checked:not(:disabled)')).map(c => c.value);
     if (!ids.includes(String(editingPermTeacherId))) ids.push(String(editingPermTeacherId));
-    const res = await _client.from('teachers').update({ viewable_teachers: ids.join(',') }).eq('id', editingPermTeacherId);
-    if (res.error) await sysAlert('儲存失敗：' + res.error.message, "系統錯誤");
-    else { const t = allTeachers.find(x => x.id === editingPermTeacherId); if (t) t.viewable_teachers = ids.join(','); setStatus('權限名單已成功儲存！', 'success'); closePermissionsModal(); await recordLog('權限設定', `修改了老師 [${t?.name}] 的側邊欄可見名單`, 'teachers', null, null); }
+    const newViewableString = ids.join(',');
+
+    // 2. 在更新前，先抓出這位老師「原本」的權限資料 (為了寫日誌作比對)
+    const { data: oldData } = await _client.from('teachers').select('*').eq('id', editingPermTeacherId).single();
+
+    // 3. 執行資料庫更新
+    const res = await _client.from('teachers')
+        .update({ viewable_teachers: newViewableString })
+        .eq('id', editingPermTeacherId)
+        .select();
+
+    if (res.error) {
+        return await sysAlert('儲存失敗：' + res.error.message, "系統錯誤");
+    }
+
+    const updatedData = res.data[0];
+
+    // 4. 智慧日誌分析引擎：算出到底 +了誰、-了誰
+    try {
+        // 直接使用全域變數 allTeachers 來做翻譯字典，不浪費時間去 DB 查
+        const nameMap = {};
+        allTeachers.forEach(t => nameMap[t.id] = t.name);
+
+        const oldList = oldData.viewable_teachers ? oldData.viewable_teachers.split(',') : [];
+        const newList = ids;
+
+        // 比對差異並翻譯成中文名字
+        const addedNames = newList.filter(id => !oldList.includes(id)).map(id => nameMap[id] || '未知');
+        const removedNames = oldList.filter(id => !newList.includes(id)).map(id => nameMap[id] || '未知');
+
+        if (addedNames.length > 0 || removedNames.length > 0) {
+            let detailStr = `修改了 [${oldData.name}] 的課表查看權限。`;
+            if (addedNames.length > 0) detailStr += `\n✅ 新增可見：${addedNames.join(', ')}`;
+            if (removedNames.length > 0) detailStr += `\n❌ 移除權限：${removedNames.join(', ')}`;
+
+            // 將這筆超詳細的差異寫入日誌
+            await recordLog('權限設定', detailStr, 'teachers', oldData, updatedData);
+        } else {
+            // 如果沒有實質增減但按了儲存，就記一筆基礎的操作
+            await recordLog('權限設定', `重新儲存了老師 [${oldData.name}] 的側邊欄可見名單`, 'teachers', null, null);
+        }
+    } catch (logErr) {
+        console.warn("權限日誌寫入失敗:", logErr);
+    }
+
+    // 5. 更新本地前端的快取，讓畫面同步
+    const t = allTeachers.find(x => x.id === editingPermTeacherId);
+    if (t) t.viewable_teachers = newViewableString;
+
+    setStatus('權限名單已成功儲存！', 'success');
+    closePermissionsModal();
 }
 
 // ==========================================
@@ -3578,32 +3629,222 @@ async function loadLogs() {
         if (log.action_type.includes('刪除')) badgeColor = "border-red-200 text-red-700 bg-red-50";
 
         const canUndo = ['新增課程', '刪除課程', '修改課程', '修改點名'].includes(log.action_type);
-        list.innerHTML += `<tr class="hover:bg-blue-50/50 transition-colors"><td class="p-4 text-xs font-mono text-gray-500 whitespace-nowrap">${timeStr}</td><td class="p-4 font-bold text-neutral-800 whitespace-nowrap">${log.actor_name || '未知'}</td><td class="p-4 whitespace-nowrap"><span class="px-2 py-1 rounded text-[10px] font-bold border ${badgeColor}">${log.action_type}</span></td><td class="p-4 text-xs text-gray-700 leading-relaxed">${log.description}</td><td class="p-4 text-center whitespace-nowrap">${canUndo ? `<button onclick="executeUndo('${log.id}')" class="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 rounded shadow-sm text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1 mx-auto"><i data-lucide="undo-2" class="w-3.5 h-3.5"></i> 復原</button>` : `<span class="text-xs text-gray-300">-</span>`}</td></tr>`;
+        list.innerHTML += `
+        <tr class="hover:bg-blue-50/50 transition-colors">
+            <td class="p-4 text-xs font-mono text-gray-500 whitespace-nowrap">${timeStr}</td>
+            <td class="p-4 font-bold text-neutral-800 whitespace-nowrap">${log.actor_name || '未知'}</td>
+            <td class="p-4 whitespace-nowrap"><span class="px-2 py-1 rounded text-[10px] font-bold border ${badgeColor}">${log.action_type}</span></td>
+            <td class="p-4 text-xs text-gray-700 leading-relaxed">${log.description}</td>
+            <td class="p-4 text-center whitespace-nowrap">
+                <div class="flex items-center justify-center gap-1.5">
+                    <button onclick="showLogDetail('${log.id}')" class="p-1.5 bg-slate-100 text-slate-600 hover:bg-slate-700 hover:text-white rounded transition-colors shadow-sm" title="查看底層數據">
+                        <i data-lucide="terminal" class="w-4 h-4"></i>
+                    </button>
+                    ${canUndo ? `<button onclick="executeUndo('${log.id}')" class="p-1.5 bg-white border border-gray-300 text-gray-600 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 rounded shadow-sm transition-all" title="復原此動作"><i data-lucide="undo-2" class="w-4 h-4"></i></button>` : `<span class="w-[30px]"></span>`}
+                </div>
+            </td>
+        </tr>`;
     });
     lucide.createIcons();
 }
 
+// ==========================================================================
+// ★ 終端機風格：詳細日誌檢視器 (智慧中文翻譯 + 高級排版)
+// ==========================================================================
+window.showLogDetail = async function (logId) {
+    setStatus("正在解析底層數據...");
+    try {
+        const { data, error } = await _client.from('action_logs').select('*').eq('id', logId).single();
+        if (error || !data) throw new Error("找不到日誌資料");
+
+        const contentEl = document.getElementById("log-detail-content");
+
+        // --- 🤖 智慧翻譯機：把冰冷的英文欄位轉成人類看得懂的中文 ---
+        const fieldDict = {
+            id: "系統編號", course_name: "學生姓名", subject: "科目",
+            phone: "聯絡電話", amount: "薪資/學費", room_no: "教室",
+            day_of_week: "星期", start_time: "開始時間", end_time: "結束時間",
+            color_class: "預設狀態", is_temporary: "排課模式", target_date: "單次課日期",
+            teacher_id: "老師內部ID", actual_date: "點名日期", status: "點名狀態",
+            remark: "備註", actual_amount: "當日實收金額", name: "老師姓名",
+            email: "帳號信箱", memo: "備忘錄", viewable_teachers: "可見權限",
+            // ★ 補上漏網的老師設定欄位
+            is_admin: "系統管理員?", is_hidden: "隱藏名單?", is_public: "公開教室?"
+        };
+
+        // --- 狀態與星期翻譯 ---
+        const statusDict = {
+            'status-pending': '尚未點名', 'status-present': '✅ 上課', 'attended': '✅ 上課',
+            'status-leave': '☕ 請假', 'leave': '☕ 請假', 'status-absent': '❌ 缺課', 'absent': '❌ 缺課',
+            'status-practice': '🎹 練習', 'status-special': '❓ 特殊狀況',
+            'status-hidden': '👻 隱藏(已替換)', 'status-vacation': '🌴 休假標記'
+        };
+        const weekDict = { 1: "週一", 2: "週二", 3: "週三", 4: "週四", 5: "週五", 6: "週六", 7: "週日" };
+
+        // 數值上色與格式化
+        function formatValue(key, val) {
+            if (val === null || val === undefined || val === '') return '<span class="text-slate-500 italic">無</span>';
+            if (key === 'day_of_week') return `<span class="text-amber-300 font-bold">${weekDict[val] || val}</span>`;
+            if (key === 'is_temporary') return `<span class="text-purple-300 font-bold">${String(val) === 'true' ? '單次臨時課' : '每週固定課'}</span>`;
+            if (key === 'status' || key === 'color_class') return `<span class="text-emerald-300 font-bold">${statusDict[val] || val}</span>`;
+            if (typeof val === 'boolean') return `<span class="text-blue-300">${val ? '是' : '否'}</span>`;
+            return `<span class="text-blue-200">"${val}"</span>`;
+        }
+
+        // 把物件轉成整齊的列表
+        function parseDataObj(obj) {
+            if (!obj) return '';
+            let html = '<div class="flex flex-col gap-1.5 mt-3 mb-6 bg-black/20 p-3 rounded-lg border border-white/5">';
+            for (const [key, val] of Object.entries(obj)) {
+                if (['created_at', 'updated_at', 'sort_order', 'card_order'].includes(key)) continue; // 略過無意義的底層時間戳
+                const translatedKey = fieldDict[key] || key;
+                html += `
+                    <div class="flex items-start gap-3">
+                        <div class="w-24 shrink-0 text-right text-slate-400 select-none">${translatedKey} :</div>
+                        <div class="flex-1 break-all">${formatValue(key, val)}</div>
+                    </div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // --- 組合最終精美畫面 ---
+        let output = `
+            <div class="text-blue-400 font-bold border-b border-slate-700 pb-2 mb-4 tracking-widest flex items-center gap-2">
+                <i data-lucide="server" class="w-4 h-4"></i> 系統數據解析中心
+            </div>
+            <div class="flex flex-col gap-2 mb-6">
+                <div class="flex items-start gap-3"><div class="w-20 shrink-0 text-right text-slate-500">執行時間 :</div><div class="text-slate-300">${new Date(data.created_at).toLocaleString('zh-TW')}</div></div>
+                <div class="flex items-start gap-3"><div class="w-20 shrink-0 text-right text-slate-500">操作人員 :</div><div class="text-slate-300">${data.actor_name}</div></div>
+                <div class="flex items-start gap-3"><div class="w-20 shrink-0 text-right text-slate-500">動作類型 :</div><div class="text-amber-400 font-bold">${data.action_type}</div></div>
+                <div class="flex items-start gap-3"><div class="w-20 shrink-0 text-right text-slate-500">目標資料 :</div><div class="text-slate-400 font-mono text-[10px] bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">${data.target_table}</div></div>
+                <div class="flex items-start gap-3"><div class="w-20 shrink-0 text-right text-slate-500">摘要說明 :</div><div class="text-white font-bold">${data.description}</div></div>
+            </div>
+        `;
+
+        if (data.old_data || data.new_data) {
+            if (data.old_data) {
+                output += `<div class="text-red-300 font-bold bg-red-900/30 px-2.5 py-1.5 rounded inline-block border border-red-900/50">📉 修改前資料 (Old Data)</div>`;
+                output += parseDataObj(data.old_data);
+            }
+            if (data.new_data) {
+                output += `<div class="text-emerald-300 font-bold bg-emerald-900/30 px-2.5 py-1.5 rounded inline-block border border-emerald-900/50">📈 修改後資料 (New Data)</div>`;
+                output += parseDataObj(data.new_data);
+            }
+        } else {
+            output += `<div class="text-slate-500 italic text-center py-6 bg-black/10 rounded-lg border border-white/5">此操作未夾帶底層數據變更。</div>`;
+        }
+
+        contentEl.innerHTML = output;
+        document.getElementById('log-detail-modal').classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+        setStatus("數據解析完成", "success");
+    } catch (err) {
+        setStatus("讀取失敗", "error");
+        sysAlert("無法讀取詳細日誌：" + err.message);
+    }
+}
+
 let pendingUndoLogId = null; let pendingUndoLogData = null;
 
-async function executeUndo(logId) {
-    setStatus("正在讀取復原資訊...");
-    const { data: log, error: fetchErr } = await _client.from('action_logs').select('*').eq('id', logId).single();
-    if (fetchErr || !log) { setStatus("讀取失敗", "error"); return sysAlert("找不到日誌，可能已經失效或已被復原過了！", "讀取失敗"); }
+// ==========================================================================
+// ★ 復原系統 (Undo) - Notion 極簡美學版
+// ==========================================================================
+window.executeUndo = async function (logId) {
+    setStatus("正在準備復原資料...");
+    try {
+        const { data: log, error: logErr } = await _client.from('action_logs').select('*').eq('id', logId).single();
+        if (logErr || !log) throw new Error("找不到日誌資料");
 
-    pendingUndoLogId = logId; pendingUndoLogData = log;
-    const titleEl = document.getElementById('undo-modal-title'); const contentEl = document.getElementById('undo-modal-content'); const warningEl = document.getElementById('undo-modal-warning');
+        const fieldDict = {
+            course_name: "學生姓名", subject: "科目", phone: "聯絡電話", amount: "金額",
+            day_of_week: "星期", start_time: "開始時間", end_time: "結束時間",
+            color_class: "預設狀態", is_temporary: "排課模式", target_date: "單次課日期",
+            status: "點名狀態", remark: "備註", actual_amount: "當日實收", actual_date: "點名日期"
+        };
+        const statusDict = {
+            'status-pending': '尚未點名', 'status-present': '✅ 上課', 'attended': '✅ 上課',
+            'status-leave': '☕ 請假', 'leave': '☕ 請假', 'status-absent': '❌ 缺課', 'absent': '❌ 缺課',
+            'status-practice': '🎹 練習', 'status-special': '❓ 特殊', 'status-hidden': '👻 隱藏', 'status-vacation': '🌴 休假'
+        };
+        const weekDict = { 1: "週一", 2: "週二", 3: "週三", 4: "週四", 5: "週五", 6: "週六", 7: "週日" };
 
-    let scheduleInfoHtml = ''; const refData = log.old_data || log.new_data;
-    if (refData && log.target_table === 'schedules') scheduleInfoHtml = `<i data-lucide="clock" class="w-3.5 h-3.5 text-blue-400"></i> ${refData.is_temporary ? `單次 ${refData.target_date?.slice(5)}` : '固定'} ${refData.start_time?.slice(0, 5)} - ${refData.end_time?.slice(0, 5)}`;
-    else if (refData && log.target_table === 'lesson_records') scheduleInfoHtml = `<i data-lucide="calendar" class="w-3.5 h-3.5 text-blue-400"></i> 點名日期：${refData.actual_date}`;
+        function fmt(k, v) {
+            if (v === null || v === undefined || v === '') return '無';
+            if (k === 'day_of_week') return weekDict[v] || v;
+            if (k === 'is_temporary') return String(v) === 'true' ? '單次臨時課' : '每週固定課';
+            if (k === 'status' || k === 'color_class') return statusDict[v] || v;
+            if (typeof v === 'boolean') return v ? '是' : '否';
+            return v;
+        }
 
-    const actionInfoHtml = `<div class="mt-3 pt-2 border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-400 font-sans"><span class="flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> 操作人：${log.actor_name || '未知'}</span></div>`;
+        // --- Notion 風格排版 ---
+        let diffHtml = `<div class="text-[14px] text-gray-800 mb-3 font-medium flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-gray-400"></i>即將復原以下變更：</div>`;
+        diffHtml += `<div class="flex flex-col gap-1 bg-white border border-gray-200 rounded-lg p-3 shadow-sm overflow-x-auto">`;
 
-    if (log.action_type === '新增課程') { titleEl.textContent = '確定要【撤銷新增】嗎？'; contentEl.innerHTML = `<div class="text-gray-800 font-bold text-center pt-2">${log.description}</div><div class="text-[11px] text-gray-500 font-medium mt-1.5 flex items-center justify-center gap-1">${scheduleInfoHtml}</div>${actionInfoHtml}`; warningEl.innerHTML = '<i data-lucide="trash-2" class="w-3.5 h-3.5 inline mr-1"></i> 執行後，這堂課將從課表中徹底刪除！'; }
-    else if (log.action_type === '刪除課程') { titleEl.textContent = '確定要【復活課程】嗎？'; contentEl.innerHTML = `<div class="text-gray-800 font-bold text-center pt-2">${log.description}</div><div class="text-[11px] text-gray-500 font-medium mt-1.5 flex items-center justify-center gap-1">${scheduleInfoHtml}</div>${actionInfoHtml}`; warningEl.innerHTML = '<i data-lucide="sparkles" class="w-3.5 h-3.5 inline mr-1"></i> 執行後，這堂課將重新回到課表上！'; }
-    else { titleEl.textContent = '確定要【退回修改】嗎？'; warningEl.innerHTML = '<i data-lucide="history" class="w-3.5 h-3.5 inline mr-1"></i> 執行後，資料將拋棄紅字，退回綠色狀態！'; contentEl.innerHTML = `<div class="py-2 text-center font-bold text-gray-800">${log.description}</div><div class="text-[11px] text-gray-500 font-medium mt-1 flex items-center justify-center gap-1">${scheduleInfoHtml}</div>${actionInfoHtml}`; }
+        const oData = log.old_data || {};
+        const nData = log.new_data || {};
 
-    document.getElementById('undo-modal').classList.remove('hidden'); lucide.createIcons(); setStatus("就緒", "success");
+        if (log.action_type === '修改課程' || log.action_type === '修改點名') {
+            let hasChanges = false;
+            const allKeys = new Set([...Object.keys(oData), ...Object.keys(nData)]);
+            for (let k of allKeys) {
+                if (['created_at', 'updated_at', 'id', 'sort_order', 'teacher_id'].includes(k)) continue;
+
+                if (JSON.stringify(oData[k]) !== JSON.stringify(nData[k])) {
+                    hasChanges = true;
+                    diffHtml += `
+                        <div class="flex items-center gap-3 py-1.5 border-b border-gray-50 last:border-0 min-w-max">
+                            <span class="w-20 text-right text-gray-400 text-[13px] shrink-0">${fieldDict[k] || k}</span>
+                            <span class="text-red-400 line-through decoration-red-300 decoration-1 bg-red-50/50 px-1.5 py-0.5 rounded text-[13px]">${fmt(k, nData[k])}</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-gray-300 shrink-0"></i>
+                            <span class="text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded text-[13px]">${fmt(k, oData[k])}</span>
+                        </div>`;
+                }
+            }
+            if (!hasChanges) diffHtml += `<div class="text-gray-400 text-[13px] italic">無實質欄位變動</div>`;
+
+        } else if (log.action_type === '新增課程') {
+            diffHtml += `<div class="text-red-600 font-medium mb-1 flex items-center gap-1.5 text-[13px]"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 將移除剛剛新增的資料：</div>`;
+            diffHtml += `<div class="text-gray-600 pl-5 text-[13px]">學生：<b>${nData.course_name || '未知'}</b> (${nData.subject || ''})</div>`;
+        } else if (log.action_type === '刪除課程') {
+            diffHtml += `<div class="text-emerald-600 font-medium mb-1 flex items-center gap-1.5 text-[13px]"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> 將救援被誤刪的資料：</div>`;
+            diffHtml += `<div class="text-gray-600 pl-5 text-[13px]">學生：<b>${oData.course_name || '未知'}</b> (${oData.subject || ''})</div>`;
+        } else {
+            diffHtml += `<div class="text-gray-500 text-[13px]">將執行系統狀態倒轉。</div>`;
+        }
+        diffHtml += `</div>`;
+
+        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 20);
+
+        if (!(await sysConfirm(diffHtml, "確認執行復原操作？", "warning"))) {
+            setStatus("");
+            return;
+        }
+
+        setStatus("正在復原資料庫...", "warn");
+        const targetTable = log.target_table || (log.action_type.includes('點名') ? 'lesson_records' : 'schedules');
+
+        if (log.action_type === '刪除課程') {
+            const { error } = await _client.from(targetTable).insert([log.old_data]);
+            if (error) throw error;
+        } else if (log.action_type === '新增課程') {
+            const { error } = await _client.from(targetTable).delete().eq('id', log.new_data.id);
+            if (error) throw error;
+        } else {
+            const { error } = await _client.from(targetTable).update(log.old_data).eq('id', log.old_data.id);
+            if (error) throw error;
+        }
+
+        await _client.from('action_logs').delete().eq('id', logId);
+        setStatus("復原成功！", "success");
+        await loadLogs();
+        if (typeof refreshData === 'function') await refreshData();
+
+    } catch (err) {
+        setStatus("復原失敗", "error");
+        sysAlert("復原過程發生錯誤：" + err.message, "系統錯誤");
+    }
 }
 
 function closeUndoModal() { document.getElementById('undo-modal').classList.add('hidden'); pendingUndoLogId = null; pendingUndoLogData = null; }
