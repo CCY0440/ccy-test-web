@@ -784,6 +784,18 @@ async function switchTeacher(tid, name) {
     }
 
     if (dateCtrl) dateCtrl.classList.remove('hidden');
+
+    // ★ 確保切換老師時，所有被隱藏的按鈕都會重新顯示
+    const salaryBtn = document.querySelector('button[onclick="openSalaryModal()"]');
+    const excelBtn = document.querySelector('button[onclick="openBatchModal()"]');
+    const leaveBtn = document.querySelector('button[onclick="openLeaveModal()"]');
+    const togglePendingBtn = document.getElementById("toggle-pending-btn");
+
+    if (salaryBtn) salaryBtn.classList.remove('hidden');
+    if (excelBtn) excelBtn.classList.remove('hidden');
+    if (leaveBtn) leaveBtn.classList.remove('hidden');
+    if (togglePendingBtn) togglePendingBtn.classList.remove('hidden');
+
     if (window.lucide) lucide.createIcons();
 
     // 以下為原有的側邊欄 UI 更新邏輯
@@ -3428,7 +3440,7 @@ async function savePermissions() {
 }
 
 // ==========================================
-// ★ 老師固定課表專屬管理系統 (無縫視角切換版)
+// ★ 老師固定課表專屬管理系統 (無縫視角切換 + 極簡頂部列)
 // ==========================================
 window.isFixedViewMode = false;
 
@@ -3444,8 +3456,11 @@ function openFixedScheduleModal() {
     const form = document.getElementById("course-form");
     const t = allTeachers.find(x => x.id === currentTid);
 
-    // ★ 抓出隱藏按鈕
+    // ★ 抓出所有需要動態隱藏的按鈕
     const togglePendingBtn = document.getElementById("toggle-pending-btn");
+    const salaryBtn = document.querySelector('button[onclick="openSalaryModal()"]');
+    const excelBtn = document.querySelector('button[onclick="openBatchModal()"]');
+    const leaveBtn = document.querySelector('button[onclick="openLeaveModal()"]');
 
     if (window.isFixedViewMode) {
         if (titleEl) titleEl.innerHTML = `<span class="text-orange-500">${t ? t.name : ''} · 固定課表</span>`;
@@ -3460,8 +3475,12 @@ function openFixedScheduleModal() {
         if (form && form.teacher_id) form.teacher_id.value = currentTid;
         if (dateCtrl) dateCtrl.classList.add('hidden');
 
-        // ★ 橘色模式防呆：隱藏按鈕，若已開啟隱藏則強制關閉
+        // ★ 橘色模式防呆：隱藏所有不相關的按鈕，保持介面極度乾淨！
+        if (salaryBtn) salaryBtn.classList.add('hidden');
+        if (excelBtn) excelBtn.classList.add('hidden');
+        if (leaveBtn) leaveBtn.classList.add('hidden');
         if (togglePendingBtn) togglePendingBtn.classList.add('hidden');
+
         if (_hidePending) {
             _hidePending = false;
             if (togglePendingBtn) {
@@ -3481,7 +3500,10 @@ function openFixedScheduleModal() {
         }
         if (dateCtrl) dateCtrl.classList.remove('hidden');
 
-        // ★ 返回藍色模式：將按鈕顯示回來
+        // ★ 返回藍色模式：將按鈕全部顯示回來
+        if (salaryBtn) salaryBtn.classList.remove('hidden');
+        if (excelBtn) excelBtn.classList.remove('hidden');
+        if (leaveBtn) leaveBtn.classList.remove('hidden');
         if (togglePendingBtn) togglePendingBtn.classList.remove('hidden');
     }
 
