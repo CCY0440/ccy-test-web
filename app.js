@@ -3626,7 +3626,7 @@ async function confirmExecuteUndo() {
 }
 
 // ==========================================================================
-// ★ 終極安全版：固定課表批次匯入 (Upsert 模式，永不刪除舊紀錄)
+// ★ 終極安全版：固定課表批次匯入 (Upsert 模式 + 智慧防盜拷盾牌)
 // ==========================================================================
 async function executeMasterCopyImport(input) {
     const file = input.files[0];
@@ -3638,7 +3638,6 @@ async function executeMasterCopyImport(input) {
 
     const targetTeacherName = document.getElementById("main-title").textContent.split(' · ')[0];
 
-    // 警告視窗也升級為安全提示
     if (!(await sysConfirm(`確定要更新 <b class="text-blue-600">${targetTeacherName}</b> 的課表嗎？<br><br><span class="text-green-600 font-bold">🛡️ 安全模式啟動：系統會自動對照「系統編號」進行更新，絕不影響歷史點名紀錄！</span>`, "安全同步確認", "warning"))) {
         input.value = "";
         return;
@@ -3648,6 +3647,12 @@ async function executeMasterCopyImport(input) {
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
+            // ==========================================
+            // ★ 1. 防盜拷魔法盾：先去資料庫查這位老師「名下擁有」的課程 ID
+            // ==========================================
+            const { data: mySchedules } = await _client.from("schedules").select("id").eq("teacher_id", currentTid);
+            const myScheduleIds = new Set((mySchedules || []).map(s => s.id));
+
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             const jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
@@ -3681,9 +3686,18 @@ async function executeMasterCopyImport(input) {
                     is_temporary: isTemp
                 };
 
-                // 如果有系統編號，就帶入 ID 進行精準覆蓋 (不換 ID，點名紀錄就不會斷)
+                // ==========================================
+                // ★ 2. 核心修復：不能盲目覆蓋！必須檢查這個 ID 是不是別人的！
+                // ==========================================
                 if (existingId && existingId.length > 20) {
-                    courseObj.id = existingId;
+                    if (myScheduleIds.has(existingId)) {
+                        // 情境 A：這是他自己的課，允許保留 ID 進行更新覆蓋
+                        courseObj.id = existingId;
+                    } else {
+                        // 情境 B：這是別人的課！(如您的測試匯入) 
+                        // ➔ 系統會自動拔除舊 ID，把它當作「全新的資料」來建立！
+                        console.log(`[系統防護] 自動將來自其他老師的課程轉為全新拷貝：${sName}`);
+                    }
                 }
 
                 upsertData.push(courseObj);
@@ -3691,7 +3705,6 @@ async function executeMasterCopyImport(input) {
 
             if (upsertData.length === 0) throw new Error("沒有讀取到任何有效的課程資料");
 
-            // ★ 核心改變：只做 Upsert (有 ID 就更新，沒 ID 就新增)，把危險的 Delete 徹底拔除！
             const { error: upsertErr } = await _client.from("schedules").upsert(upsertData);
             if (upsertErr) throw upsertErr;
 
