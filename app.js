@@ -646,10 +646,10 @@ async function fetchUserProfile(email) {
     if (initialEl && nameEl && roleEl) {
         initialEl.textContent = data.name.charAt(0);
         nameEl.textContent = data.name;
-
         if (data.is_admin) {
-            const isDev = data.name === "Ccy";
-            const roleTitle = isDev ? "系統開發者" : "系統管理員";
+            // ★ 修復：將名字轉為小寫比對，無視大小寫差異，並換上專屬稱呼
+            const isDev = data.name.toLowerCase() === "ccy";
+            const roleTitle = isDev ? "系統開發人員" : "系統管理員";
             const roleIcon = isDev ? "code" : "shield-alert";
             roleEl.innerHTML = `<i data-lucide="${roleIcon}" class="w-3 h-3 text-amber-500"></i> ${roleTitle}`;
             roleEl.classList.add("text-amber-600");
