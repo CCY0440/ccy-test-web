@@ -183,6 +183,11 @@ function showSidebarDetail(itemId, dateStr) {
     const monthDiff = (today.getFullYear() * 12 + today.getMonth()) - (cardDate.getFullYear() * 12 + cardDate.getMonth());
     const isLocked = monthDiff >= 2 && (!currentUserInfo || !currentUserInfo.is_admin);
 
+    // ★ 視覺修復：根據模式決定顯示的金額 (橘色固定模式永遠顯示原價)
+    const displayAmount = window.isFixedViewMode
+        ? (item.amount || 0)
+        : ((record && record.actual_amount != null) ? record.actual_amount : (item.amount || 0));
+
     let statusBadge = '';
     if (['attended', 'status-present'].includes(currentStatus)) statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-green-50 text-green-600 border border-green-100"><i data-lucide="check-circle" class="w-3 h-3 inline"></i> 已上課</span>';
     else if (['leave', 'status-leave'].includes(currentStatus)) statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-amber-50 text-amber-600 border border-amber-100"><i data-lucide="coffee" class="w-3 h-3 inline"></i> 已請假</span>';
@@ -250,7 +255,7 @@ function showSidebarDetail(itemId, dateStr) {
                 <div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px]"><i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i> ${dateStr}</div>
                 <div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px]"><i data-lucide="clock" class="w-4 h-4 text-amber-400"></i> ${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}</div>
                 <div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px]"><i data-lucide="map-pin" class="w-4 h-4 text-rose-400"></i> ${item.room_no || '未指定教室'}</div>
-                <div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px] font-mono"><i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i> NT$ ${item.amount || 0}</div>
+<div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px] font-mono"><i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i> NT$ ${displayAmount}</div>
             </div>
 
             ${phoneList.length > 0 ? `
@@ -1064,13 +1069,37 @@ async function handleImportDaily(input) {
                 if (date && date.includes('/')) date = date.replace(/\//g, '-');
                 if (!row["系統編號(請勿修改)"] || !date) continue;
 
+                let sStatus = statusMap[row["狀態"]] || 'status-pending';
+                let sAmount = parseInt(row["當日金額"]);
+                if (isNaN(sAmount)) sAmount = 0;
+
+                // ★ 智慧判斷：如果 Excel 寫「尚未點名」且金額為 0，代表這堂課根本還沒結帳，存入 null 以保持彈性
+                let finalActualAmount = sAmount;
+                if (sStatus === 'status-pending' && sAmount === 0) {
+                    finalActualAmount = null;
+                }
+
+                // ==========================================
+                // ★ 終極資安防禦：攔截 Excel 竄改歷史漏洞
+                // ==========================================
+                const importDateObj = new Date(date);
+                const todayForCheck = new Date();
+                const mDiff = (todayForCheck.getFullYear() * 12 + todayForCheck.getMonth()) - (importDateObj.getFullYear() * 12 + importDateObj.getMonth());
+
+                // 如果這筆資料超過兩個月，且操作者「不是管理員」，直接斬斷不准匯入！
+                if (mDiff >= 2 && (!currentUserInfo || !currentUserInfo.is_admin)) {
+                    console.warn(`[權限阻擋] 攔截到非管理員試圖透過 Excel 修改鎖定歷史：${date}`);
+                    continue; // 🛡️ 直接跳過這一筆，不加入更新清單！
+                }
+
+                // (原本的 push 邏輯維持不變)
                 updates.push({
                     schedule_id: row["系統編號(請勿修改)"],
                     teacher_id: currentTid,
                     actual_date: date,
-                    status: statusMap[row["狀態"]] || 'status-pending',
+                    status: sStatus,
                     remark: row["備註"] || "",
-                    actual_amount: parseInt(row["當日金額"]) || 0
+                    actual_amount: finalActualAmount
                 });
             }
 
@@ -1391,12 +1420,17 @@ function renderSchedule(list, records = [], startDate) {
             let cardActionsHtml = '';
             let clickAction = '';
 
+            // 🚀 核心修復：提早尋找點名紀錄與結帳金額，解除 ReferenceError！
+            const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
+            let displayAmount = (record && record.actual_amount != null) ? record.actual_amount : (item.amount || 0);
+
             // ==========================================
             // ★ 核心分流：判斷現在是「母版模式」還是「本週模式」
             // ==========================================
             if (window.isFixedViewMode) {
                 // 🍊【固定課表母版模式】：無視鎖定、日誌、隱藏，純淨顯示！
                 displayStatus = item.color_class || 'status-pending';
+                displayAmount = item.amount || 0; // ★ 核心修復：固定課表模式「絕對」只顯示最新菜單定價！
                 clickAction = `openEditModal('${item.id}', 'status-pending', '${formatDate(new Date())}')`;
                 cardActionsHtml = `
                     <button type="button" onclick="openEditModal('${item.id}', 'status-pending', '${formatDate(new Date())}'); event.stopPropagation();" class="p-1 rounded-full text-orange-600 hover:text-orange-800 hover:scale-110 transition-all cursor-pointer" title="修改固定課表"><i data-lucide="pencil" class="w-4 h-4"></i></button>
@@ -1409,7 +1443,7 @@ function renderSchedule(list, records = [], startDate) {
                 const monthDiff = (today.getFullYear() * 12 + today.getMonth()) - (cardDate.getFullYear() * 12 + cardDate.getMonth());
                 isLocked = monthDiff >= 2 && !currentUserInfo?.is_admin;
 
-                const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
+                // (這裡原本的 const record = ... 已經被我們移到上面去了！)
                 displayStatus = record ? record.status : (item.color_class || 'status-pending');
 
                 if (displayStatus === 'status-hidden') return; // 隱身魔法：遇到轉為單次的母版直接不顯示
@@ -1448,8 +1482,9 @@ function renderSchedule(list, records = [], startDate) {
             else if (displayStatus === 'status-practice') { statusBorder = 'border-l-4 border-blue-400'; bgClass = 'bg-blue-50'; }
             else if (displayStatus === 'status-special') { statusBorder = 'border-l-4 border-purple-400'; bgClass = 'bg-purple-50'; }
 
+            // (這裡原本的 const displayAmount = ... 已經被我們移到上面去了！)
+
             const card = document.createElement("div");
-            // ★ 核心修復：拔除原本的 p-1.5 pb-1.5，加入 overflow-hidden，讓底部框框能真正貼齊卡片最底端！
             card.className = `schedule-card absolute rounded-r-md rounded-l-sm text-sm shadow-md flex flex-col transition-all duration-200 group box-border overflow-hidden ${isLocked ? 'card-locked' : 'hover:shadow-xl hover:z-[70] cursor-pointer'} ${statusBorder} ${bgClass}`;
             card.dataset.id = item.id;
 
@@ -1492,7 +1527,7 @@ function renderSchedule(list, records = [], startDate) {
                 <div onclick="showSidebarDetail('${item.id}', '${thisDayDateStr}'); event.stopPropagation();" class="h-1/2 w-full flex items-center justify-between bg-gray-50/80 hover:bg-blue-50 transition-colors backdrop-blur-sm px-2 border-t border-gray-100 cursor-pointer group/bottom overflow-hidden">
                     <div class="flex items-center gap-0.5 text-[11px] text-gray-500 font-bold group-hover/bottom:text-emerald-600 transition-colors whitespace-nowrap shrink-0 tracking-wide flex-none">
                         <i data-lucide="coins" class="w-3.5 h-3.5 text-emerald-400 shrink-0"></i>
-                        $${item.amount || 0}
+                        $${displayAmount}
                     </div>
                     <div class="flex items-center gap-1 ml-auto shrink-0 pl-1 flex-none">
                         ${displayRemark ? `<i data-lucide="pin" class="w-3.5 h-3.5 text-red-500 shrink-0"></i>` : ''}
@@ -1709,12 +1744,23 @@ async function toggleRecordStatus(scheduleId, dateStr, currentStatus) {
                     if (error) throw error;
                 }
             } else {
-                // 🛡️ 有備註！只能更新狀態，絕對不能刪除紀錄
                 if (dbExisting) {
-                    const { error: updateErr } = await _client.from("lesson_records").update({ status: nextStatus }).eq("id", dbExisting.id);
+                    const updatePayload = { status: nextStatus };
+                    // ★ 只要歷史薪資是 null (代表從未被防護盾上鎖過)，才去抓最新的菜單價格
+                    if (dbExisting.actual_amount == null) {
+                        updatePayload.actual_amount = masterItem.amount || 0;
+                    }
+                    const { error: updateErr } = await _client.from("lesson_records").update(updatePayload).eq("id", dbExisting.id);
                     if (updateErr) throw updateErr;
                 } else {
-                    const { error: insertErr } = await _client.from("lesson_records").insert({ schedule_id: scheduleId, teacher_id: currentTid, actual_date: dateStr, status: nextStatus });
+                    // ★ 核心修復：第一次點名時，立刻把當下的薪水拍下來，變成獨立的歷史收據！
+                    const { error: insertErr } = await _client.from("lesson_records").insert({
+                        schedule_id: scheduleId,
+                        teacher_id: currentTid,
+                        actual_date: dateStr,
+                        status: nextStatus,
+                        actual_amount: masterItem.amount || 0  // 👈 就是補上了這行魔法！
+                    });
                     if (insertErr) throw insertErr;
                 }
             }
@@ -2198,6 +2244,150 @@ async function autoSyncNewStudent(courseName, phone) {
     }
 }
 
+// ==========================================================================
+// ★ 終極歷史薪資防護盾 (支援自訂「開始」與「結束」日期)
+// ==========================================================================
+window.lockHistoricalSalary = async function (scheduleId, oldAmount, teacherId, dayOfWeek, createdAt, targetStartDateStr, targetEndDateStr) {
+    if (!oldAmount || oldAmount === 0) return;
+
+    try {
+        // 1. 決定截止日期：如果有傳入就用傳入的，沒有預設為「昨天」
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const lockUntilStr = targetEndDateStr || formatDate(yesterday);
+        const targetEndDate = new Date(lockUntilStr);
+
+        // 2. 決定開始日期：如果有傳入就用傳入的，沒有的話預設往回追溯 3 個月
+        let startDate;
+        if (targetStartDateStr) {
+            startDate = new Date(targetStartDateStr);
+        } else {
+            startDate = new Date(targetEndDate);
+            startDate.setMonth(startDate.getMonth() - 3);
+            startDate.setDate(1);
+        }
+
+        // 3. 先把「指定區間內」已經存在、但金額還是 null 的紀錄蓋上舊薪水
+        await _client.from("lesson_records")
+            .update({ actual_amount: oldAmount })
+            .eq("schedule_id", scheduleId)
+            .gte("actual_date", formatDate(startDate))
+            .lte("actual_date", lockUntilStr)
+            .is("actual_amount", null);
+
+        // 4. 抓取區間內已存在的紀錄日期，避免重複寫入
+        const { data: existingRecords } = await _client.from("lesson_records")
+            .select("actual_date")
+            .eq("schedule_id", scheduleId)
+            .gte("actual_date", formatDate(startDate))
+            .lte("actual_date", lockUntilStr);
+        const existingDates = new Set((existingRecords || []).map(r => r.actual_date));
+
+        const insertData = [];
+        let loopDate = new Date(startDate);
+
+        // 5. 迴圈跑到使用者指定的截止日，把空白的日子補上收據！
+        while (loopDate <= targetEndDate) {
+            let day = loopDate.getDay() === 0 ? 7 : loopDate.getDay();
+            if (day === parseInt(dayOfWeek)) {
+                const dStr = formatDate(loopDate);
+                if (!existingDates.has(dStr)) {
+                    insertData.push({
+                        schedule_id: scheduleId,
+                        teacher_id: teacherId,
+                        actual_date: dStr,
+                        status: 'status-pending',
+                        remark: '',
+                        actual_amount: oldAmount
+                    });
+                }
+            }
+            loopDate.setDate(loopDate.getDate() + 1);
+        }
+
+        if (insertData.length > 0) {
+            await _client.from("lesson_records").upsert(insertData, { onConflict: 'schedule_id,actual_date' });
+        }
+    } catch (err) {
+        console.error("[薪資防護盾] 歷史鎖定發生錯誤:", err);
+    }
+}
+
+// ==========================================================================
+// ★ 手動安全鎖：自訂時間段的歷史薪資存檔
+// ==========================================================================
+window.manualLockTeacherHistory = async function () {
+    if (!currentTid) return;
+    const t = allTeachers.find(x => x.id === currentTid);
+    const tName = t ? t.name : '未知老師';
+
+    // ★ 智慧預設值：抓取「上個月的 1 號」到「上個月的最後一天」
+    const today = new Date();
+    const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+
+    const defaultStart = formatDate(firstDayOfLastMonth);
+    const defaultEnd = formatDate(lastDayOfLastMonth);
+
+    // 溫和且具備「開始與結束」選擇器的提示框
+    const confirmMsg = `
+        <div class="text-[14px] text-gray-700 leading-relaxed text-left">
+            您即將為 <b>${tName}</b> 建立歷史薪資存檔：<br><br>
+            
+            <div class="mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-1.5"><i data-lucide="calendar-clock" class="w-4 h-4 text-slate-500"></i> 請選擇存檔的「開始」與「結束」日期：</label>
+                <div class="flex items-center gap-2">
+                    <input type="date" id="archive-start-date" value="${defaultStart}" class="w-full border border-slate-300 rounded p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all">
+                    <span class="text-slate-400 font-bold">~</span>
+                    <input type="date" id="archive-end-date" value="${defaultEnd}" max="${formatDate(today)}" class="w-full border border-slate-300 rounded p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all">
+                </div>
+            </div>
+
+            <ul class="list-disc pl-5 space-y-1.5 text-slate-600 mb-2">
+                <li>系統會將您選擇的 <b>這段期間內</b> 的課程，完整打包成歷史快照。</li>
+                <li>全面保存當時的<b>「薪資金額、點名狀態、備註紀錄」</b>，確保未來的任何設定變更，都不會影響到這份歷史帳目。</li>
+                <li><b>💡 存檔後若需微調，您依然可以隨時點擊該日期的卡片進行修改喔！</b></li>
+            </ul>
+        </div>
+    `;
+
+    setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 20);
+
+    if (!(await sysConfirm(confirmMsg, "📦 建立區間歷史存檔", "info"))) return;
+
+    // 抓取使用者選擇的開始與結束日期
+    const selectedStart = document.getElementById('archive-start-date') ? document.getElementById('archive-start-date').value : defaultStart;
+    const selectedEnd = document.getElementById('archive-end-date') ? document.getElementById('archive-end-date').value : defaultEnd;
+
+    // 簡單的防呆檢查
+    if (new Date(selectedStart) > new Date(selectedEnd)) {
+        return sysAlert("「開始日期」不能晚於「結束日期」喔！請重新選擇。");
+    }
+
+    setStatus("正在建立歷史存檔，請稍候...", "warn");
+    try {
+        const { data: mySchedules } = await _client.from("schedules").select("*").eq("teacher_id", currentTid).eq("is_temporary", false);
+        if (!mySchedules || mySchedules.length === 0) {
+            setStatus("");
+            return sysAlert(`<b>${tName}</b> 目前沒有任何固定課程需要存檔。`);
+        }
+
+        // 啟動防護盾！傳入使用者指定的「開始」與「結束」日期
+        for (const sched of mySchedules) {
+            await window.lockHistoricalSalary(sched.id, Number(sched.amount) || 0, currentTid, sched.day_of_week, sched.created_at, selectedStart, selectedEnd);
+        }
+
+        await recordLog('系統操作', `為 [${tName}] 建立了歷史薪資存檔 (區間：${selectedStart} ~ ${selectedEnd})。`, 'lesson_records', null, null);
+
+        setStatus("歷史存檔建立完成！", "success");
+        await sysAlert(`🎉 存檔成功！<br><br><b>${tName}</b> 從 <b>${selectedStart}</b> 到 <b>${selectedEnd}</b> 的課程皆已安心保存。<br>未來的課表調整都不會影響到這段期間的帳目囉！`);
+    } catch (err) {
+        console.error(err);
+        setStatus("存檔失敗", "error");
+        sysAlert("存檔過程發生錯誤：" + err.message);
+    }
+};
+
 /** 新增與編輯課程提交 (修復刪除母版問題版) */
 document.getElementById("course-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -2316,6 +2506,14 @@ document.getElementById("course-form").addEventListener("submit", async (e) => {
         if (editingId && oldData && !oldData.is_temporary) {
             data.is_temporary = false;
             data.target_date = null;
+        }
+
+        // ==========================================
+        // ★ 終極歷史薪資防護盾 (呼叫全自動追溯引擎)
+        // ==========================================
+        if (editingId && oldData && Number(oldData.amount) !== Number(data.amount)) {
+            setStatus("正在安全鎖定歷史帳目...");
+            await window.lockHistoricalSalary(editingId, Number(oldData.amount), oldData.teacher_id, oldData.day_of_week, oldData.created_at);
         }
 
         // ==========================================
@@ -2625,7 +2823,9 @@ async function saveQuickRemark(forceClear = false) {
                 teacher_id: currentTid,
                 actual_date: dStr,
                 status: exist ? exist.status : (targetMaster.color_class || 'status-pending'),
-                remark: text
+                remark: text,
+                // ★ 寫備註時，也確保當下金額被拍照存證！
+                actual_amount: (exist && exist.actual_amount != null) ? exist.actual_amount : (targetMaster.amount || 0)
             });
         }
         loopDate.setDate(loopDate.getDate() + 1);
@@ -3472,6 +3672,21 @@ function openFixedScheduleModal() {
             addCourseBtn.className = "flex items-center gap-2 bg-orange-50 text-orange-700 border border-orange-200 px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold hover:bg-orange-100 transition-all shrink-0 shadow-sm";
             addCourseBtn.innerHTML = '<i data-lucide="plus" class="w-4 h-4"></i><span class="hidden md:inline">新增固定課</span><span class="md:hidden">新增</span>';
         }
+
+        // ★ 動態產生「手動封存」按鈕 (放在新增按鈕的旁邊)
+        let archiveBtn = document.getElementById('manual-archive-btn');
+        if (!archiveBtn && addCourseBtn) {
+            archiveBtn = document.createElement('button');
+            archiveBtn.id = 'manual-archive-btn';
+            archiveBtn.onclick = manualLockTeacherHistory;
+            // ★ 換上柔和的綠色系，圖示改為代表安全存檔的 save
+            archiveBtn.className = "flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-bold hover:bg-emerald-100 transition-all shrink-0 shadow-sm";
+            archiveBtn.innerHTML = '<i data-lucide="save" class="w-4 h-4"></i><span class="hidden md:inline">建立歷史存檔</span><span class="md:hidden">存檔</span>';
+            addCourseBtn.parentNode.insertBefore(archiveBtn, addCourseBtn);
+            if (window.lucide) lucide.createIcons({ root: archiveBtn });
+        }
+        if (archiveBtn) archiveBtn.classList.remove('hidden');
+
         if (form && form.teacher_id) form.teacher_id.value = currentTid;
         if (dateCtrl) dateCtrl.classList.add('hidden');
 
@@ -3489,6 +3704,9 @@ function openFixedScheduleModal() {
             }
         }
     } else {
+        // ★ 切回藍色模式時，隱藏封存按鈕
+        let archiveBtn = document.getElementById('manual-archive-btn');
+        if (archiveBtn) archiveBtn.classList.add('hidden');
         if (titleEl) titleEl.innerHTML = `<span class="text-blue-600">${t ? t.name : ''} · 本週課表</span>`;
         if (fixedBtn) {
             fixedBtn.className = "flex items-center gap-2 bg-orange-50 text-orange-700 border border-orange-200 px-3 py-2 rounded-lg text-xs md:text-sm font-bold hover:bg-orange-100 transition-all shrink-0 shadow-sm";
@@ -3911,10 +4129,10 @@ async function executeMasterCopyImport(input) {
     reader.onload = async (e) => {
         try {
             // ==========================================
-            // ★ 1. 防盜拷魔法盾：先去資料庫查這位老師「名下擁有」的課程 ID
+            // ★ 1. 防盜拷魔法盾 & 歷史薪資防護前置作業
             // ==========================================
-            const { data: mySchedules } = await _client.from("schedules").select("id").eq("teacher_id", currentTid);
-            const myScheduleIds = new Set((mySchedules || []).map(s => s.id));
+            const { data: mySchedules } = await _client.from("schedules").select("*").eq("teacher_id", currentTid);
+            const myScheduleMap = new Map((mySchedules || []).map(s => [s.id, s]));
 
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
@@ -3953,12 +4171,18 @@ async function executeMasterCopyImport(input) {
                 // ★ 2. 核心修復：不能盲目覆蓋！必須檢查這個 ID 是不是別人的！
                 // ==========================================
                 if (existingId && existingId.length > 20) {
-                    if (myScheduleIds.has(existingId)) {
+                    if (myScheduleMap.has(existingId)) {
                         // 情境 A：這是他自己的課，允許保留 ID 進行更新覆蓋
                         courseObj.id = existingId;
+                        const oldMaster = myScheduleMap.get(existingId);
+
+                        // ★ 核心魔法：如果 Excel 上的金額跟原本的不同，自動觸發歷史防護盾！
+                        if (Number(oldMaster.amount) !== Number(courseObj.amount)) {
+                            console.log(`[Excel匯入防護] 偵測到 ${courseObj.course_name} 金額變更，啟動防護盾！`);
+                            await window.lockHistoricalSalary(existingId, Number(oldMaster.amount), currentTid, oldMaster.day_of_week, oldMaster.created_at);
+                        }
                     } else {
                         // 情境 B：這是別人的課！(如您的測試匯入) 
-                        // ➔ 系統會自動拔除舊 ID，把它當作「全新的資料」來建立！
                         console.log(`[系統防護] 自動將來自其他老師的課程轉為全新拷貝：${sName}`);
                     }
                 }
