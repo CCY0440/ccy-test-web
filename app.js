@@ -138,7 +138,7 @@ function togglePendingView() {
 
 // ★ 動態側邊欄：課程詳細資訊與操作面板 (智慧滑動特效版)
 function showSidebarDetail(itemId, dateStr) {
-    window.currentSidebarDateStr = dateStr; // 讓系統記住側邊欄現在顯示的日期
+    window.currentSidebarDateStr = dateStr;
 
     const item = _cachedSchedule.find(i => i.id === itemId);
     const record = _cachedRecords.find(r => r.schedule_id === itemId && r.actual_date === dateStr);
@@ -151,29 +151,26 @@ function showSidebarDetail(itemId, dateStr) {
     if (!panel) {
         panel = document.createElement('div');
         panel.id = 'class-detail-panel';
-        // ★ 加上 -translate-x-full 讓它預設躲在左邊螢幕外，並設定 300ms 的過渡動畫
         panel.className = 'absolute inset-0 bg-white z-50 flex flex-col shadow-xl transition-transform duration-300 -translate-x-full hidden';
         if (sidebar) {
-            sidebar.style.overflowX = 'hidden'; // 防止滑動過程產生橫向捲軸
+            sidebar.style.overflowX = 'hidden';
             sidebar.appendChild(panel);
         }
     }
 
-    // ★ 判斷面板是否已經在畫面上 (沒有 -translate-x-full 就代表已經打開了)
     const isPanelOpen = !panel.classList.contains('-translate-x-full');
 
-    // 2. 智慧開關邏輯：如果是點擊「同一張」，就執行平滑收回
+    // 2. 智慧開關邏輯
     if (isPanelOpen && panel.dataset.currentId === itemId) {
-        panel.classList.add('-translate-x-full'); // 向左滑走
+        panel.classList.add('-translate-x-full');
         panel.dataset.currentId = '';
-        // 等 300ms 動畫跑完後，再把它隱藏起來
         setTimeout(() => { if (panel.dataset.currentId === '') panel.classList.add('hidden'); }, 300);
         return;
     }
 
     panel.dataset.currentId = itemId;
 
-    // 3. 狀態與資料準備 (不變)
+    // 3. 狀態與資料準備
     const phoneList = (item.phone || "").split(/\s+/).filter(p => p.trim() !== "");
     const displayRemark = record ? record.remark : "";
     const currentStatus = record ? record.status : (item.color_class || 'status-pending');
@@ -183,10 +180,20 @@ function showSidebarDetail(itemId, dateStr) {
     const monthDiff = (today.getFullYear() * 12 + today.getMonth()) - (cardDate.getFullYear() * 12 + cardDate.getMonth());
     const isLocked = monthDiff >= 2 && (!currentUserInfo || !currentUserInfo.is_admin);
 
-    // ★ 視覺修復：根據模式決定顯示的金額 (橘色固定模式永遠顯示原價)
     const displayAmount = window.isFixedViewMode
         ? (item.amount || 0)
         : ((record && record.actual_amount != null) ? record.actual_amount : (item.amount || 0));
+
+    // ★ 新增：獨立的存檔狀態區塊 HTML
+    const isArchived = !window.isFixedViewMode && record && record.actual_amount != null;
+    const archivedRowHtml = isArchived ? `
+        <div class="mt-4 pt-4 border-t border-gray-100">
+            <h3 class="text-[11px] font-bold text-slate-400 mb-2.5 uppercase tracking-wider flex items-center gap-1"><i data-lucide="shield-check" class="w-3 h-3 text-slate-400"></i> 系統狀態</h3>
+            <div class="flex items-center gap-2.5 bg-slate-50 text-slate-600 p-3 rounded-lg border border-slate-200 font-bold text-sm shadow-sm">
+                <i data-lucide="lock" class="w-4 h-4 text-slate-400 shrink-0"></i> <span>所有資訊已被紀錄</span>
+            </div>
+        </div>
+    ` : '';
 
     let statusBadge = '';
     if (['attended', 'status-present'].includes(currentStatus)) statusBadge = '<span class="text-xs font-bold px-2.5 py-1.5 rounded bg-green-50 text-green-600 border border-green-100"><i data-lucide="check-circle" class="w-3 h-3 inline"></i> 已上課</span>';
@@ -198,16 +205,12 @@ function showSidebarDetail(itemId, dateStr) {
 
     // 4. 按鈕佈局
     let actionButtonsHtml = '';
-
-    // 🟠 新增防護：如果現在是橘色母版模式，側邊欄只顯示「編輯」與「徹底刪除」！
     if (window.isFixedViewMode) {
         actionButtonsHtml = `
             <button onclick="openEditModal('${item.id}', 'status-pending', '${formatDate(new Date())}')" class="py-2.5 col-span-1 bg-white text-orange-600 border border-orange-200 rounded-xl font-bold shadow-sm hover:bg-orange-50 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="pencil" class="w-4 h-4"></i> 編輯</button>
             <button onclick="deleteCourse('${item.id}'); document.getElementById('class-detail-panel').classList.add('-translate-x-full'); setTimeout(() => document.getElementById('class-detail-panel').classList.add('hidden'), 300);" class="py-2.5 col-span-1 bg-red-50 text-red-600 border border-red-200 rounded-xl font-bold shadow-sm hover:bg-red-100 transition-all flex justify-center items-center gap-1.5 text-sm active:scale-95"><i data-lucide="trash-2" class="w-4 h-4"></i> 刪除</button>
         `;
-    }
-    // 🔵 以下維持藍色模式原本的邏輯
-    else if (isLocked) {
+    } else if (isLocked) {
         actionButtonsHtml = `<div class="col-span-2 text-center text-[11px] text-gray-400 font-bold py-2.5 bg-gray-50 rounded-xl border border-gray-200"><i data-lucide="lock" class="w-3.5 h-3.5 inline mb-0.5"></i> 歷史紀錄已鎖定，無法修改</div>`;
     } else {
         let nextText = '點名上課', nextColor = 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100', nextIcon = 'check-circle';
@@ -236,16 +239,16 @@ function showSidebarDetail(itemId, dateStr) {
         `;
     }
 
-    // 5. 繪製精美面板 UI (修改了「返回按鈕」的 onclick，加入收回動畫)
+    // 5. 繪製精美面板 UI 
     panel.innerHTML = `
         <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50 shrink-0">
-                <button onclick="const p = document.getElementById('class-detail-panel'); p.classList.add('-translate-x-full'); p.dataset.currentId = ''; setTimeout(() => { if(p.dataset.currentId === '') p.classList.add('hidden'); }, 300); if(window.innerWidth < 1024) toggleSidebar();" class="flex items-center gap-1 text-gray-500 hover:text-gray-800 font-bold text-sm transition-colors">
-                    <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回
-                </button>
+            <button onclick="const p = document.getElementById('class-detail-panel'); p.classList.add('-translate-x-full'); p.dataset.currentId = ''; setTimeout(() => { if(p.dataset.currentId === '') p.classList.add('hidden'); }, 300); if(window.innerWidth < 1024) toggleSidebar();" class="flex items-center gap-1 text-gray-500 hover:text-gray-800 font-bold text-sm transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回
+            </button>
             ${statusBadge}
         </div>
         
-        <div class="p-5 flex flex-col gap-5 flex-1 overflow-y-auto bg-white">
+        <div class="p-5 flex flex-col gap-4 flex-1 overflow-y-auto bg-white">
             <div>
                 <h2 class="text-2xl font-extrabold text-gray-800 tracking-tight leading-tight">${item.course_name}</h2>
                 ${item.subject ? `<span class="inline-block mt-1.5 text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md font-semibold border border-gray-200/60">${item.subject}</span>` : ''}
@@ -255,7 +258,7 @@ function showSidebarDetail(itemId, dateStr) {
                 <div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px]"><i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i> ${dateStr}</div>
                 <div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px]"><i data-lucide="clock" class="w-4 h-4 text-amber-400"></i> ${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}</div>
                 <div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px]"><i data-lucide="map-pin" class="w-4 h-4 text-rose-400"></i> ${item.room_no || '未指定教室'}</div>
-<div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px] font-mono"><i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i> NT$ ${displayAmount}</div>
+                <div class="flex items-center gap-2.5 text-gray-600 font-bold text-[15px] font-mono"><i data-lucide="coins" class="w-4 h-4 text-emerald-400"></i> NT$ ${displayAmount}</div>
             </div>
 
             ${phoneList.length > 0 ? `
@@ -275,6 +278,8 @@ function showSidebarDetail(itemId, dateStr) {
                 <h3 class="text-[11px] font-bold text-red-400 mb-2.5 uppercase tracking-wider flex items-center gap-1"><i data-lucide="pin" class="w-3 h-3 text-red-400"></i> 課程備註</h3>
                 <div class="bg-red-50 text-red-600 p-3.5 rounded-lg border border-red-100 font-bold text-sm whitespace-pre-wrap leading-relaxed shadow-sm">${displayRemark}</div>
             </div>` : ''}
+
+            ${archivedRowHtml}
         </div>
 
         <div class="p-4 border-t border-gray-100 bg-white grid grid-cols-2 gap-2.5 shrink-0 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.02)]">
@@ -282,14 +287,13 @@ function showSidebarDetail(itemId, dateStr) {
         </div>
     `;
 
-    // ★ 6. 核心魔法：如果是剛打開，執行平滑滑入動畫
+    // 6. 核心魔法
     if (!isPanelOpen) {
         panel.classList.remove('hidden');
         void panel.offsetWidth;
         panel.classList.remove('-translate-x-full');
     }
 
-    // ✨ 新增防護：如果是手機/平板版，強制把整個側邊欄也推出來！
     if (window.innerWidth < 1024) {
         const side = document.getElementById('sidebar');
         const over = document.getElementById('sidebar-overlay');
@@ -1413,16 +1417,20 @@ function renderSchedule(list, records = [], startDate) {
             const heightPx = getDynamicTop(eT.h, eT.m) - topPx;
             const myIndex = cardColIndex[item.id];
 
-            // ★ 宣告變數，準備根據模式來賦值
+            // ★ 1. 宣告共用變數
             let displayStatus = 'status-pending';
             let displayRemark = '';
             let isLocked = false;
             let cardActionsHtml = '';
             let clickAction = '';
 
-            // 🚀 核心修復：提早尋找點名紀錄與結帳金額，解除 ReferenceError！
+            // 🚀 2. 先尋找點名紀錄與結帳金額！
             const record = records.find(r => r.schedule_id === item.id && r.actual_date === thisDayDateStr);
             let displayAmount = (record && record.actual_amount != null) ? record.actual_amount : (item.amount || 0);
+
+            // ★ 3. 再判斷存檔鎖頭 (這行就是剛剛消失，導致報錯的關鍵！)
+            const isArchived = !window.isFixedViewMode && record && record.actual_amount != null;
+            const archiveIcon = isArchived ? `<i data-lucide="lock" class="w-3.5 h-3.5 text-slate-400/70 ml-auto" title="薪資已存檔"></i>` : '';
 
             // ==========================================
             // ★ 核心分流：判斷現在是「母版模式」還是「本週模式」
@@ -1522,7 +1530,10 @@ function renderSchedule(list, records = [], startDate) {
                         <span class="font-bold text-neutral-800 text-[15px] tracking-tight whitespace-nowrap truncate min-w-0">${item.course_name}</span>
                         ${item.subject ? `<span class="text-[11px] text-gray-500 bg-gray-200/50 px-1 py-0.5 rounded-sm shrink-0 font-bold whitespace-nowrap">${item.subject}</span>` : ''}
                     </div>
-                    <div class="text-[12px] text-gray-400 font-mono mt-0.5 whitespace-nowrap font-bold leading-none">${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}</div>
+                    <div class="text-[12px] text-gray-400 font-mono mt-0.5 whitespace-nowrap font-bold leading-none flex items-center w-full">
+                        ${item.start_time.slice(0, 5)} - ${item.end_time.slice(0, 5)}
+                        ${archiveIcon}
+                    </div>
                 </div>
                 <div onclick="showSidebarDetail('${item.id}', '${thisDayDateStr}'); event.stopPropagation();" class="h-1/2 w-full flex items-center justify-between bg-gray-50/80 hover:bg-blue-50 transition-colors backdrop-blur-sm px-2 border-t border-gray-100 cursor-pointer group/bottom overflow-hidden">
                     <div class="flex items-center gap-0.5 text-[11px] text-gray-500 font-bold group-hover/bottom:text-emerald-600 transition-colors whitespace-nowrap shrink-0 tracking-wide flex-none">
@@ -2314,57 +2325,117 @@ window.lockHistoricalSalary = async function (scheduleId, oldAmount, teacherId, 
 }
 
 // ==========================================================================
-// ★ 手動安全鎖：自訂時間段的歷史薪資存檔
+// ★ 智慧日曆小幫手：自動連動「1號跳月底、週一跳週日」
+// ==========================================================================
+window.handleSmartDateSelection = function (selectedDates, endInputId) {
+    if (selectedDates.length === 0) return;
+    const startDate = selectedDates[0];
+    const endInput = document.getElementById(endInputId);
+
+    if (endInput && endInput._flatpickr) {
+        // 🎁 魔法 1：選「1 號」，自動連動到「月底」
+        if (startDate.getDate() === 1) {
+            const lastDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+            endInput._flatpickr.setDate(lastDay, true);
+            return;
+        }
+        // 🎁 魔法 2：選「週一」，自動連動到該週「週日」
+        if (startDate.getDay() === 1) {
+            const sunday = new Date(startDate);
+            sunday.setDate(sunday.getDate() + 6);
+            endInput._flatpickr.setDate(sunday, true);
+            return;
+        }
+        // 防呆：結束日期不能早於開始日期
+        const endDate = endInput._flatpickr.selectedDates[0];
+        if (!endDate || endDate < startDate) {
+            endInput._flatpickr.setDate(startDate, true);
+        }
+    }
+};
+
+// ==========================================================================
+// ★ 手動安全鎖：自訂時間段的歷史薪資存檔 (視覺統一與防呆升級版)
 // ==========================================================================
 window.manualLockTeacherHistory = async function () {
     if (!currentTid) return;
     const t = allTeachers.find(x => x.id === currentTid);
     const tName = t ? t.name : '未知老師';
 
-    // ★ 智慧預設值：抓取「上個月的 1 號」到「上個月的最後一天」
     const today = new Date();
     const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-
     const defaultStart = formatDate(firstDayOfLastMonth);
     const defaultEnd = formatDate(lastDayOfLastMonth);
 
-    // 溫和且具備「開始與結束」選擇器的提示框
+    let finalStart = defaultStart;
+    let finalEnd = defaultEnd;
+
+    // ★ 視覺修正：全部改用乾淨專業的 Slate (灰色)
     const confirmMsg = `
         <div class="text-[14px] text-gray-700 leading-relaxed text-left">
             您即將為 <b>${tName}</b> 建立歷史薪資存檔：<br><br>
             
-            <div class="mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <label class="block text-sm font-bold text-slate-700 mb-2 flex items-center gap-1.5"><i data-lucide="calendar-clock" class="w-4 h-4 text-slate-500"></i> 請選擇存檔的「開始」與「結束」日期：</label>
+            <div class="mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                <label class="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5 uppercase tracking-wider">
+                    <i data-lucide="calendar-clock" class="w-4 h-4 text-slate-500"></i> 請選擇存檔區間
+                </label>
                 <div class="flex items-center gap-2">
-                    <input type="date" id="archive-start-date" value="${defaultStart}" class="w-full border border-slate-300 rounded p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all">
+                    <input type="text" id="archive-start-date" value="${defaultStart}" readonly class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-center font-mono font-bold focus:ring-2 focus:ring-slate-400 outline-none cursor-pointer text-slate-700">
                     <span class="text-slate-400 font-bold">~</span>
-                    <input type="date" id="archive-end-date" value="${defaultEnd}" max="${formatDate(today)}" class="w-full border border-slate-300 rounded p-2 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all">
+                    <input type="text" id="archive-end-date" value="${defaultEnd}" readonly class="w-full bg-white border border-slate-300 rounded-lg p-2 text-sm text-center font-mono font-bold focus:ring-2 focus:ring-slate-400 outline-none cursor-pointer text-slate-700">
                 </div>
             </div>
 
             <ul class="list-disc pl-5 space-y-1.5 text-slate-600 mb-2">
                 <li>系統會將您選擇的 <b>這段期間內</b> 的課程，完整打包成歷史快照。</li>
-                <li>全面保存當時的<b>「薪資金額、點名狀態、備註紀錄」</b>，確保未來的任何設定變更，都不會影響到這份歷史帳目。</li>
-                <li><b>💡 存檔後若需微調，您依然可以隨時點擊該日期的卡片進行修改喔！</b></li>
+                <li>全面保存當時的<b>「薪資金額、點名狀態、備註紀錄」</b>，不受未來變動影響。</li>
+                <li><b>💡 存檔後若需微調，您依然可以隨時點擊卡片進行修改。</b></li>
             </ul>
         </div>
     `;
 
-    setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 20);
+    setTimeout(() => {
+        if (window.lucide) lucide.createIcons();
+
+        const commonConfig = {
+            locale: "zh_tw",
+            dateFormat: "Y-m-d",
+            disableMobile: true,
+            // ★ 核心修復：強制呼叫全域的變色龍引擎，否則它會因為動態生成而漏接！
+            onReady: function (s, d, instance) {
+                if (typeof window.applyCalendarTheme === 'function') {
+                    window.applyCalendarTheme(instance);
+                }
+            }
+        };
+
+        flatpickr("#archive-start-date", {
+            ...commonConfig,
+            defaultDate: defaultStart,
+            onChange: (dates, dateStr) => {
+                finalStart = dateStr;
+                // 呼叫省力引擎！
+                window.handleSmartDateSelection(dates, 'archive-end-date');
+                // 同步更新 finalEnd 變數
+                const endFp = document.getElementById('archive-end-date')._flatpickr;
+                if (endFp && endFp.selectedDates[0]) finalEnd = formatDate(endFp.selectedDates[0]);
+            }
+        });
+        flatpickr("#archive-end-date", {
+            ...commonConfig,
+            defaultDate: defaultEnd,
+            onChange: (dates, dateStr) => { finalEnd = dateStr; }
+        });
+    }, 50);
 
     if (!(await sysConfirm(confirmMsg, "📦 建立區間歷史存檔", "info"))) return;
 
-    // 抓取使用者選擇的開始與結束日期
-    const selectedStart = document.getElementById('archive-start-date') ? document.getElementById('archive-start-date').value : defaultStart;
-    const selectedEnd = document.getElementById('archive-end-date') ? document.getElementById('archive-end-date').value : defaultEnd;
-
-    // 簡單的防呆檢查
-    if (new Date(selectedStart) > new Date(selectedEnd)) {
+    if (new Date(finalStart) > new Date(finalEnd)) {
         return sysAlert("「開始日期」不能晚於「結束日期」喔！請重新選擇。");
     }
 
-    setStatus("正在建立歷史存檔，請稍候...", "warn");
+    setStatus(`正在建立 ${finalStart} ~ ${finalEnd} 的存檔...`, "warn");
     try {
         const { data: mySchedules } = await _client.from("schedules").select("*").eq("teacher_id", currentTid).eq("is_temporary", false);
         if (!mySchedules || mySchedules.length === 0) {
@@ -2372,15 +2443,14 @@ window.manualLockTeacherHistory = async function () {
             return sysAlert(`<b>${tName}</b> 目前沒有任何固定課程需要存檔。`);
         }
 
-        // 啟動防護盾！傳入使用者指定的「開始」與「結束」日期
         for (const sched of mySchedules) {
-            await window.lockHistoricalSalary(sched.id, Number(sched.amount) || 0, currentTid, sched.day_of_week, sched.created_at, selectedStart, selectedEnd);
+            await window.lockHistoricalSalary(sched.id, Number(sched.amount) || 0, currentTid, sched.day_of_week, sched.created_at, finalStart, finalEnd);
         }
 
-        await recordLog('系統操作', `為 [${tName}] 建立了歷史薪資存檔 (區間：${selectedStart} ~ ${selectedEnd})。`, 'lesson_records', null, null);
+        await recordLog('系統操作', `為 [${tName}] 建立了歷史薪資存檔 (區間：${finalStart} ~ ${finalEnd})。`, 'lesson_records', null, null);
 
         setStatus("歷史存檔建立完成！", "success");
-        await sysAlert(`🎉 存檔成功！<br><br><b>${tName}</b> 從 <b>${selectedStart}</b> 到 <b>${selectedEnd}</b> 的課程皆已安心保存。<br>未來的課表調整都不會影響到這段期間的帳目囉！`);
+        await sysAlert(`🎉 存檔成功！<br><br><b>${tName}</b> 從 <b>${finalStart}</b> 到 <b>${finalEnd}</b> 的課程皆已安心保存。`);
     } catch (err) {
         console.error(err);
         setStatus("存檔失敗", "error");
@@ -4336,144 +4406,57 @@ window.checkSync = async function () {
  * ========================================================================== */
 let _fpInstance = null;
 
-window.initAllPickers = function () {
-    // 🎨 變色龍情境偵測器
-    function applyTheme(instance) {
-        if (!instance.calendarContainer) return;
-        const inputId = instance.element.id || '';
-        let theme = 'theme-blue'; // 預設藍色 (主課表、調課)
+// 🎨 將變色龍引擎提升為「全域函數」，讓動態生成的視窗也能隨時呼叫它！
+window.applyCalendarTheme = function (instance) {
+    if (!instance.calendarContainer) return;
+    const inputId = instance.element.id || '';
+    let theme = 'theme-blue'; // 預設：清透天空藍
 
-        // 根據輸入框的 ID 或當下模式，決定要穿什麼顏色的衣服
-        if (inputId.includes('salary') || inputId.includes('report') || inputId.includes('stat')) {
-            theme = 'theme-slate'; // 薪資結算與統計 ➔ 專業石板灰
-        } else if (inputId.includes('addclass')) {
-            theme = 'theme-emerald'; // 一鍵加課 ➔ 清新薄荷綠
-        } else if (inputId.includes('remark')) {
-            theme = 'theme-yellow'; // 備註 ➔ 溫暖蜂蜜黃
-        } else if (window.isFixedViewMode && !inputId.includes('reschedule')) {
-            theme = 'theme-orange'; // 橘色母版模式 ➔ 甜美蜜桃橘
-        }
-
-        // 幫日曆換上專屬的 CSS 類別
-        instance.calendarContainer.classList.add(theme);
+    // 🟢 翡翠綠 (薪資試算、Excel歷史點名、新增單次課)
+    if (inputId.includes('salary') || inputId.includes('batch') || inputId.includes('addclass')) {
+        theme = 'theme-emerald';
+    }
+    // 🔘 專業石板灰 (建立區間歷史存檔、統計報表)
+    else if (inputId.includes('archive') || inputId.includes('stat')) {
+        theme = 'theme-slate';
+    }
+    // 🟠 蜜桃橘 (休假、固定課表)
+    else if (inputId.includes('leave') || window.isFixedViewMode) {
+        theme = 'theme-orange';
+    }
+    // 🟡 蜂蜜黃 (備註)
+    else if (inputId.includes('remark')) {
+        theme = 'theme-yellow';
     }
 
-    // 掃描並升級所有「日期」輸入框 (加入滾輪支援與貼心連動)
+    // 脫掉舊衣服，換上新主題
+    instance.calendarContainer.classList.remove('theme-blue', 'theme-emerald', 'theme-orange', 'theme-slate', 'theme-yellow');
+    instance.calendarContainer.classList.add(theme);
+};
+
+window.initAllPickers = function () {
     flatpickr('input[type="date"]:not(.flatpickr-input):not(#date-picker)', {
         locale: "zh_tw",
         disableMobile: true,
         dateFormat: "Y-m-d",
         onChange: function (selectedDates, dateStr, instance) {
-            // ==========================================
-            // ★ 貼心設計大禮包：日期連動引擎
-            // ==========================================
-            if (selectedDates.length === 0) return;
             const inputId = instance.element.id || '';
-            const startDate = selectedDates[0];
-
-            // 尋找它旁邊配對的「結束日期」欄位 (利用命名規則: 把 start 替換為 end)
-            const endInputId = inputId.replace('start', 'end');
-            const endInput = document.getElementById(endInputId);
-
-            if (endInput && endInput._flatpickr) {
-                // 🎁 貼心設計 1：【報表/薪資/匯出】如果選了某個月 1 號，結束日自動跳到當月最後一天
-                if (['salary-start-date', 'stat-start', 'batch-history-start'].includes(inputId)) {
-                    if (startDate.getDate() === 1) {
-                        const lastDay = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); // 神奇語法：下個月的第 0 天就是這個月的最後一天
-                        endInput._flatpickr.setDate(lastDay, false);
-                        return; // 完成月結連動就結束
-                    }
-                }
-
-                // 🎁 貼心設計 2：【防呆保護】結束日期絕對不能早於開始日期！如果發生了，自動把結束日對齊開始日
-                const endDate = endInput._flatpickr.selectedDates[0];
-                if (!endDate || endDate < startDate) {
-                    endInput._flatpickr.setDate(startDate, false);
+            // ★ 無死角偵測：只要 ID 裡面有 "start"，就啟動省力連動！
+            if (inputId.includes('start')) {
+                const endInputId = inputId.replace('start', 'end');
+                if (window.handleSmartDateSelection) {
+                    window.handleSmartDateSelection(selectedDates, endInputId);
                 }
             }
         },
         onReady: function (s, d, instance) {
-            applyTheme(instance); // 保持變色龍主題
-            // 讓日曆支援滾輪切換月份
-            instance.calendarContainer.addEventListener('wheel', function (e) {
-                e.preventDefault();
-                e.deltaY < 0 ? instance.changeMonth(-1) : instance.changeMonth(1);
-            }, { passive: false });
+            window.applyCalendarTheme(instance);
         }
     });
 
-    // 掃描並升級所有「時間」輸入框
     flatpickr('input[type="time"]:not(.flatpickr-input)', {
-        enableTime: true,
-        noCalendar: true,
-        dateFormat: "H:i",
-        time_24hr: true,
-        disableMobile: true,
-        minuteIncrement: 5,
-        onChange: function (selectedDates, dateStr, instance) {
-            // ==========================================
-            // ★ 智慧連動魔法：當選擇了「開始時間」，自動將對應的「結束時間」設為 +1 小時
-            // ==========================================
-            if (selectedDates.length === 0) return;
-
-            const el = instance.element;
-            const id = el.id || '';
-            const name = el.name || '';
-            let targetEndInput = null;
-
-            // 1. 尋找這個開始時間「對應」的結束時間欄位
-            if (id.includes('start-time')) {
-                // 針對調課、加課彈窗
-                targetEndInput = document.getElementById(id.replace('start-time', 'end-time'));
-            } else if (name === 'start_time') {
-                // 針對新增/編輯課程主表單
-                const form = el.closest('form');
-                if (form) targetEndInput = form.querySelector('input[name="end_time"]');
-            }
-
-            // 2. 如果成功找到對應的結束時間欄位，就幫它 +1 小時！
-            if (targetEndInput) {
-                const startDate = selectedDates[0];
-                const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // 加上 1 小時 (3600000 毫秒)
-
-                const endStr = String(endDate.getHours()).padStart(2, '0') + ':' + String(endDate.getMinutes()).padStart(2, '0');
-
-                // 透過 flatpickr 的 API 來更新結束時間，畫面才會同步改變
-                if (targetEndInput._flatpickr) {
-                    targetEndInput._flatpickr.setDate(endStr, false); // false 代表不要再次觸發 onChange，避免無限迴圈
-                } else {
-                    targetEndInput.value = endStr;
-                }
-            }
-        },
-        onReady: function (s, d, instance) {
-            applyTheme(instance); // 時間外掛也要變色
-            if (instance.timeContainer) {
-                instance.timeContainer.addEventListener('wheel', function (e) {
-                    e.preventDefault();
-                    const isUp = e.deltaY < 0;
-                    const targetInput = e.target;
-
-                    if (targetInput.classList.contains('flatpickr-hour')) {
-                        let currentHour = parseInt(targetInput.value, 10) || 0;
-                        currentHour = isUp ? currentHour + 1 : currentHour - 1;
-                        if (currentHour >= 24) currentHour = 0;
-                        if (currentHour < 0) currentHour = 23;
-                        targetInput.value = currentHour.toString().padStart(2, '0');
-                        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                    else if (targetInput.classList.contains('flatpickr-minute')) {
-                        let currentMin = parseInt(targetInput.value, 10) || 0;
-                        const step = instance.config.minuteIncrement || 5;
-                        currentMin = isUp ? currentMin + step : currentMin - step;
-                        if (currentMin >= 60) currentMin = 0;
-                        if (currentMin < 0) currentMin = 60 - step;
-                        targetInput.value = currentMin.toString().padStart(2, '0');
-                        targetInput.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                }, { passive: false });
-            }
-        }
+        enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true, disableMobile: true, minuteIncrement: 5,
+        onReady: function (s, d, instance) { window.applyCalendarTheme(instance); }
     });
 };
 
