@@ -2437,20 +2437,45 @@ window.manualLockTeacherHistory = async function () {
 
     setStatus(`正在建立 ${finalStart} ~ ${finalEnd} 的存檔...`, "warn");
     try {
+        // 🛡️ 防護網 1：打包所有「固定課表」
         const { data: mySchedules } = await _client.from("schedules").select("*").eq("teacher_id", currentTid).eq("is_temporary", false);
-        if (!mySchedules || mySchedules.length === 0) {
-            setStatus("");
-            return sysAlert(`<b>${tName}</b> 目前沒有任何固定課程需要存檔。`);
+        if (mySchedules && mySchedules.length > 0) {
+            for (const sched of mySchedules) {
+                await window.lockHistoricalSalary(sched.id, Number(sched.amount) || 0, currentTid, sched.day_of_week, sched.created_at, finalStart, finalEnd);
+            }
         }
 
-        for (const sched of mySchedules) {
-            await window.lockHistoricalSalary(sched.id, Number(sched.amount) || 0, currentTid, sched.day_of_week, sched.created_at, finalStart, finalEnd);
+        // 🛡️ 防護網 2：打包所有「單次課」與「被修改過的例外課」(因為它們的 is_temporary 是 true)
+        const { data: tempSchedules } = await _client.from("schedules").select("*").eq("teacher_id", currentTid).eq("is_temporary", true).gte("target_date", finalStart).lte("target_date", finalEnd);
+        if (tempSchedules && tempSchedules.length > 0) {
+            for (const tSched of tempSchedules) {
+                const { data: existingRecords } = await _client.from("lesson_records").select("*").eq("schedule_id", tSched.id).eq("actual_date", tSched.target_date);
+                if (existingRecords && existingRecords.length > 0) {
+                    if (existingRecords[0].actual_amount == null) {
+                        await _client.from("lesson_records").update({ actual_amount: tSched.amount || 0 }).eq("id", existingRecords[0].id);
+                    }
+                } else {
+                    await _client.from("lesson_records").insert([{
+                        schedule_id: tSched.id, teacher_id: currentTid, actual_date: tSched.target_date,
+                        status: tSched.color_class || 'status-pending', actual_amount: tSched.amount || 0, remark: ''
+                    }]);
+                }
+            }
+        }
+
+        // 🛡️ 防護網 3：終極掃蕩！強制把這段期間內「所有失去鎖頭」的殘留點名紀錄，全部強制重新上鎖！
+        const { data: recordsToLock } = await _client.from("lesson_records").select("*, schedules(amount)").eq("teacher_id", currentTid).gte("actual_date", finalStart).lte("actual_date", finalEnd).is("actual_amount", null);
+        if (recordsToLock && recordsToLock.length > 0) {
+            for (const r of recordsToLock) {
+                const amt = r.schedules ? (r.schedules.amount || 0) : 0;
+                await _client.from("lesson_records").update({ actual_amount: amt }).eq("id", r.id);
+            }
         }
 
         await recordLog('系統操作', `為 [${tName}] 建立了歷史薪資存檔 (區間：${finalStart} ~ ${finalEnd})。`, 'lesson_records', null, null);
 
         setStatus("歷史存檔建立完成！", "success");
-        await sysAlert(`🎉 存檔成功！<br><br><b>${tName}</b> 從 <b>${finalStart}</b> 到 <b>${finalEnd}</b> 的課程皆已安心保存。`);
+        await sysAlert(`🎉 存檔成功！<br><br><b>${tName}</b> 從 <b>${finalStart}</b> 到 <b>${finalEnd}</b> 的所有課程（包含修改過的例外單次課）皆已安心保存。`);
     } catch (err) {
         console.error(err);
         setStatus("存檔失敗", "error");
