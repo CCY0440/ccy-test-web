@@ -41,6 +41,8 @@ let _allSchedulesForAdmin = [];
 let _allStudentsForAdmin = [];
 let _dirSortState = { key: 'name', dir: 1 };
 let allTeachers = [];
+let allRooms = [];                 // 教室資料快取
+let _cachedOccupiedSlots = [];    // 教室佔用時段快取 (給 is_public 教室檢視用)
 let memoTimeout = null;
 
 // 日期控制：一啟動就自動尋找本週的星期一
@@ -584,6 +586,7 @@ async function setupStudentAutocomplete() {
                 if (form.start_time && s.start_time) form.start_time.value = s.start_time;
                 if (form.end_time && s.end_time) form.end_time.value = s.end_time;
                 if (form.room_no) form.room_no.value = s.room_no;
+                if (window.tsInstances.room_no) window.tsInstances.room_no.setValue(s.room_no || "", true);
                 if (form.color_class && s.color_class) form.color_class.value = s.color_class;
 
                 dropdown.classList.add("hidden");
@@ -604,6 +607,45 @@ async function setupStudentAutocomplete() {
  * 3. 身分驗證與啟動 (Auth & Init)
  * ========================================================================== */
 
+/** 載入教室選單並初始化下拉插件 */
+async function loadRooms() {
+    const { data, error } = await _client
+        .from('rooms')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+    if (error) { console.error('載入教室資料失敗', error); return; }
+    allRooms = data || [];
+
+    const roomEl = document.querySelector('select[name="room_no"]');
+    if (!roomEl) return;
+
+    // 重建選項清單 (保留當前值)
+    const currentVal = roomEl.value;
+    roomEl.innerHTML = '<option value="">未指定</option>';
+    allRooms.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.name;
+        opt.textContent = r.name;
+        roomEl.appendChild(opt);
+    });
+    if (currentVal) roomEl.value = currentVal;
+
+    // 初始化或同步 TomSelect
+    if (window.tsInstances.room_no) {
+        window.tsInstances.room_no.sync();
+        if (currentVal) window.tsInstances.room_no.setValue(currentVal, true);
+    } else {
+        window.tsInstances.room_no = new TomSelect(roomEl, {
+            create: false,
+            placeholder: '選擇教室...',
+            dropdownParent: 'body',
+            controlInput: null
+        });
+    }
+}
+
 window.onload = async () => {
     const { data: { session } } = await _client.auth.getSession();
     if (!session) {
@@ -620,6 +662,9 @@ window.onload = async () => {
 
     const colorEl = document.querySelector('select[name="color_class"]');
     if (colorEl) window.tsInstances.color = new TomSelect(colorEl, { create: false, controlInput: null, dropdownParent: 'body' });
+
+    // ★ 載入教室下拉選單
+    await loadRooms();
 
     lucide.createIcons();
 
@@ -1197,6 +1242,25 @@ async function refreshData() {
             if (t) t.card_order = orderStr;
         }
 
+        // ★ 教室佔用偵測：如果目前選擇的是「公開教室帳號 (is_public = true)」，
+        // 就撈取其他老師使用這間教室的時段，繪製灰色斜線遮罩
+        _cachedOccupiedSlots = [];
+        const _currentTeacherInfo = allTeachers.find(t => String(t.id) === String(currentTid));
+        if (_currentTeacherInfo && _currentTeacherInfo.is_public) {
+            const { data: oData } = await _client
+                .from('schedules')
+                .select('start_time, end_time, day_of_week, is_temporary, target_date, course_name, teacher_id, color_class')
+                .eq('room_no', _currentTeacherInfo.name)
+                .neq('teacher_id', currentTid)
+                .neq('color_class', 'status-vacation')
+                .or(`target_date.is.null,and(target_date.gte.${startStr},target_date.lte.${endStr})`);
+
+            _cachedOccupiedSlots = (oData || []).map(s => ({
+                ...s,
+                is_temporary: String(s.is_temporary).toLowerCase() === 'true'
+            }));
+        }
+
         renderSchedule(_cachedSchedule, _cachedRecords, startDate);
         updateStatsUI();
 
@@ -1548,6 +1612,65 @@ function renderSchedule(list, records = [], startDate) {
             </div>`;
             contentLayer.appendChild(card);
         });
+
+        // ★ 教室佔用遮罩：灰色斜線 (只在 is_public 的教室視圖中顯示)
+        if (_cachedOccupiedSlots && _cachedOccupiedSlots.length > 0) {
+            _cachedOccupiedSlots.forEach(slot => {
+                // 判斷這個佔用時段是否屬於本天
+                let slotMatchesDay = false;
+                if (slot.is_temporary && slot.target_date) {
+                    slotMatchesDay = (slot.target_date === thisDayDateStr);
+                } else {
+                    slotMatchesDay = (slot.day_of_week === dbDay);
+                }
+                if (!slotMatchesDay) return;
+
+                const sT = parseTime(slot.start_time);
+                const eT = parseTime(slot.end_time);
+                const topPx = getDynamicTop(sT.h, sT.m);
+                const heightPx = getDynamicTop(eT.h, eT.m) - topPx;
+                if (heightPx <= 0) return;
+
+                // 查找使用這間教室的老師名稱
+                const usingTeacher = allTeachers.find(t => String(t.id) === String(slot.teacher_id));
+                const teacherLabel = usingTeacher ? usingTeacher.name : '老師';
+
+                const overlay = document.createElement('div');
+                overlay.className = 'absolute overflow-hidden';
+                overlay.style.cssText = `
+                    top: calc(${topPx}px * var(--z, 1));
+                    left: 0;
+                    width: 100%;
+                    height: calc(${heightPx}px * var(--z, 1));
+                    z-index: 15;
+                    background: repeating-linear-gradient(
+                        -45deg,
+                        rgba(107, 114, 128, 0.10) 0px,
+                        rgba(107, 114, 128, 0.10) 5px,
+                        rgba(209, 213, 219, 0.05) 5px,
+                        rgba(209, 213, 219, 0.05) 13px
+                    );
+                    border: 1.5px solid rgba(107, 114, 128, 0.22);
+                    border-radius: 4px;
+                    box-sizing: border-box;
+                    transform: scale(var(--z, 1));
+                    transform-origin: 0 0;
+                    pointer-events: none;
+                `;
+                overlay.innerHTML = `
+                    <div style="padding:3px 6px; display:flex; flex-direction:column; gap:1px; overflow:hidden;">
+                        <span style="font-size:10px; font-weight:700; color:rgba(75,85,99,0.80); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            🔒 ${teacherLabel}
+                        </span>
+                        <span style="font-size:9px; color:rgba(107,114,128,0.65); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${slot.course_name || '使用中'}
+                        </span>
+                    </div>
+                `;
+                contentLayer.appendChild(overlay);
+            });
+        }
+
         dayCol.appendChild(contentLayer);
         container.appendChild(dayCol);
     }
@@ -2769,6 +2892,7 @@ function closeModal() {
     if (window.tsInstances.teacher && currentTid) window.tsInstances.teacher.setValue(currentTid, true);
     if (window.tsInstances.day) window.tsInstances.day.setValue("1", true);
     if (window.tsInstances.color) window.tsInstances.color.setValue("status-pending", true);
+    if (window.tsInstances.room_no) window.tsInstances.room_no.setValue("", true); // ★ 重置教室選單
     setCourseModalTitle('book-open', '新增課程資料');
 }
 
@@ -2785,6 +2909,7 @@ function openEditInstanceModal(id, dateStr) {
     if (window.tsInstances.color) window.tsInstances.color.setValue(form.color_class.value, true);
     form.course_name.value = item.course_name; form.start_time.value = item.start_time.slice(0, 5);
     form.end_time.value = item.end_time.slice(0, 5); form.room_no.value = item.room_no || "";
+    if (window.tsInstances.room_no) window.tsInstances.room_no.setValue(item.room_no || "", true); // ★ 教室同步
     form.amount.value = item.amount || 0; form.phone.value = item.phone || ""; form.subject.value = item.subject || "";
 
     const record = _cachedRecords.find(r => r.schedule_id === id && r.actual_date === dateStr);
@@ -2816,6 +2941,7 @@ function openEditInstanceModal(id, dateStr) {
         if (window.tsInstances.teacher) window.tsInstances.teacher.setValue(form.teacher_id.value, true);
         if (window.tsInstances.day) window.tsInstances.day.setValue(form.day_of_week.value, true);
         if (window.tsInstances.color) window.tsInstances.color.setValue(form.color_class.value, true);
+        if (window.tsInstances.room_no) window.tsInstances.room_no.setValue(form.room_no.value, true); // ★ 教室同步
     }, 50);
 }
 
@@ -2832,6 +2958,7 @@ function openEditModal(id, status, dateStr) {
     if (window.tsInstances.color) window.tsInstances.color.setValue(form.color_class.value, true);
     form.course_name.value = item.course_name; form.start_time.value = item.start_time.slice(0, 5);
     form.end_time.value = item.end_time.slice(0, 5); form.room_no.value = item.room_no || "";
+    if (window.tsInstances.room_no) window.tsInstances.room_no.setValue(item.room_no || "", true); // ★ 教室同步
     form.amount.value = item.amount || 0; form.phone.value = item.phone || ""; form.subject.value = item.subject || "";
 
     const record = _cachedRecords.find(r => r.schedule_id === id && r.actual_date === dateStr);
@@ -2863,6 +2990,7 @@ function openEditModal(id, status, dateStr) {
         if (window.tsInstances.teacher) window.tsInstances.teacher.setValue(form.teacher_id.value, true);
         if (window.tsInstances.day) window.tsInstances.day.setValue(form.day_of_week.value, true);
         if (window.tsInstances.color) window.tsInstances.color.setValue(form.color_class.value, true);
+        if (window.tsInstances.room_no) window.tsInstances.room_no.setValue(form.room_no.value, true); // ★ 教室同步
     }, 50);
 }
 
