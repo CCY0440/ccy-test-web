@@ -1614,61 +1614,84 @@ function renderSchedule(list, records = [], startDate) {
         });
 
         // ★ 教室佔用遮罩：灰色斜線 (只在 is_public 的教室視圖中顯示)
+        // 使用區間合併演算法，讓同一時段的多位老師只顯示一個遮罩
         if (_cachedOccupiedSlots && _cachedOccupiedSlots.length > 0) {
-            _cachedOccupiedSlots.forEach(slot => {
-                // 判斷這個佔用時段是否屬於本天
-                let slotMatchesDay = false;
-                if (slot.is_temporary && slot.target_date) {
-                    slotMatchesDay = (slot.target_date === thisDayDateStr);
-                } else {
-                    slotMatchesDay = (slot.day_of_week === dbDay);
-                }
-                if (!slotMatchesDay) return;
-
-                const sT = parseTime(slot.start_time);
-                const eT = parseTime(slot.end_time);
-                const topPx = getDynamicTop(sT.h, sT.m);
-                const heightPx = getDynamicTop(eT.h, eT.m) - topPx;
-                if (heightPx <= 0) return;
-
-                // 查找使用這間教室的老師名稱
-                const usingTeacher = allTeachers.find(t => String(t.id) === String(slot.teacher_id));
-                const teacherLabel = usingTeacher ? usingTeacher.name : '老師';
-
-                const overlay = document.createElement('div');
-                overlay.className = 'absolute overflow-hidden';
-                overlay.style.cssText = `
-                    top: calc(${topPx}px * var(--z, 1));
-                    left: 0;
-                    width: 100%;
-                    height: calc(${heightPx}px * var(--z, 1));
-                    z-index: 15;
-                    background: repeating-linear-gradient(
-                        -45deg,
-                        rgba(107, 114, 128, 0.10) 0px,
-                        rgba(107, 114, 128, 0.10) 5px,
-                        rgba(209, 213, 219, 0.05) 5px,
-                        rgba(209, 213, 219, 0.05) 13px
-                    );
-                    border: 1.5px solid rgba(107, 114, 128, 0.22);
-                    border-radius: 4px;
-                    box-sizing: border-box;
-                    transform: scale(var(--z, 1));
-                    transform-origin: 0 0;
-                    pointer-events: none;
-                `;
-                overlay.innerHTML = `
-                    <div style="padding:3px 6px; display:flex; flex-direction:column; gap:1px; overflow:hidden;">
-                        <span style="font-size:10px; font-weight:700; color:rgba(75,85,99,0.80); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                            🔒 ${teacherLabel}
-                        </span>
-                        <span style="font-size:9px; color:rgba(107,114,128,0.65); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                            ${slot.course_name || '使用中'}
-                        </span>
-                    </div>
-                `;
-                contentLayer.appendChild(overlay);
+            // Step 1：篩出今天有效的時段
+            const daySlots = _cachedOccupiedSlots.filter(slot => {
+                if (slot.is_temporary && slot.target_date) return slot.target_date === thisDayDateStr;
+                return slot.day_of_week === dbDay;
             });
+
+            if (daySlots.length > 0) {
+                // Step 2：轉成分鐘數方便比較，並依開始時間排序
+                const toMin = (tStr) => {
+                    const p = parseTime(tStr);
+                    return p.h * 60 + p.m;
+                };
+                const slotsMins = daySlots.map(s => ({
+                    start: toMin(s.start_time),
+                    end:   toMin(s.end_time),
+                    teacher_id: s.teacher_id
+                })).sort((a, b) => a.start - b.start);
+
+                // Step 3：合併重疊區間，同一區間收集所有老師 id (用 Set 去重)
+                const merged = [];
+                for (const s of slotsMins) {
+                    if (merged.length === 0 || s.start >= merged[merged.length - 1].end) {
+                        merged.push({ start: s.start, end: s.end, teacherIds: new Set([s.teacher_id]) });
+                    } else {
+                        const last = merged[merged.length - 1];
+                        last.end = Math.max(last.end, s.end);
+                        last.teacherIds.add(s.teacher_id);
+                    }
+                }
+
+                // Step 4：每個合併後的區間繪製一個遮罩
+                merged.forEach(m => {
+                    const startH = Math.floor(m.start / 60), startM = m.start % 60;
+                    const endH   = Math.floor(m.end   / 60), endM   = m.end   % 60;
+                    const topPx    = getDynamicTop(startH, startM);
+                    const heightPx = getDynamicTop(endH, endM) - topPx;
+                    if (heightPx <= 0) return;
+
+                    // 組合老師名字，多位用「、」隔開
+                    const teacherNames = [...m.teacherIds].map(tid => {
+                        const t = allTeachers.find(t => String(t.id) === String(tid));
+                        return t ? t.name : '老師';
+                    }).join('、');
+
+                    const overlay = document.createElement('div');
+                    overlay.className = 'absolute overflow-hidden';
+                    overlay.style.cssText = `
+                        top: calc(${topPx}px * var(--z, 1));
+                        left: 0;
+                        width: 100%;
+                        height: calc(${heightPx}px * var(--z, 1));
+                        z-index: 15;
+                        background: repeating-linear-gradient(
+                            -45deg,
+                            rgba(107, 114, 128, 0.10) 0px,
+                            rgba(107, 114, 128, 0.10) 5px,
+                            rgba(209, 213, 219, 0.05) 5px,
+                            rgba(209, 213, 219, 0.05) 13px
+                        );
+                        border: 1.5px solid rgba(107, 114, 128, 0.22);
+                        border-radius: 4px;
+                        box-sizing: border-box;
+                        transform: scale(var(--z, 1));
+                        transform-origin: 0 0;
+                        pointer-events: none;
+                    `;
+                    overlay.innerHTML = `
+                        <div style="padding:4px 7px; overflow:hidden;">
+                            <span style="font-size:10px; font-weight:700; color:rgba(75,85,99,0.85); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">
+                                🔒 ${teacherNames} 正在使用中
+                            </span>
+                        </div>
+                    `;
+                    contentLayer.appendChild(overlay);
+                });
+            }
         }
 
         dayCol.appendChild(contentLayer);
