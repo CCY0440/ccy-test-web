@@ -1684,8 +1684,8 @@ function renderSchedule(list, records = [], startDate) {
                     `;
                     overlay.innerHTML = `
                         <div style="padding:4px 7px; overflow:hidden;">
-                            <span style="font-size:10px; font-weight:700; color:rgba(75,85,99,0.85); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block;">
-                                🔒 ${teacherNames} 正在使用中
+                            <span style="font-size:10px; font-weight:700; color:rgba(75,85,99,0.85); white-space:normal; word-break:break-all; line-height:1.4; display:block;">
+                                🔒 ${teacherNames}<br>正在使用中
                             </span>
                         </div>
                     `;
